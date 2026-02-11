@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 3 - Dark Professional</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+    }
+  }
+}
+</script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+</style>
+</head>
+<body class="font-sans bg-slate-950 text-slate-200 h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="flex items-center h-12 px-5 bg-slate-900 border-b border-slate-800 shrink-0">
+    <div class="w-[70px]"></div>
+    <button class="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm mr-4">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+      Home
+    </button>
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 bg-violet-600 rounded-md flex items-center justify-center">
+        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <span class="text-sm font-semibold text-white">My Research</span>
+    </div>
+    <div class="flex-1"></div>
+    <button class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.3.56.93.92 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <div class="flex flex-1 min-h-0">
+
+    <!-- LEFT SIDEBAR -->
+    <div class="w-[280px] shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col">
+      <div class="p-4 pt-5">
+        <button class="w-full flex items-center justify-center gap-2 py-2.5 bg-violet-600 text-white rounded-xl hover:bg-violet-500 transition-colors font-semibold text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Add Source
+        </button>
+      </div>
+
+      <div class="px-4 mb-3">
+        <div class="space-y-0.5">
+          <button class="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg bg-violet-600/15 text-violet-400 font-medium text-sm border border-violet-500/20">
+            <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Chat
+          </button>
+          <button class="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-slate-400 hover:bg-slate-800/60 text-sm">
+            <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            Notes
+          </button>
+        </div>
+      </div>
+
+      <div class="h-px bg-slate-800 mx-4 my-1"></div>
+
+      <div class="flex-1 overflow-auto px-4 py-3">
+        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-2 px-1">Sources (3)</p>
+        <div class="space-y-1">
+          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50">
+            <input type="checkbox" checked class="w-3.5 h-3.5 rounded accent-violet-500">
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="text-sm text-slate-300 truncate flex-1">research-paper.pdf</span>
+          </div>
+          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-slate-800/40">
+            <input type="checkbox" checked class="w-3.5 h-3.5 rounded accent-violet-500">
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+            <span class="text-sm text-slate-300 truncate flex-1">wikipedia.org/AI</span>
+          </div>
+          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-slate-800/40">
+            <input type="checkbox" class="w-3.5 h-3.5 rounded accent-violet-500">
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="text-sm text-slate-300 truncate flex-1">meeting-notes.txt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="flex-1 min-w-0 flex flex-col bg-slate-950">
+      <div class="flex-1 overflow-auto">
+        <div class="max-w-3xl mx-auto w-full px-6 py-8 h-full flex flex-col items-center justify-center">
+          <div class="text-center">
+            <div class="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-slate-700">
+              <svg class="w-10 h-10 text-violet-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Ask your notebook</h3>
+            <p class="text-sm text-slate-400 max-w-xs mx-auto mb-8 leading-relaxed">
+              Ask questions about your sources. Responses are grounded in your uploaded content.
+            </p>
+            <div class="flex flex-wrap gap-2 justify-center">
+              <button class="px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-sm text-slate-300 hover:border-violet-500/50 hover:text-violet-400 transition-all">
+                Summarize my sources
+              </button>
+              <button class="px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-sm text-slate-300 hover:border-violet-500/50 hover:text-violet-400 transition-all">
+                Key takeaways
+              </button>
+              <button class="px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-sm text-slate-300 hover:border-violet-500/50 hover:text-violet-400 transition-all">
+                Study guide
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-5">
+        <div class="max-w-3xl mx-auto w-full relative">
+          <textarea
+            placeholder="Ask a question..."
+            rows="1"
+            class="w-full pl-5 pr-14 py-3.5 bg-slate-900 border border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/50 resize-none h-[52px] text-sm text-slate-200 placeholder:text-slate-500"
+          ></textarea>
+          <button class="absolute right-2.5 bottom-2.5 w-9 h-9 bg-violet-600 text-white rounded-xl hover:bg-violet-500 transition-all flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div class="w-[340px] shrink-0 bg-slate-900 border-l border-slate-800 flex flex-col">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+        <h2 class="font-bold text-white">Studio</h2>
+      </div>
+
+      <div class="flex-1 overflow-auto p-4 space-y-2">
+        <button class="w-full text-left p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-violet-500/30 hover:bg-slate-800 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-violet-500/10 rounded-xl flex items-center justify-center text-violet-400 shrink-0 border border-violet-500/20">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-200">Audio Overview</h3>
+              <p class="text-xs text-slate-500">Podcast-style discussion</p>
+            </div>
+          </div>
+        </button>
+
+        <button class="w-full text-left p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-violet-500/30 hover:bg-slate-800 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 shrink-0 border border-blue-500/20">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-200">Slide Deck</h3>
+              <p class="text-xs text-slate-500">Presentation from sources</p>
+            </div>
+          </div>
+        </button>
+
+        <button class="w-full text-left p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-violet-500/30 hover:bg-slate-800 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-400 shrink-0 border border-amber-500/20">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-200">Study Flashcards</h3>
+              <p class="text-xs text-slate-500">Q&A study set</p>
+            </div>
+          </div>
+        </button>
+
+        <button class="w-full text-left p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-violet-500/30 hover:bg-slate-800 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/20">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-200">Report</h3>
+              <p class="text-xs text-slate-500">Detailed analytical report</p>
+            </div>
+          </div>
+        </button>
+
+        <button class="w-full text-left p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-violet-500/30 hover:bg-slate-800 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-400 shrink-0 border border-rose-500/20">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-200">Quiz</h3>
+              <p class="text-xs text-slate-500">Auto-generated questions</p>
+            </div>
+          </div>
+        </button>
+
+        <!-- Status -->
+        <div class="mt-4 bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-400">Sources Selected</span>
+            <span class="text-xs font-bold text-slate-300">2/3</span>
+          </div>
+          <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+            <div class="bg-violet-500 h-full rounded-full" style="width: 66%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed bottom-4 left-4 bg-violet-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg">
+    Mockup 3: Dark Professional — slate-950/900, violet accent, colored icon badges per tool
+  </div>
+</body>
+</html>

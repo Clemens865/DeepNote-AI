@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 2 - Google NotebookLM Style</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      colors: {
+        gblue: { 50: '#e8f0fe', 100: '#d2e3fc', 500: '#4285f4', 600: '#1a73e8', 700: '#1967d2' },
+      }
+    }
+  }
+}
+</script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #dadce0; border-radius: 3px; }
+</style>
+</head>
+<body class="font-sans bg-[#f8f9fa] text-[#202124] h-screen flex flex-col">
+
+  <!-- Header — Google style thin top bar -->
+  <header class="flex items-center h-14 px-4 bg-white border-b border-[#dadce0] shrink-0">
+    <div class="w-[70px]"></div>
+    <button class="w-9 h-9 rounded-full flex items-center justify-center text-[#5f6368] hover:bg-[#f1f3f4] mr-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+    </button>
+    <div class="flex items-center gap-2">
+      <svg class="w-5 h-5 text-gblue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      <span class="text-base font-medium text-[#202124]">My Research</span>
+    </div>
+    <div class="flex-1"></div>
+    <button class="w-9 h-9 rounded-full flex items-center justify-center text-[#5f6368] hover:bg-[#f1f3f4]">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+    </button>
+    <button class="w-9 h-9 rounded-full flex items-center justify-center text-[#5f6368] hover:bg-[#f1f3f4] ml-1">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <div class="flex flex-1 min-h-0">
+
+    <!-- LEFT SIDEBAR — Google-style with tinted background -->
+    <div class="w-[300px] shrink-0 bg-[#f0f4f9] flex flex-col">
+      <div class="p-4 pt-5">
+        <!-- Add source — Google blue pill button -->
+        <button class="w-full flex items-center justify-center gap-2 py-3 bg-gblue-600 text-white rounded-full hover:bg-gblue-700 hover:shadow-md transition-all font-medium text-sm shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Add Source
+        </button>
+      </div>
+
+      <!-- Navigation pills -->
+      <div class="px-3 mb-3">
+        <div class="space-y-0.5">
+          <button class="flex items-center gap-3 px-4 py-2.5 w-full rounded-full bg-gblue-100 text-gblue-700 font-medium text-[13px]">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Chat
+          </button>
+          <button class="flex items-center gap-3 px-4 py-2.5 w-full rounded-full text-[#5f6368] hover:bg-[#e3e7eb] text-[13px] font-medium">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            Notes
+          </button>
+        </div>
+      </div>
+
+      <div class="h-px bg-[#dadce0] mx-4 my-1"></div>
+
+      <!-- Sources -->
+      <div class="flex-1 overflow-auto px-3 py-3">
+        <p class="text-[11px] font-medium text-[#5f6368] uppercase tracking-wider mb-2 px-3">Sources</p>
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-3 px-3 py-2.5 rounded-full bg-white hover:bg-white/80 transition-colors cursor-pointer border border-transparent hover:border-[#dadce0]">
+            <div class="w-8 h-8 bg-gblue-50 rounded-full flex items-center justify-center text-gblue-600 shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-[#202124] truncate font-medium">research-paper.pdf</p>
+              <p class="text-xs text-[#5f6368]">PDF - 24 pages</p>
+            </div>
+            <input type="checkbox" checked class="w-4 h-4 rounded accent-gblue-600">
+          </div>
+          <div class="flex items-center gap-3 px-3 py-2.5 rounded-full hover:bg-white/60 transition-colors cursor-pointer">
+            <div class="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center text-green-600 shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-[#202124] truncate font-medium">Wikipedia - Artificial Intelligence</p>
+              <p class="text-xs text-[#5f6368]">Web page</p>
+            </div>
+            <input type="checkbox" checked class="w-4 h-4 rounded accent-gblue-600">
+          </div>
+          <div class="flex items-center gap-3 px-3 py-2.5 rounded-full hover:bg-white/60 transition-colors cursor-pointer">
+            <div class="w-8 h-8 bg-orange-50 rounded-full flex items-center justify-center text-orange-600 shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-[#202124] truncate font-medium">AI Ethics Talk - YouTube</p>
+              <p class="text-xs text-[#5f6368]">Video transcript</p>
+            </div>
+            <input type="checkbox" class="w-4 h-4 rounded accent-gblue-600">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="flex-1 min-w-0 flex flex-col bg-white">
+      <div class="flex-1 overflow-auto">
+        <div class="max-w-2xl mx-auto w-full px-6 py-8 h-full flex flex-col items-center justify-center">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-gblue-50 rounded-full flex items-center justify-center mx-auto mb-5">
+              <svg class="w-8 h-8 text-gblue-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 12 18.469c-1.006 0-1.966.399-2.676 1.11l-.311.31"/></svg>
+            </div>
+            <h3 class="text-xl font-medium text-[#202124] mb-2">Start a conversation</h3>
+            <p class="text-sm text-[#5f6368] max-w-sm mx-auto mb-8 leading-relaxed">
+              Ask questions about your sources. I'll provide answers grounded in your uploaded content.
+            </p>
+            <div class="flex flex-wrap gap-2 justify-center">
+              <button class="px-5 py-2.5 rounded-full border border-[#dadce0] text-sm text-[#5f6368] hover:bg-[#f1f3f4] hover:border-[#bdc1c6] transition-all">
+                Summarize my sources
+              </button>
+              <button class="px-5 py-2.5 rounded-full border border-[#dadce0] text-sm text-[#5f6368] hover:bg-[#f1f3f4] hover:border-[#bdc1c6] transition-all">
+                Key takeaways
+              </button>
+              <button class="px-5 py-2.5 rounded-full border border-[#dadce0] text-sm text-[#5f6368] hover:bg-[#f1f3f4] hover:border-[#bdc1c6] transition-all">
+                Study guide
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input — Google rounded style -->
+      <div class="px-6 py-4">
+        <div class="max-w-2xl mx-auto w-full relative">
+          <div class="bg-[#f8f9fa] border border-[#dadce0] rounded-3xl flex items-center px-5 hover:bg-white hover:shadow-md hover:border-transparent transition-all focus-within:bg-white focus-within:shadow-md focus-within:border-transparent">
+            <input
+              type="text"
+              placeholder="Type your question here..."
+              class="flex-1 py-3.5 bg-transparent text-sm text-[#202124] placeholder:text-[#80868b] outline-none"
+            />
+            <button class="w-9 h-9 bg-gblue-600 text-white rounded-full hover:bg-gblue-700 transition-all flex items-center justify-center ml-2 shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR — Google "Studio" panel -->
+    <div class="w-[340px] shrink-0 bg-[#f0f4f9] flex flex-col">
+      <div class="flex items-center justify-between px-5 py-4">
+        <h2 class="font-medium text-[#202124] text-base">Studio</h2>
+      </div>
+
+      <div class="flex-1 overflow-auto px-4 pb-4 space-y-2">
+        <!-- Google-style action cards -->
+        <button class="w-full text-left p-4 bg-white rounded-2xl hover:shadow-md hover:shadow-gblue-500/5 transition-all group border border-transparent hover:border-[#dadce0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gblue-50 rounded-full flex items-center justify-center text-gblue-600 shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium text-[#202124]">Audio Overview</h3>
+              <p class="text-xs text-[#5f6368]">Podcast-style discussion</p>
+            </div>
+          </div>
+        </button>
+
+        <button class="w-full text-left p-4 bg-white rounded-2xl hover:shadow-md hover:shadow-gblue-500/5 transition-all group border border-transparent hover:border-[#dadce0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center text-purple-600 shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium text-[#202124]">Slide Deck</h3>
+              <p class="text-xs text-[#5f6368]">Presentation outline</p>
+            </div>
+          </div>
+        </button>
+
+        <button class="w-full text-left p-4 bg-white rounded-2xl hover:shadow-md hover:shadow-gblue-500/5 transition-all group border border-transparent hover:border-[#dadce0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-600 shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium text-[#202124]">Study Flashcards</h3>
+              <p class="text-xs text-[#5f6368]">Q&A study set</p>
+            </div>
+          </div>
+        </button>
+
+        <button class="w-full text-left p-4 bg-white rounded-2xl hover:shadow-md hover:shadow-gblue-500/5 transition-all group border border-transparent hover:border-[#dadce0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium text-[#202124]">Report</h3>
+              <p class="text-xs text-[#5f6368]">Detailed analysis</p>
+            </div>
+          </div>
+        </button>
+
+        <button class="w-full text-left p-4 bg-white rounded-2xl hover:shadow-md hover:shadow-gblue-500/5 transition-all group border border-transparent hover:border-[#dadce0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium text-[#202124]">Quiz</h3>
+              <p class="text-xs text-[#5f6368]">Test your knowledge</p>
+            </div>
+          </div>
+        </button>
+
+        <!-- Status -->
+        <div class="mt-4 p-4 bg-white/60 rounded-2xl">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            <span class="text-xs font-medium text-[#202124]">Ready</span>
+          </div>
+          <p class="text-xs text-[#5f6368]">2 of 3 sources selected for context</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed bottom-4 left-4 bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg">
+    Mockup 2: Google NotebookLM — blue accent, tinted sidebars (#f0f4f9), rounded-full nav, white center
+  </div>
+</body>
+</html>

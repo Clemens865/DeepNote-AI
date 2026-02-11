@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #ffffff;
+  --color-bg-surface: #f8fafc;
+  --color-bg-surface-hover: #f1f5f9;
+  --color-bg-elevated: #ffffff;
+  --color-border: #e2e8f0;
+  --color-border-light: #cbd5e1;
+  --color-text-primary: #1e293b;
+  --color-text-secondary: #64748b;
+  --color-text-muted: #94a3b8;
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-accent-light: rgba(79, 70, 229, 0.12);
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+}
+
+/* Dark theme — override semantic tokens */
+.dark {
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-bg-surface: #1e293b;
+  --color-bg-surface-hover: #334155;
+  --color-bg-elevated: #1e293b;
+  --color-border: #334155;
+  --color-border-light: #475569;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-accent-light: rgba(99, 102, 241, 0.2);
+}
+
+/* NOTE: Do NOT add unlayered * {} resets here — Tailwind v4's @layer base
+   already handles margin/padding/box-sizing resets. Unlayered styles override
+   ALL layered utilities (padding, margin, border, shadow) and break the design. */
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #f1f5f9;
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .dark body {
+    background: #0f172a;
+  }
+
+  /* Tiptap / ProseMirror editor styles */
+  .ProseMirror { outline: none; }
+  .ProseMirror p { margin: 0.25rem 0; }
+  .ProseMirror ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+  .ProseMirror li { list-style-type: disc; }
+  .ProseMirror a { color: #3b82f6; text-decoration: underline; }
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: #94a3b8;
+    pointer-events: none;
+    height: 0;
+  }
+}
+
+/* Electron drag region for titlebar */
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

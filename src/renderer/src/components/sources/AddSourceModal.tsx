@@ -1,0 +1,369 @@
+import { useState } from 'react'
+import { Modal } from '../common/Modal'
+import { Button } from '../common/Button'
+import { Spinner } from '../common/Spinner'
+import { useNotebookStore } from '../../stores/notebookStore'
+import { FileText, Globe, ClipboardPaste, Youtube, Mic } from 'lucide-react'
+
+interface AddSourceModalProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+type Tab = 'file' | 'website' | 'paste' | 'youtube' | 'audio'
+
+export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
+  const [tab, setTab] = useState<Tab>('file')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<string | null>(null)
+  const [url, setUrl] = useState('')
+  const [pasteText, setPasteText] = useState('')
+  const [pasteTitle, setPasteTitle] = useState('')
+  const [youtubeUrl, setYoutubeUrl] = useState('')
+  const [selectedAudio, setSelectedAudio] = useState<string | null>(null)
+  const currentNotebook = useNotebookStore((s) => s.currentNotebook)
+  const setSources = useNotebookStore((s) => s.setSources)
+
+  const resetForm = () => {
+    setSelectedFile(null)
+    setUrl('')
+    setPasteText('')
+    setPasteTitle('')
+    setYoutubeUrl('')
+    setSelectedAudio(null)
+    setError(null)
+  }
+
+  const refreshSources = async () => {
+    if (!currentNotebook) return
+    const sources = await window.api.listSources(currentNotebook.id)
+    setSources(sources as never[])
+  }
+
+  const handleFileSelect = async () => {
+    const filePath = await window.api.showOpenDialog({
+      filters: [
+        { name: 'Documents', extensions: ['pdf', 'docx', 'doc', 'txt', 'md'] },
+      ],
+    }) as string | null
+    if (filePath) {
+      setSelectedFile(filePath)
+      setError(null)
+    }
+  }
+
+  const handleFileUpload = async () => {
+    if (!selectedFile || !currentNotebook) return
+    setLoading(true)
+    setError(null)
+    try {
+      const ext = selectedFile.split('.').pop()?.toLowerCase() || 'txt'
+      const type = ext === 'doc' ? 'docx' : ext
+      await window.api.addSource({
+        notebookId: currentNotebook.id,
+        type,
+        filePath: selectedFile,
+      })
+      await refreshSources()
+      resetForm()
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add source')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUrlSubmit = async () => {
+    if (!url.trim() || !currentNotebook) return
+    setLoading(true)
+    setError(null)
+    try {
+      await window.api.addSource({
+        notebookId: currentNotebook.id,
+        type: 'url',
+        url: url.trim(),
+      })
+      await refreshSources()
+      resetForm()
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add source')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePasteSubmit = async () => {
+    if (!pasteText.trim() || !currentNotebook) return
+    setLoading(true)
+    setError(null)
+    try {
+      await window.api.addSource({
+        notebookId: currentNotebook.id,
+        type: 'paste',
+        content: pasteText.trim(),
+        title: pasteTitle.trim() || undefined,
+      })
+      await refreshSources()
+      resetForm()
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add source')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleYoutubeSubmit = async () => {
+    if (!youtubeUrl.trim() || !currentNotebook) return
+    setLoading(true)
+    setError(null)
+    try {
+      await window.api.addSource({
+        notebookId: currentNotebook.id,
+        type: 'youtube',
+        url: youtubeUrl.trim(),
+      })
+      await refreshSources()
+      resetForm()
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add source')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAudioSelect = async () => {
+    const filePath = await window.api.showOpenDialog({
+      filters: [
+        { name: 'Audio Files', extensions: ['mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac'] },
+      ],
+    }) as string | null
+    if (filePath) {
+      setSelectedAudio(filePath)
+      setError(null)
+    }
+  }
+
+  const handleAudioUpload = async () => {
+    if (!selectedAudio || !currentNotebook) return
+    setLoading(true)
+    setError(null)
+    try {
+      await window.api.addSource({
+        notebookId: currentNotebook.id,
+        type: 'audio',
+        filePath: selectedAudio,
+      })
+      await refreshSources()
+      resetForm()
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add source')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const tabs: { id: Tab; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'file', label: 'File', Icon: FileText },
+    { id: 'website', label: 'Website', Icon: Globe },
+    { id: 'paste', label: 'Paste', Icon: ClipboardPaste },
+    { id: 'youtube', label: 'YouTube', Icon: Youtube },
+    { id: 'audio', label: 'Audio', Icon: Mic },
+  ]
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Add source">
+      <div className="space-y-4">
+        {/* Tab bar */}
+        <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => { setTab(t.id); setError(null) }}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                tab === t.id
+                  ? 'bg-indigo-600 dark:bg-indigo-500 text-white font-medium shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              <t.Icon className="w-3.5 h-3.5" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        {tab === 'file' && (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Upload a PDF, DOCX, TXT, or Markdown file.
+            </p>
+            <button
+              onClick={handleFileSelect}
+              disabled={loading}
+              className="w-full py-8 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            >
+              {selectedFile ? (
+                <span className="text-sm">{selectedFile.split('/').pop()}</span>
+              ) : (
+                <span className="text-sm">Click to select a file...</span>
+              )}
+            </button>
+            <Button
+              onClick={handleFileUpload}
+              disabled={!selectedFile || loading}
+              className="w-full"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Spinner size="sm" /> Processing...
+                </span>
+              ) : (
+                'Upload'
+              )}
+            </Button>
+          </div>
+        )}
+
+        {tab === 'website' && (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Enter a URL to extract text content from a web page.
+            </p>
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com/article"
+              disabled={loading}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500/50"
+            />
+            <Button
+              onClick={handleUrlSubmit}
+              disabled={!url.trim() || loading}
+              className="w-full"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Spinner size="sm" /> Fetching...
+                </span>
+              ) : (
+                'Add Website'
+              )}
+            </Button>
+          </div>
+        )}
+
+        {tab === 'paste' && (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Paste text content directly.
+            </p>
+            <input
+              type="text"
+              value={pasteTitle}
+              onChange={(e) => setPasteTitle(e.target.value)}
+              placeholder="Title (optional)"
+              disabled={loading}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500/50"
+            />
+            <textarea
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              placeholder="Paste your text here..."
+              rows={6}
+              disabled={loading}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500/50 resize-none"
+            />
+            <Button
+              onClick={handlePasteSubmit}
+              disabled={!pasteText.trim() || loading}
+              className="w-full"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Spinner size="sm" /> Processing...
+                </span>
+              ) : (
+                'Add Text'
+              )}
+            </Button>
+          </div>
+        )}
+
+        {tab === 'youtube' && (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Paste a YouTube URL to extract the video transcript via AI.
+            </p>
+            <input
+              type="url"
+              value={youtubeUrl}
+              onChange={(e) => setYoutubeUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              disabled={loading}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500/50"
+            />
+            <Button
+              onClick={handleYoutubeSubmit}
+              disabled={!youtubeUrl.trim() || loading}
+              className="w-full"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Spinner size="sm" /> Extracting transcript...
+                </span>
+              ) : (
+                'Add YouTube Video'
+              )}
+            </Button>
+          </div>
+        )}
+
+        {tab === 'audio' && (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Upload an audio file (MP3, WAV, M4A, OGG, FLAC, AAC) to transcribe via AI.
+            </p>
+            <button
+              onClick={handleAudioSelect}
+              disabled={loading}
+              className="w-full py-8 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            >
+              {selectedAudio ? (
+                <span className="text-sm">{selectedAudio.split('/').pop()}</span>
+              ) : (
+                <span className="text-sm">Click to select an audio file...</span>
+              )}
+            </button>
+            <Button
+              onClick={handleAudioUpload}
+              disabled={!selectedAudio || loading}
+              className="w-full"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Spinner size="sm" /> Transcribing...
+                </span>
+              ) : (
+                'Upload & Transcribe'
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Error display */}
+        {error && (
+          <div className="px-3 py-2 rounded-lg text-sm bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20">
+            {error}
+          </div>
+        )}
+      </div>
+    </Modal>
+  )
+}
