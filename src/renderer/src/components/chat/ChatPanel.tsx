@@ -3,7 +3,19 @@ import { ChatInput } from './ChatInput'
 import { ChatMessage } from './ChatMessage'
 import { Spinner } from '../common/Spinner'
 import { useNotebookStore } from '../../stores/notebookStore'
-import { MessageSquare, Search, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import {
+  MessageSquare,
+  Search,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Table2,
+  BarChart3,
+  GitBranch,
+  KanbanSquare,
+  Gauge,
+  Clock,
+} from 'lucide-react'
 import type { ChatMessage as ChatMessageType, SourceType } from '@shared/types'
 
 const EXT_TO_TYPE: Record<string, SourceType> = {
@@ -17,6 +29,15 @@ const EXT_TO_TYPE: Record<string, SourceType> = {
   ogg: 'audio',
   webm: 'audio',
 }
+
+const ARTIFACT_SHORTCUTS = [
+  { icon: Table2, label: 'Table', prompt: 'Create a table summarizing the key data from my sources' },
+  { icon: BarChart3, label: 'Chart', prompt: 'Create a chart visualizing the most important data from my sources' },
+  { icon: GitBranch, label: 'Diagram', prompt: 'Create a mermaid diagram showing the main concepts and relationships from my sources' },
+  { icon: KanbanSquare, label: 'Kanban', prompt: 'Create a kanban board with action items based on my sources' },
+  { icon: Gauge, label: 'KPIs', prompt: 'Create KPI metric cards for the key performance indicators found in my sources' },
+  { icon: Clock, label: 'Timeline', prompt: 'Create a timeline of the key events and milestones from my sources' },
+]
 
 export function ChatPanel() {
   const currentNotebook = useNotebookStore((s) => s.currentNotebook)
@@ -322,6 +343,23 @@ export function ChatPanel() {
               Clear
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Artifact shortcut chips */}
+      {hasSelectedSources && (
+        <div className="flex items-center gap-1.5 px-6 py-1.5 max-w-3xl mx-auto w-full overflow-x-auto">
+          {ARTIFACT_SHORTCUTS.map((shortcut) => (
+            <button
+              key={shortcut.label}
+              onClick={() => handleSend(shortcut.prompt)}
+              disabled={sending}
+              className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <shortcut.icon size={12} />
+              {shortcut.label}
+            </button>
+          ))}
         </div>
       )}
 

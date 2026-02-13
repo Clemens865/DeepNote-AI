@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ToolGrid } from './ToolGrid'
 import { GeneratedContentView } from './GeneratedContentView'
 import { ImageSlidesWizard } from './ImageSlidesWizard'
 import { StudioCustomizeDialog } from './StudioCustomizeDialog'
+import { ReportFormatDialog } from './ReportFormatDialog'
+import { InfographicWizard } from './InfographicWizard'
 import { useNotebookStore } from '../../stores/notebookStore'
 import {
   PanelRightOpen,
@@ -11,8 +13,27 @@ import {
   MoreVertical,
   Pencil,
   Trash2,
+  Search,
+  X,
 } from 'lucide-react'
 import type { GeneratedContent, StudioToolOptions } from '@shared/types'
+
+const TYPE_LABELS: Record<string, string> = {
+  audio: 'Audio',
+  slides: 'Slides',
+  'image-slides': 'Slides',
+  flashcard: 'Flashcards',
+  report: 'Report',
+  mindmap: 'Mind Map',
+  quiz: 'Quiz',
+  datatable: 'Table',
+  infographic: 'Infographic',
+  dashboard: 'Dashboard',
+  'literature-review': 'Lit. Review',
+  'competitive-analysis': 'Comp. Analysis',
+  diff: 'Diff',
+  'citation-graph': 'Citation Graph',
+}
 
 interface StudioPanelProps {
   collapsed: boolean
@@ -26,9 +47,15 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
   const [showImageSlidesWizard, setShowImageSlidesWizard] = useState(false)
   const [customizeTool, setCustomizeTool] = useState<{ id: string; label: string } | null>(null)
   const [customizeGenerating, setCustomizeGenerating] = useState(false)
+  const [showReportFormat, setShowReportFormat] = useState(false)
+  const [reportFormatGenerating, setReportFormatGenerating] = useState(false)
+  const [showInfographicWizard, setShowInfographicWizard] = useState(false)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterType, setFilterType] = useState('all')
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title' | 'type'>('newest')
   const renameInputRef = useRef<HTMLInputElement>(null)
 
   const loadItems = useCallback(async () => {
@@ -57,6 +84,48 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
     }
   }, [renamingId])
 
+  const availableTypes = useMemo(() => {
+    const types = new Set(generatedItems.map((item) => item.type))
+    return Array.from(types).sort()
+  }, [generatedItems])
+
+  const filteredItems = useMemo(() => {
+    let items = generatedItems
+
+    if (filterType !== 'all') {
+      items = items.filter((item) => item.type === filterType)
+    }
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      items = items.filter((item) => item.title.toLowerCase().includes(q))
+    }
+
+    switch (sortBy) {
+      case 'oldest':
+        items = [...items].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        )
+        break
+      case 'title':
+        items = [...items].sort((a, b) => a.title.localeCompare(b.title))
+        break
+      case 'type':
+        items = [...items].sort(
+          (a, b) =>
+            a.type.localeCompare(b.type) ||
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        break
+      case 'newest':
+      default:
+        // Already in newest-first order from the API
+        break
+    }
+
+    return items
+  }, [generatedItems, filterType, searchQuery, sortBy])
+
   const handleGenerated = (content: GeneratedContent) => {
     setGeneratedItems((prev) => [content, ...prev])
     setViewing(content)
@@ -64,6 +133,36 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
 
   const handleImageSlidesComplete = async (contentId: string) => {
     setShowImageSlidesWizard(false)
+    const content = (await window.api.studioStatus(contentId)) as GeneratedContent | null
+    if (content) {
+      setGeneratedItems((prev) => [content, ...prev])
+      setViewing(content)
+    }
+  }
+
+  const handleReportFormatGenerate = async (options: StudioToolOptions) => {
+    if (!currentNotebook) return
+    setReportFormatGenerating(true)
+    try {
+      const result = (await window.api.studioGenerate({
+        notebookId: currentNotebook.id,
+        type: 'report',
+        options: { ...options },
+      })) as GeneratedContent
+      if (result) {
+        setGeneratedItems((prev) => [result, ...prev])
+        setViewing(result)
+      }
+      setShowReportFormat(false)
+    } catch (err) {
+      console.error('Report generation failed:', err)
+    } finally {
+      setReportFormatGenerating(false)
+    }
+  }
+
+  const handleInfographicComplete = async (contentId: string) => {
+    setShowInfographicWizard(false)
     const content = (await window.api.studioStatus(contentId)) as GeneratedContent | null
     if (content) {
       setGeneratedItems((prev) => [content, ...prev])
@@ -161,14 +260,86 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
               onOpenCustomize={(toolId, toolLabel) =>
                 setCustomizeTool({ id: toolId, label: toolLabel })
               }
+              onOpenReportFormat={() => setShowReportFormat(true)}
+              onStartInfographic={() => setShowInfographicWizard(true)}
             />
 
             {generatedItems.length > 0 && (
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em]">
-                  Generated Content
+                  Generated Content ({filteredItems.length})
                 </p>
-                {generatedItems.map((item) => (
+
+                {/* Search input */}
+                <div className="relative">
+                  <Search
+                    size={14}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none"
+                  />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search…"
+                    className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:border-indigo-400 dark:focus:border-indigo-500 transition-colors"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Type filter chips + sort */}
+                <div className="flex items-start gap-1.5 flex-wrap">
+                  <button
+                    onClick={() => setFilterType('all')}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                      filterType === 'all'
+                        ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {availableTypes.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setFilterType(filterType === t ? 'all' : t)}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                        filterType === t
+                          ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {TYPE_LABELS[t] || t}
+                    </button>
+                  ))}
+                  <select
+                    value={sortBy}
+                    onChange={(e) =>
+                      setSortBy(e.target.value as 'newest' | 'oldest' | 'title' | 'type')
+                    }
+                    className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 outline-none cursor-pointer"
+                  >
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                    <option value="title">Title A-Z</option>
+                    <option value="type">Type</option>
+                  </select>
+                </div>
+
+                {/* Empty filter state */}
+                {filteredItems.length === 0 && (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-3">
+                    No items match your search.
+                  </p>
+                )}
+
+                {filteredItems.map((item) => (
                   <div key={item.id} className="relative group">
                     {renamingId === item.id ? (
                       <div className="px-4 py-3 rounded-xl border border-indigo-400 dark:border-indigo-500 bg-white dark:bg-slate-800">
@@ -246,6 +417,26 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
           notebookId={currentNotebook.id}
           onComplete={handleImageSlidesComplete}
           onClose={() => setShowImageSlidesWizard(false)}
+        />
+      )}
+
+      {showReportFormat && currentNotebook && (
+        <ReportFormatDialog
+          notebookId={currentNotebook.id}
+          onGenerate={handleReportFormatGenerate}
+          onClose={() => {
+            setShowReportFormat(false)
+            setReportFormatGenerating(false)
+          }}
+          isGenerating={reportFormatGenerating}
+        />
+      )}
+
+      {showInfographicWizard && currentNotebook && (
+        <InfographicWizard
+          notebookId={currentNotebook.id}
+          onComplete={handleInfographicComplete}
+          onClose={() => setShowInfographicWizard(false)}
         />
       )}
 

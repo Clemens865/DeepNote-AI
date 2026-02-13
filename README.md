@@ -20,6 +20,8 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
   - [Notebooks](#notebooks)
   - [Sources](#sources)
   - [Chat](#chat)
+    - [Interactive Artifacts](#interactive-artifacts)
+    - [Artifact Shortcut Chips](#artifact-shortcut-chips)
   - [Deep Research](#deep-research)
   - [Notes](#notes)
   - [Studio](#studio)
@@ -43,11 +45,11 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | Category | Features |
 |----------|----------|
 | **Source Ingestion** | PDF, DOCX, TXT, Markdown, Website URLs, YouTube transcripts, Audio files (MP3/WAV/M4A/OGG/FLAC), Paste text |
-| **AI Chat** | Streaming responses, source-grounded citations, conversation history, suggested prompts |
+| **AI Chat** | Streaming responses, source-grounded citations, conversation history, suggested prompts, 6 interactive artifact types (Table, Chart, Mermaid, Kanban, KPI, Timeline), one-click artifact shortcut chips |
 | **Deep Research** | Multi-step AI analysis with real-time progress updates |
 | **Audio Overview** | Multi-speaker AI podcast with 4 format styles (Deep Dive, Brief, Critical Analysis, Debate) |
 | **Image Slides** | AI-generated slide decks with 6 visual styles, 2 render modes, fullscreen presenter, rich text drag-and-drop editor |
-| **Study Tools** | Flashcards, Quizzes (multiple choice), Reports, Mind Maps, Data Tables |
+| **Study Tools** | Flashcards, Quizzes (multiple choice), Reports, Mind Maps, Data Tables, search/filter/sort for generated content |
 | **Notes** | Create, edit, auto-save notes; convert notes to sources for AI context |
 | **Workspace** | Link local folders, file tree browser, text editor with AI rewrite, .gitignore support |
 | **Export** | Download audio as WAV, slides as PNG, copy reports to clipboard |
@@ -180,6 +182,23 @@ The **Chat Panel** is the main interaction mode. Ask questions and get AI-genera
 - **Save to Note** - Save any AI response as a note for later reference
 - **Clear history** - Reset the conversation
 
+**Interactive Artifacts:**
+
+The AI can embed rich visualizations directly in its responses:
+
+| Artifact | Description |
+|----------|-------------|
+| **Table** | Sortable data tables with columns and rows |
+| **Chart** | Bar, line, or pie charts with tooltips and legend |
+| **Mermaid Diagram** | Flowcharts, sequence diagrams, ER diagrams |
+| **Kanban Board** | Task cards with assignee, priority, and status |
+| **KPI Cards** | Metric cards with progress bars and sentiment colors |
+| **Timeline** | Horizontal timeline with dated events |
+
+**Artifact Shortcut Chips:**
+
+Six quick-action buttons appear above the chat input (when sources are selected). Click any chip to instantly request that artifact type - Table, Chart, Diagram, Kanban, KPIs, or Timeline.
+
 ---
 
 ### Deep Research
@@ -216,6 +235,7 @@ All studio tools support:
 - **Rename** generated content
 - **Delete** generated content
 - **Generation history** - All past outputs are accessible
+- **Search & filter** - Find generated items by title, filter by type, sort by newest/oldest/title/type
 
 ---
 
