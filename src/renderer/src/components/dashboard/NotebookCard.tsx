@@ -18,9 +18,13 @@ export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: Noteb
   const hasImage = !!notebook.cardBgImage
   const hasGradient = !!notebook.cardGradientFrom && !!notebook.cardGradientTo
 
+  const encodedImagePath = hasImage
+    ? `local-file://${encodeURI(notebook.cardBgImage!)}`
+    : null
+
   const bgStyle: React.CSSProperties = hasImage
     ? {
-        backgroundImage: `url(local-file://${notebook.cardBgImage})`,
+        backgroundImage: `url(${encodedImagePath})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }
@@ -34,7 +38,7 @@ export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: Noteb
 
   return (
     <div
-      className={`group relative flex flex-col h-48 rounded-2xl border transition-all cursor-pointer shadow-sm ${
+      className={`group relative flex flex-col h-48 rounded-2xl border transition-all cursor-pointer shadow-sm overflow-hidden ${
         hasCustomBg
           ? 'border-white/20 dark:border-white/10 hover:border-white/40 dark:hover:border-white/30 hover:shadow-lg'
           : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-100/50 dark:hover:shadow-slate-900/50'
@@ -42,9 +46,9 @@ export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: Noteb
       style={bgStyle}
       onClick={onClick}
     >
-      {/* Dark overlay for text readability on custom backgrounds */}
-      {hasCustomBg && (
-        <div className="absolute inset-0 rounded-2xl bg-black/30 dark:bg-black/40" />
+      {/* Dark overlay only for images (needed for text readability over photos) */}
+      {hasImage && (
+        <div className="absolute inset-0 bg-black/25 dark:bg-black/35" />
       )}
 
       <div className="relative flex-1 p-5">
@@ -96,7 +100,7 @@ export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: Noteb
         </div>
         <h3 className={`mt-3 text-sm font-semibold line-clamp-2 ${
           hasCustomBg
-            ? 'text-white drop-shadow-sm'
+            ? 'text-white drop-shadow-md'
             : 'text-slate-800 dark:text-slate-100'
         }`}>
           {notebook.title}

@@ -26,7 +26,7 @@ export function CardCustomizeModal({ notebook, isOpen, onClose, onSave }: CardCu
   const [gradientFrom, setGradientFrom] = useState(notebook.cardGradientFrom || '#6366f1')
   const [gradientTo, setGradientTo] = useState(notebook.cardGradientTo || '#a855f7')
   const [imagePreview, setImagePreview] = useState<string | null>(
-    notebook.cardBgImage ? `local-file://${notebook.cardBgImage}` : null
+    notebook.cardBgImage ? `local-file://${encodeURI(notebook.cardBgImage)}` : null
   )
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -120,7 +120,6 @@ export function CardCustomizeModal({ notebook, isOpen, onClose, onSave }: CardCu
                 alt="Cover preview"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-black/20" />
               <button
                 onClick={handleRemoveImage}
                 className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
