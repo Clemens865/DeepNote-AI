@@ -6,6 +6,9 @@ export interface Notebook {
   chatMode: 'auto' | 'custom'
   responseLength: 'short' | 'medium' | 'long'
   workspaceRootPath: string | null
+  cardBgImage?: string | null
+  cardGradientFrom?: string | null
+  cardGradientTo?: string | null
   createdAt: string
   updatedAt: string
   sourceCount?: number
@@ -46,7 +49,7 @@ export interface WorkspaceDiffResult {
   unchanged: number
 }
 
-export type SourceType = 'pdf' | 'docx' | 'txt' | 'md' | 'url' | 'youtube' | 'paste' | 'audio'
+export type SourceType = 'pdf' | 'docx' | 'txt' | 'md' | 'url' | 'youtube' | 'paste' | 'audio' | 'xlsx' | 'csv' | 'image' | 'pptx'
 
 export interface Source {
   id: string
@@ -111,6 +114,11 @@ export type GeneratedContentType =
   | 'infographic'
   | 'datatable'
   | 'report'
+  | 'dashboard'
+  | 'literature-review'
+  | 'competitive-analysis'
+  | 'diff'
+  | 'citation-graph'
 
 // Image Slides types
 export interface SlideStylePreset {
@@ -122,6 +130,16 @@ export interface SlideStylePreset {
   colorPalette: string[]
 }
 
+export interface SlideElementLayout {
+  type: 'title' | 'bullet' | 'text'
+  content: string
+  x: number        // % from left (0-100)
+  y: number        // % from top (0-100)
+  width: number    // % width (10-100)
+  fontSize: number  // px
+  align: 'left' | 'center' | 'right'
+}
+
 export interface SlideContentPlan {
   slideNumber: number
   title: string
@@ -130,6 +148,7 @@ export interface SlideContentPlan {
   layout: string
   visualCue: string
   speakerNotes: string
+  elementLayout?: SlideElementLayout[]
 }
 
 export interface ImageSlideData {
@@ -164,6 +183,7 @@ export interface HybridSlideData {
   speakerNotes: string
   layout: string
   elements?: SlideTextElement[]
+  elementLayout?: SlideElementLayout[]
 }
 
 export interface ImageSlidesGeneratedData {
@@ -174,6 +194,7 @@ export interface ImageSlidesGeneratedData {
   contentPlan: SlideContentPlan[]
   renderMode?: SlideRenderMode
   hybridSlides?: HybridSlideData[]
+  customPalette?: string[]
 }
 
 export interface ImageSlidesProgressEvent {
@@ -194,9 +215,29 @@ export interface StudioToolOptions {
   questionCount?: 'fewer' | 'standard' | 'more'
   // Flashcard + Quiz
   difficulty?: 'easy' | 'medium' | 'hard'
+  // Report
+  reportFormat?: string
+  // Mind Map
+  mindmapDepth?: 'shallow' | 'standard' | 'deep'
+  mindmapBranches?: 'fewer' | 'standard' | 'more'
+  mindmapStyle?: 'overview' | 'detailed' | 'relationships'
+  // Dashboard
+  dashboardKpiCount?: 'fewer' | 'standard' | 'more'
+  dashboardChartPreference?: 'mixed' | 'bar' | 'line' | 'pie'
+  dashboardDensity?: 'compact' | 'standard' | 'full'
+  // Citation Graph
+  citationDetail?: 'key-connections' | 'standard' | 'comprehensive'
+  citationTopicDepth?: 'overview' | 'standard' | 'detailed'
   // Shared
   length?: 'short' | 'default' | 'long'
   description?: string
+}
+
+// Report format suggestion
+export interface ReportFormatSuggestion {
+  title: string
+  description: string
+  prompt: string
 }
 
 export type GeneratedContentStatus = 'pending' | 'generating' | 'completed' | 'failed'

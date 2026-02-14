@@ -71,6 +71,49 @@
     pointer-events: none;
     height: 0;
   }
+
+  /* Flashcard 3D flip */
+  .flashcard-container { perspective: 1000px; }
+  .flashcard-inner {
+    position: relative;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+  .flashcard-inner.flipped { transform: rotateY(180deg); }
+  .flashcard-face {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .flashcard-back { transform: rotateY(180deg); }
+
+  /* Mind map tree connectors */
+  .mindmap-children {
+    position: relative;
+    padding-left: 24px;
+  }
+  .mindmap-children::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 16px;
+    bottom: 16px;
+    width: 2px;
+    background: currentColor;
+    opacity: 0.15;
+  }
+  .mindmap-node-row {
+    position: relative;
+  }
+  .mindmap-node-row::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 50%;
+    width: 24px;
+    height: 2px;
+    background: currentColor;
+    opacity: 0.15;
+  }
 }
 
 /* Electron drag region for titlebar */

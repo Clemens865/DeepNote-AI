@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { X, Upload, Loader2, Check } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { X, Upload, Loader2, Check, Palette } from 'lucide-react'
 
 interface StyleOption {
   id: string
@@ -10,40 +10,40 @@ interface StyleOption {
 
 const STYLE_OPTIONS: StyleOption[] = [
   {
-    id: 'blueprint-dark',
-    name: 'Blueprint Dark',
-    description: 'Dark teal, orange & cyan accents, technical diagrams',
-    colorPalette: ['#0f2b3c', '#f97316', '#06b6d4', '#e2e8f0'],
+    id: 'neon-circuit',
+    name: 'Neon Circuit',
+    description: 'Purple & cyan neon glow, circuit traces, cyberpunk',
+    colorPalette: ['#0a0a14', '#a855f7', '#22d3ee', '#e2e8f0'],
   },
   {
-    id: 'editorial-clean',
-    name: 'Editorial Clean',
-    description: 'Cream background, orange & blue, hand-drawn sketches',
-    colorPalette: ['#faf5eb', '#ea580c', '#1e5fa6', '#18181b'],
+    id: 'glass-morph',
+    name: 'Glass Morphism',
+    description: 'Frosted glass panels, dark gradient, soft glow',
+    colorPalette: ['#0f172a', '#e2e8f0', '#818cf8', '#94a3b8'],
   },
   {
-    id: 'corporate-blue',
-    name: 'Corporate Blue',
-    description: 'White background, navy & light blue, geometric icons',
-    colorPalette: ['#ffffff', '#1e3a5f', '#3b82f6', '#64748b'],
+    id: 'gradient-mesh',
+    name: 'Gradient Mesh',
+    description: 'Pink-to-blue gradient blobs, dark navy, startup feel',
+    colorPalette: ['#0c1222', '#ec4899', '#3b82f6', '#e2e8f0'],
   },
   {
-    id: 'bold-minimal',
-    name: 'Bold Minimal',
-    description: 'White, black text, red accent, large typography',
-    colorPalette: ['#ffffff', '#18181b', '#dc2626', '#71717a'],
+    id: 'terminal-hacker',
+    name: 'Terminal',
+    description: 'Phosphor green, matrix data streams, hacker aesthetic',
+    colorPalette: ['#0a0f0a', '#22c55e', '#4ade80', '#d1fae5'],
   },
   {
-    id: 'nature-warm',
-    name: 'Nature Warm',
-    description: 'Cream, forest green & terracotta, leaf patterns',
-    colorPalette: ['#fef9ef', '#2d5016', '#c2410c', '#d4a76a'],
+    id: 'cosmic-dark',
+    name: 'Cosmic Dark',
+    description: 'Violet & rose nebula, starfield, deep space',
+    colorPalette: ['#06060e', '#8b5cf6', '#f43f5e', '#e2e8f0'],
   },
   {
-    id: 'dark-luxe',
-    name: 'Dark Luxe',
-    description: 'Black background, gold & white, elegant lines',
-    colorPalette: ['#0c0c0c', '#c9a84c', '#ffffff', '#2a2a2a'],
+    id: 'arctic-frost',
+    name: 'Arctic Frost',
+    description: 'Ice blue & white, crystalline shapes, dark slate',
+    colorPalette: ['#0f1729', '#38bdf8', '#f8fafc', '#64748b'],
   },
 ]
 
@@ -81,11 +81,23 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
   // Config state
   const [renderMode, setRenderMode] = useState<'full-image' | 'hybrid'>('full-image')
   const [format, setFormat] = useState<'presentation' | 'pitch' | 'report'>('presentation')
-  const [selectedStyle, setSelectedStyle] = useState('blueprint-dark')
+  const [selectedStyle, setSelectedStyle] = useState('neon-circuit')
   const [customStylePath, setCustomStylePath] = useState<string | null>(null)
   const [length, setLength] = useState<'test' | 'short' | 'default'>('default')
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '4:3'>('16:9')
   const [userInstructions, setUserInstructions] = useState('')
+
+  // Custom style builder state
+  const [customColors, setCustomColors] = useState(['#0a0a14', '#a855f7', '#22d3ee', '#e2e8f0'])
+  const [customStyleDesc, setCustomStyleDesc] = useState('')
+
+  const updateCustomColor = useCallback((index: number, color: string) => {
+    setCustomColors(prev => {
+      const next = [...prev]
+      next[index] = color
+      return next
+    })
+  }, [])
 
   // Progress state
   const [isGenerating, setIsGenerating] = useState(false)
@@ -143,13 +155,17 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
     try {
       const result = await window.api.imageSlidesStart({
         notebookId,
-        stylePresetId: selectedStyle === 'custom' ? 'blueprint-dark' : selectedStyle,
+        stylePresetId: selectedStyle === 'custom' ? 'neon-circuit' : selectedStyle,
         format,
         length,
         aspectRatio,
         userInstructions: userInstructions.trim() || undefined,
         customStyleImagePath: customStylePath ?? undefined,
         renderMode,
+        ...(selectedStyle === 'custom-builder' ? {
+          customStyleColors: customColors,
+          customStyleDescription: customStyleDesc.trim() || 'modern, clean, professional tech aesthetic with subtle geometric elements',
+        } : {}),
       })
       setGeneratedContentId(result.generatedContentId)
     } catch (err) {
@@ -263,6 +279,72 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
                 </button>
               ))}
             </div>
+
+            {/* Custom style builder */}
+            <button
+              onClick={() => { setSelectedStyle('custom-builder'); setCustomStylePath(null) }}
+              className={`w-full mt-2 text-left p-2.5 rounded-lg border-2 transition-all flex items-center gap-2 ${
+                selectedStyle === 'custom-builder'
+                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10'
+                  : 'border-dashed border-slate-300 dark:border-slate-600 hover:border-slate-400'
+              }`}
+            >
+              <Palette size={14} className="text-slate-400 flex-shrink-0" />
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Create your own style
+              </span>
+              <div className="ml-auto flex gap-0.5">
+                {customColors.map((c, i) => (
+                  <div key={i} className="w-3 h-3 rounded-sm border border-slate-300 dark:border-slate-600" style={{ backgroundColor: c }} />
+                ))}
+              </div>
+            </button>
+
+            {selectedStyle === 'custom-builder' && (
+              <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg space-y-3">
+                <div className="grid grid-cols-4 gap-2">
+                  {['Background', 'Primary', 'Accent', 'Text'].map((label, i) => (
+                    <div key={label}>
+                      <label className="text-[9px] font-medium text-slate-500 dark:text-slate-400 mb-1 block">{label}</label>
+                      <div className="relative">
+                        <input
+                          type="color"
+                          value={customColors[i]}
+                          onChange={(e) => updateCustomColor(i, e.target.value)}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <div
+                          className="w-full h-7 rounded-md border border-slate-200 dark:border-slate-600 cursor-pointer"
+                          style={{ backgroundColor: customColors[i] }}
+                        />
+                      </div>
+                      <span className="text-[8px] text-slate-400 mt-0.5 block">{customColors[i]}</span>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <label className="text-[9px] font-medium text-slate-500 dark:text-slate-400 mb-1 block">Style Description</label>
+                  <input
+                    type="text"
+                    value={customStyleDesc}
+                    onChange={(e) => setCustomStyleDesc(e.target.value)}
+                    placeholder="e.g. futuristic holographic UI, retro pixel art, watercolor..."
+                    className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-400"
+                  />
+                </div>
+                {/* Preview strip */}
+                <div className="flex gap-1 items-center">
+                  <span className="text-[9px] text-slate-400">Preview:</span>
+                  <div className="flex-1 h-5 rounded-md flex overflow-hidden border border-slate-200 dark:border-slate-600">
+                    <div className="flex-[3]" style={{ backgroundColor: customColors[0] }} />
+                    <div className="flex-1" style={{ backgroundColor: customColors[1] }} />
+                    <div className="flex-1" style={{ backgroundColor: customColors[2] }} />
+                    <div className="flex-[2]" style={{ backgroundColor: customColors[3] }} />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Upload reference */}
             <button
               onClick={handleUploadReference}

@@ -1,0 +1,160 @@
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { Search, X, BookOpen, FileText } from 'lucide-react'
+import { Spinner } from '../common/Spinner'
+
+interface SearchResult {
+  notebookId: string
+  notebookTitle: string
+  sourceId: string
+  sourceTitle: string
+  text: string
+  score: number
+  pageNumber?: number
+}
+
+interface GlobalSearchDialogProps {
+  isOpen: boolean
+  onClose: () => void
+  onNavigate?: (notebookId: string) => void
+}
+
+export function GlobalSearchDialog({ isOpen, onClose, onNavigate }: GlobalSearchDialogProps) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 100)
+    } else {
+      setQuery('')
+      setResults([])
+      setSearched(false)
+    }
+  }, [isOpen])
+
+  const handleSearch = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      setResults([])
+      setSearched(false)
+      return
+    }
+    setLoading(true)
+    setSearched(true)
+    try {
+      const response = await window.api.globalSearch({ query: searchQuery.trim(), limit: 15 })
+      setResults(response.results ?? [])
+    } catch {
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const handleInputChange = (value: string) => {
+    setQuery(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => handleSearch(value), 400)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') onClose()
+    if (e.key === 'Enter') {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      handleSearch(query)
+    }
+  }
+
+  // Group results by notebook
+  const grouped = results.reduce<Record<string, { notebookTitle: string; items: SearchResult[] }>>((acc, r) => {
+    if (!acc[r.notebookId]) {
+      acc[r.notebookId] = { notebookTitle: r.notebookTitle, items: [] }
+    }
+    acc[r.notebookId].items.push(r)
+    return acc
+  }, {})
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        {/* Search input */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-700">
+          <Search size={18} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Search across all notebooks..."
+            className="flex-1 bg-transparent text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none"
+          />
+          {loading && <Spinner size="sm" />}
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Results */}
+        <div className="max-h-[50vh] overflow-y-auto">
+          {searched && results.length === 0 && !loading && (
+            <div className="px-5 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+              No results found for "{query}"
+            </div>
+          )}
+
+          {Object.entries(grouped).map(([notebookId, group]) => (
+            <div key={notebookId}>
+              <div className="px-5 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700/50 sticky top-0">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                  <BookOpen size={11} />
+                  {group.notebookTitle}
+                </span>
+              </div>
+              {group.items.map((result, i) => (
+                <button
+                  key={`${result.sourceId}-${i}`}
+                  onClick={() => onNavigate?.(notebookId)}
+                  className="w-full text-left px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-100 dark:border-slate-700/50 last:border-b-0"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText size={12} className="text-indigo-500 flex-shrink-0" />
+                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{result.sourceTitle}</span>
+                    {result.pageNumber && (
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500">p.{result.pageNumber}</span>
+                    )}
+                    <span className="ml-auto text-[9px] text-slate-400 dark:text-slate-500">
+                      {(result.score * 100).toFixed(0)}% match
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
+                    {result.text}
+                  </p>
+                </button>
+              ))}
+            </div>
+          ))}
+
+          {!searched && !loading && (
+            <div className="px-5 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+              Type to search across all your notebooks
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30">
+          <p className="text-[10px] text-slate-400 dark:text-slate-500">
+            Press <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[9px] font-mono">Enter</kbd> to search, <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[9px] font-mono">Esc</kbd> to close
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}

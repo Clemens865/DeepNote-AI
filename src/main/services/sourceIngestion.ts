@@ -75,6 +75,28 @@ export async function ingestSource(args: IngestArgs): Promise<Source> {
         parsedTitle = args.title || result.title
         break
       }
+      case 'xlsx':
+      case 'csv': {
+        if (!args.filePath) throw new Error('File path required for spreadsheet')
+        const result = await documentParserService.parseExcel(args.filePath)
+        parsedText = result.text
+        parsedTitle = args.title || result.title
+        break
+      }
+      case 'image': {
+        if (!args.filePath) throw new Error('File path required for image')
+        const result = await documentParserService.parseImage(args.filePath)
+        parsedText = result.text
+        parsedTitle = args.title || result.title
+        break
+      }
+      case 'pptx': {
+        if (!args.filePath) throw new Error('File path required for PowerPoint')
+        const result = await documentParserService.parsePptx(args.filePath)
+        parsedText = result.text
+        parsedTitle = args.title || result.title
+        break
+      }
       default:
         parsedText = args.content || ''
     }
@@ -87,7 +109,10 @@ export async function ingestSource(args: IngestArgs): Promise<Source> {
   }
 
   // Step 2: Chunk the parsed text
-  const chunkResults = chunkerService.chunk(parsedText)
+  const isTabular = args.type === 'xlsx' || args.type === 'csv'
+  const chunkResults = isTabular
+    ? chunkerService.chunkTabular(parsedText)
+    : chunkerService.chunk(parsedText)
   const chunkTexts = chunkResults.map((c) => c.text)
 
   // Step 3: Kick off embeddings AND source guide in parallel (both are API calls)
