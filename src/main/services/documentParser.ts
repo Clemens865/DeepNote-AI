@@ -11,44 +11,7 @@ const AUDIO_MIME_MAP: Record<string, string> = {
   '.aac': 'audio/aac',
 }
 
-const IMAGE_MIME_MAP: Record<string, string> = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.webp': 'image/webp',
-  '.heic': 'image/heic',
-  '.heif': 'image/heif',
-  '.gif': 'image/gif',
-  '.bmp': 'image/bmp',
-}
-
 export class DocumentParserService {
-  async parseExcel(filePath: string): Promise<{ text: string; title: string; sheetNames: string[] }> {
-    const XLSX = await import('xlsx')
-    const buffer = await readFile(filePath)
-    const workbook = XLSX.read(buffer, { type: 'buffer' })
-
-    const markdownParts: string[] = []
-    for (const sheetName of workbook.SheetNames) {
-      const sheet = workbook.Sheets[sheetName]
-      const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
-      if (rows.length === 0) continue
-
-      markdownParts.push(`## Sheet: ${sheetName}`)
-      const header = rows[0].map(String)
-      markdownParts.push('| ' + header.join(' | ') + ' |')
-      markdownParts.push('| ' + header.map(() => '---').join(' | ') + ' |')
-      for (let i = 1; i < rows.length; i++) {
-        markdownParts.push('| ' + rows[i].map((c) => String(c ?? '')).join(' | ') + ' |')
-      }
-      markdownParts.push('')
-    }
-
-    const title = basename(filePath).replace(/\.(xlsx|xls|csv)$/i, '')
-    return { text: markdownParts.join('\n'), title, sheetNames: workbook.SheetNames }
-  }
-
-
   async parsePDF(filePath: string): Promise<{ text: string; title: string; pages: number }> {
     const buffer = await readFile(filePath)
     const pdf = new PDFParse({ data: new Uint8Array(buffer) })
@@ -190,91 +153,6 @@ export class DocumentParserService {
     }
 
     const title = basename(filePath, ext)
-    return { text, title }
-  }
-  async parseImage(filePath: string): Promise<{ text: string; title: string }> {
-    const { GoogleGenAI } = await import('@google/genai')
-    const { configService } = await import('./config')
-
-    const apiKey = configService.getApiKey()
-    if (!apiKey) throw new Error('Gemini API key not configured. Please set it in Settings.')
-
-    const ext = extname(filePath).toLowerCase()
-    const mimeType = IMAGE_MIME_MAP[ext]
-    if (!mimeType) {
-      throw new Error(`Unsupported image format: ${ext}`)
-    }
-
-    const buffer = await readFile(filePath)
-    const base64 = buffer.toString('base64')
-
-    const ai = new GoogleGenAI({ apiKey })
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              inlineData: {
-                mimeType,
-                data: base64,
-              },
-            },
-            {
-              text: 'Extract all text, tables, numbers, and information from this image. If it is a receipt, extract all line items, totals, dates, and merchant information. If it is a whiteboard or handwritten notes, transcribe all visible text. Output only the extracted content, no additional commentary.',
-            },
-          ],
-        },
-      ],
-    })
-
-    const text = response.text ?? ''
-    if (!text.trim()) {
-      throw new Error('Could not extract text from image.')
-    }
-
-    const title = basename(filePath, ext)
-    return { text, title }
-  }
-
-  async parsePptx(filePath: string): Promise<{ text: string; title: string }> {
-    const { GoogleGenAI } = await import('@google/genai')
-    const { configService } = await import('./config')
-
-    const apiKey = configService.getApiKey()
-    if (!apiKey) throw new Error('Gemini API key not configured. Please set it in Settings.')
-
-    const buffer = await readFile(filePath)
-    const base64 = buffer.toString('base64')
-
-    const ai = new GoogleGenAI({ apiKey })
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              inlineData: {
-                mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                data: base64,
-              },
-            },
-            {
-              text: 'Extract all text content from this PowerPoint presentation. For each slide, output the slide number, title, bullet points, and any speaker notes. Format as:\n\n## Slide 1: [Title]\n[Content]\n\nSpeaker Notes: [notes if any]\n\nExtract ALL slides completely.',
-            },
-          ],
-        },
-      ],
-    })
-
-    const text = response.text ?? ''
-    if (!text.trim()) {
-      throw new Error('Could not extract text from PowerPoint file.')
-    }
-
-    const title = basename(filePath).replace(/\.pptx?$/i, '')
     return { text, title }
   }
 }

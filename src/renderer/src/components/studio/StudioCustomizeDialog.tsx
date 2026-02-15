@@ -63,20 +63,6 @@ export function StudioCustomizeDialog({
   const [questionCount, setQuestionCount] = useState<string>('standard')
   const [difficulty, setDifficulty] = useState<string>('medium')
 
-  // Mind Map options
-  const [mindmapDepth, setMindmapDepth] = useState<string>('standard')
-  const [mindmapBranches, setMindmapBranches] = useState<string>('standard')
-  const [mindmapStyle, setMindmapStyle] = useState<string>('overview')
-
-  // Dashboard options
-  const [dashboardKpiCount, setDashboardKpiCount] = useState<string>('standard')
-  const [dashboardChartPreference, setDashboardChartPreference] = useState<string>('mixed')
-  const [dashboardDensity, setDashboardDensity] = useState<string>('standard')
-
-  // Citation Graph options
-  const [citationDetail, setCitationDetail] = useState<string>('standard')
-  const [citationTopicDepth, setCitationTopicDepth] = useState<string>('standard')
-
   // Shared
   const [description, setDescription] = useState('')
 
@@ -96,20 +82,6 @@ export function StudioCustomizeDialog({
         opts.questionCount = questionCount as StudioToolOptions['questionCount']
         opts.difficulty = difficulty as StudioToolOptions['difficulty']
         break
-      case 'mindmap':
-        opts.mindmapDepth = mindmapDepth as StudioToolOptions['mindmapDepth']
-        opts.mindmapBranches = mindmapBranches as StudioToolOptions['mindmapBranches']
-        opts.mindmapStyle = mindmapStyle as StudioToolOptions['mindmapStyle']
-        break
-      case 'dashboard':
-        opts.dashboardKpiCount = dashboardKpiCount as StudioToolOptions['dashboardKpiCount']
-        opts.dashboardChartPreference = dashboardChartPreference as StudioToolOptions['dashboardChartPreference']
-        opts.dashboardDensity = dashboardDensity as StudioToolOptions['dashboardDensity']
-        break
-      case 'citation-graph':
-        opts.citationDetail = citationDetail as StudioToolOptions['citationDetail']
-        opts.citationTopicDepth = citationTopicDepth as StudioToolOptions['citationTopicDepth']
-        break
     }
 
     if (description.trim()) {
@@ -126,8 +98,6 @@ export function StudioCustomizeDialog({
     report: 'Describe the report you want — e.g., focus on specific aspects, comparison style, executive summary...',
     mindmap: 'Describe the mind map you want — e.g., focus on relationships, hierarchy, specific theme...',
     datatable: 'Describe the table you want — e.g., comparison table, timeline, feature matrix...',
-    dashboard: 'Describe the dashboard you want — e.g., focus on financials, trends, KPIs...',
-    'citation-graph': 'Describe what relationships to focus on — e.g., shared themes, methodology links...',
   }
 
   return (
@@ -239,105 +209,6 @@ export function StudioCustomizeDialog({
                 ]}
                 value={difficulty}
                 onChange={setDifficulty}
-              />
-            </>
-          )}
-
-          {/* Mind Map options */}
-          {toolId === 'mindmap' && (
-            <>
-              <ToggleGroup
-                label="Depth"
-                options={[
-                  { value: 'shallow', label: 'Shallow (2 levels)' },
-                  { value: 'standard', label: 'Standard (3 levels)' },
-                  { value: 'deep', label: 'Deep (4 levels)' },
-                ]}
-                value={mindmapDepth}
-                onChange={setMindmapDepth}
-              />
-              <ToggleGroup
-                label="Branch Count"
-                options={[
-                  { value: 'fewer', label: 'Fewer' },
-                  { value: 'standard', label: 'Standard' },
-                  { value: 'more', label: 'More' },
-                ]}
-                value={mindmapBranches}
-                onChange={setMindmapBranches}
-              />
-              <ToggleGroup
-                label="Focus Style"
-                options={[
-                  { value: 'overview', label: 'Overview' },
-                  { value: 'detailed', label: 'Detailed' },
-                  { value: 'relationships', label: 'Relationships' },
-                ]}
-                value={mindmapStyle}
-                onChange={setMindmapStyle}
-              />
-            </>
-          )}
-
-          {/* Dashboard options */}
-          {toolId === 'dashboard' && (
-            <>
-              <ToggleGroup
-                label="KPI Cards"
-                options={[
-                  { value: 'fewer', label: 'Fewer (2-3)' },
-                  { value: 'standard', label: 'Standard (3-5)' },
-                  { value: 'more', label: 'More (5-8)' },
-                ]}
-                value={dashboardKpiCount}
-                onChange={setDashboardKpiCount}
-              />
-              <ToggleGroup
-                label="Chart Preference"
-                options={[
-                  { value: 'mixed', label: 'Mixed' },
-                  { value: 'bar', label: 'Bar' },
-                  { value: 'line', label: 'Line' },
-                  { value: 'pie', label: 'Pie' },
-                ]}
-                value={dashboardChartPreference}
-                onChange={setDashboardChartPreference}
-              />
-              <ToggleGroup
-                label="Density"
-                options={[
-                  { value: 'compact', label: 'Compact' },
-                  { value: 'standard', label: 'Standard' },
-                  { value: 'full', label: 'Full' },
-                ]}
-                value={dashboardDensity}
-                onChange={setDashboardDensity}
-              />
-            </>
-          )}
-
-          {/* Citation Graph options */}
-          {toolId === 'citation-graph' && (
-            <>
-              <ToggleGroup
-                label="Relationship Detail"
-                options={[
-                  { value: 'key-connections', label: 'Key Only' },
-                  { value: 'standard', label: 'Standard' },
-                  { value: 'comprehensive', label: 'Comprehensive' },
-                ]}
-                value={citationDetail}
-                onChange={setCitationDetail}
-              />
-              <ToggleGroup
-                label="Topic Depth"
-                options={[
-                  { value: 'overview', label: 'Overview (1-2)' },
-                  { value: 'standard', label: 'Standard (2-4)' },
-                  { value: 'detailed', label: 'Detailed (4-6)' },
-                ]}
-                value={citationTopicDepth}
-                onChange={setCitationTopicDepth}
               />
             </>
           )}

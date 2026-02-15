@@ -3,14 +3,14 @@ import { Modal } from '../common/Modal'
 import { Button } from '../common/Button'
 import { Spinner } from '../common/Spinner'
 import { useNotebookStore } from '../../stores/notebookStore'
-import { FileText, Globe, ClipboardPaste, Youtube, Mic, Camera, Layers } from 'lucide-react'
+import { FileText, Globe, ClipboardPaste, Youtube, Mic } from 'lucide-react'
 
 interface AddSourceModalProps {
   isOpen: boolean
   onClose: () => void
 }
 
-type Tab = 'file' | 'website' | 'paste' | 'youtube' | 'audio' | 'image' | 'pptx'
+type Tab = 'file' | 'website' | 'paste' | 'youtube' | 'audio'
 
 export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
   const [tab, setTab] = useState<Tab>('file')
@@ -22,8 +22,6 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
   const [pasteTitle, setPasteTitle] = useState('')
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [selectedAudio, setSelectedAudio] = useState<string | null>(null)
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [selectedPptx, setSelectedPptx] = useState<string | null>(null)
   const currentNotebook = useNotebookStore((s) => s.currentNotebook)
   const setSources = useNotebookStore((s) => s.setSources)
 
@@ -34,8 +32,6 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
     setPasteTitle('')
     setYoutubeUrl('')
     setSelectedAudio(null)
-    setSelectedImage(null)
-    setSelectedPptx(null)
     setError(null)
   }
 
@@ -48,7 +44,7 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
   const handleFileSelect = async () => {
     const filePath = await window.api.showOpenDialog({
       filters: [
-        { name: 'Documents', extensions: ['pdf', 'docx', 'doc', 'txt', 'md', 'xlsx', 'xls', 'csv'] },
+        { name: 'Documents', extensions: ['pdf', 'docx', 'doc', 'txt', 'md'] },
       ],
     }) as string | null
     if (filePath) {
@@ -63,7 +59,7 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
     setError(null)
     try {
       const ext = selectedFile.split('.').pop()?.toLowerCase() || 'txt'
-      const type = ext === 'doc' ? 'docx' : ext === 'xls' ? 'xlsx' : ext
+      const type = ext === 'doc' ? 'docx' : ext
       await window.api.addSource({
         notebookId: currentNotebook.id,
         type,
@@ -172,78 +168,12 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
     }
   }
 
-  const handleImageSelect = async () => {
-    const filePath = await window.api.showOpenDialog({
-      filters: [
-        { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif', 'bmp'] },
-      ],
-    }) as string | null
-    if (filePath) {
-      setSelectedImage(filePath)
-      setError(null)
-    }
-  }
-
-  const handleImageUpload = async () => {
-    if (!selectedImage || !currentNotebook) return
-    setLoading(true)
-    setError(null)
-    try {
-      await window.api.addSource({
-        notebookId: currentNotebook.id,
-        type: 'image',
-        filePath: selectedImage,
-      })
-      await refreshSources()
-      resetForm()
-      onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add source')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handlePptxSelect = async () => {
-    const filePath = await window.api.showOpenDialog({
-      filters: [
-        { name: 'PowerPoint', extensions: ['pptx', 'ppt'] },
-      ],
-    }) as string | null
-    if (filePath) {
-      setSelectedPptx(filePath)
-      setError(null)
-    }
-  }
-
-  const handlePptxUpload = async () => {
-    if (!selectedPptx || !currentNotebook) return
-    setLoading(true)
-    setError(null)
-    try {
-      await window.api.addSource({
-        notebookId: currentNotebook.id,
-        type: 'pptx',
-        filePath: selectedPptx,
-      })
-      await refreshSources()
-      resetForm()
-      onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add source')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const tabs: { id: Tab; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'file', label: 'File', Icon: FileText },
     { id: 'website', label: 'Website', Icon: Globe },
     { id: 'paste', label: 'Paste', Icon: ClipboardPaste },
     { id: 'youtube', label: 'YouTube', Icon: Youtube },
     { id: 'audio', label: 'Audio', Icon: Mic },
-    { id: 'image', label: 'Image', Icon: Camera },
-    { id: 'pptx', label: 'PPTX', Icon: Layers },
   ]
 
   return (
@@ -271,7 +201,7 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
         {tab === 'file' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-400 dark:text-slate-500">
-              Upload a PDF, DOCX, TXT, Markdown, Excel, or CSV file.
+              Upload a PDF, DOCX, TXT, or Markdown file.
             </p>
             <button
               onClick={handleFileSelect}
@@ -422,70 +352,6 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
                 </span>
               ) : (
                 'Upload & Transcribe'
-              )}
-            </Button>
-          </div>
-        )}
-
-        {tab === 'image' && (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              Upload an image (photo, receipt, whiteboard, handwritten notes) to extract text via AI OCR.
-            </p>
-            <button
-              onClick={handleImageSelect}
-              disabled={loading}
-              className="w-full py-8 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-            >
-              {selectedImage ? (
-                <span className="text-sm">{selectedImage.split('/').pop()}</span>
-              ) : (
-                <span className="text-sm">Click to select an image...</span>
-              )}
-            </button>
-            <Button
-              onClick={handleImageUpload}
-              disabled={!selectedImage || loading}
-              className="w-full"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Spinner size="sm" /> Extracting text...
-                </span>
-              ) : (
-                'Upload & Extract'
-              )}
-            </Button>
-          </div>
-        )}
-
-        {tab === 'pptx' && (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              Upload a PowerPoint (.pptx) presentation to extract slide text and speaker notes via AI.
-            </p>
-            <button
-              onClick={handlePptxSelect}
-              disabled={loading}
-              className="w-full py-8 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-            >
-              {selectedPptx ? (
-                <span className="text-sm">{selectedPptx.split('/').pop()}</span>
-              ) : (
-                <span className="text-sm">Click to select a PowerPoint file...</span>
-              )}
-            </button>
-            <Button
-              onClick={handlePptxUpload}
-              disabled={!selectedPptx || loading}
-              className="w-full"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Spinner size="sm" /> Processing slides...
-                </span>
-              ) : (
-                'Upload & Extract'
               )}
             </Button>
           </div>

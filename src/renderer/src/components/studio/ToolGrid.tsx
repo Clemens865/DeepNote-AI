@@ -5,8 +5,7 @@ import type { GeneratedContent, StudioToolOptions } from '@shared/types'
 import {
   Headphones, BrainCircuit, FileBarChart, Layers,
   HelpCircle, Presentation, Table2, ArrowRight,
-  CheckCircle2, Pencil, ImageIcon, LayoutDashboard,
-  BookOpen, Trophy, GitCompare, Network,
+  CheckCircle2, Pencil,
 } from 'lucide-react'
 
 interface Tool {
@@ -25,12 +24,6 @@ const TOOLS: Tool[] = [
   { id: 'mindmap', label: 'Mind Map', description: 'Visualize the key concepts and connections.', Icon: BrainCircuit, enabled: true },
   { id: 'quiz', label: 'Quiz', description: 'Test your knowledge with auto-generated questions.', Icon: HelpCircle, enabled: true },
   { id: 'datatable', label: 'Data Table', description: 'Extract and organize data into tables.', Icon: Table2, enabled: true },
-  { id: 'infographic', label: 'Infographic', description: 'Generate a visual infographic from your sources.', Icon: ImageIcon, enabled: true },
-  { id: 'dashboard', label: 'Dashboard', description: 'Generate a KPI dashboard with charts and tables.', Icon: LayoutDashboard, enabled: true },
-  { id: 'literature-review', label: 'Literature Review', description: 'Structured review with themes, gaps, and recommendations.', Icon: BookOpen, enabled: true },
-  { id: 'competitive-analysis', label: 'Competitive Analysis', description: 'Feature comparison matrix with scoring.', Icon: Trophy, enabled: true },
-  { id: 'diff', label: 'Document Diff', description: 'Compare two sources clause-by-clause.', Icon: GitCompare, enabled: true },
-  { id: 'citation-graph', label: 'Citation Graph', description: 'Visualize relationships between your sources.', Icon: Network, enabled: true },
 ]
 
 interface ToolGridProps {
@@ -38,11 +31,9 @@ interface ToolGridProps {
   onOpenImageSlidesWizard?: () => void
   onOpenCustomize?: (toolId: string, toolLabel: string) => void
   onGenerateWithOptions?: (toolId: string, options: StudioToolOptions) => void
-  onOpenReportFormat?: () => void
-  onStartInfographic?: () => void
 }
 
-export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize, onOpenReportFormat, onStartInfographic }: ToolGridProps) {
+export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize }: ToolGridProps) {
   const [toast, setToast] = useState<string | null>(null)
   const [generating, setGenerating] = useState<string | null>(null)
   const currentNotebook = useNotebookStore((s) => s.currentNotebook)
@@ -61,12 +52,6 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
     // Intercept slides to open image slides wizard
     if (tool.id === 'slides' && onOpenImageSlidesWizard) {
       onOpenImageSlidesWizard()
-      return
-    }
-
-    // Intercept infographic for fire-and-forget generation
-    if (tool.id === 'infographic' && onStartInfographic) {
-      onStartInfographic()
       return
     }
 
@@ -98,14 +83,6 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
     e.stopPropagation()
     if (tool.id === 'slides' && onOpenImageSlidesWizard) {
       onOpenImageSlidesWizard()
-      return
-    }
-    if (tool.id === 'report' && onOpenReportFormat) {
-      onOpenReportFormat()
-      return
-    }
-    if (tool.id === 'infographic' && onStartInfographic) {
-      onStartInfographic()
       return
     }
     onOpenCustomize?.(tool.id, tool.label)

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ChevronLeft, ChevronRight, StickyNote, Download, Maximize2, X, Pencil, FileDown } from 'lucide-react'
+import { ChevronLeft, ChevronRight, StickyNote, Download, Maximize2, X, Pencil } from 'lucide-react'
 import type { ImageSlidesGeneratedData, ImageSlideData, HybridSlideData, SlideTextElement } from '@shared/types'
 import { DraggableTextElement } from './DraggableTextElement'
 import { SlideEditorToolbar } from './SlideEditorToolbar'
@@ -7,12 +7,12 @@ import type { Editor } from '@tiptap/react'
 
 // Color palettes: [overlay-bg, title-color, accent-color, body-text-color]
 const PALETTE_MAP: Record<string, [string, string, string, string]> = {
-  'neon-circuit': ['#0a0a14', '#a855f7', '#22d3ee', '#e2e8f0'],
-  'glass-morph': ['#0f172a', '#e2e8f0', '#818cf8', '#94a3b8'],
-  'gradient-mesh': ['#0c1222', '#ec4899', '#3b82f6', '#e2e8f0'],
-  'terminal-hacker': ['#0a0f0a', '#22c55e', '#4ade80', '#d1fae5'],
-  'cosmic-dark': ['#06060e', '#8b5cf6', '#f43f5e', '#e2e8f0'],
-  'arctic-frost': ['#0f1729', '#38bdf8', '#f8fafc', '#64748b'],
+  'blueprint-dark': ['#0f2b3c', '#f97316', '#06b6d4', '#e2e8f0'],
+  'editorial-clean': ['#faf5eb', '#ea580c', '#1e5fa6', '#18181b'],
+  'corporate-blue': ['#ffffff', '#1e3a5f', '#3b82f6', '#64748b'],
+  'bold-minimal': ['#ffffff', '#18181b', '#dc2626', '#71717a'],
+  'nature-warm': ['#fef9ef', '#2d5016', '#c2410c', '#d4a76a'],
+  'dark-luxe': ['#0c0c0c', '#c9a84c', '#ffffff', '#2a2a2a'],
 }
 
 let nextElementId = 1
@@ -20,69 +20,51 @@ function genId(): string {
   return `el-${Date.now()}-${nextElementId++}`
 }
 
-/** Convert legacy title+bullets into SlideTextElement[] — uses AI elementLayout when available */
+/** Convert legacy title+bullets into SlideTextElement[] based on layout & palette */
 function migrateToElements(
   slide: HybridSlideData,
   style: string
 ): SlideTextElement[] {
   const palette = PALETTE_MAP[style] || PALETTE_MAP['blueprint-dark']
-  const [, titleColor, accentColor, bodyColor] = palette
+  const [, titleColor, , bodyColor] = palette
+  const layout = slide.layout.toLowerCase()
 
-  // If AI-generated layout is available, use it
-  if (slide.elementLayout && slide.elementLayout.length > 0) {
-    const elements: SlideTextElement[] = []
-    for (const layout of slide.elementLayout) {
-      const color = layout.type === 'title' ? titleColor : bodyColor
-      elements.push({
-        id: genId(),
-        type: layout.type as 'title' | 'bullet' | 'text',
-        content: `<p>${layout.content}</p>`,
-        x: layout.x,
-        y: layout.y,
-        width: layout.width,
-        style: {
-          fontSize: layout.fontSize,
-          color,
-          align: layout.align,
-        },
-      })
-    }
-    return elements
+  // Compute starting positions based on layout
+  let xStart = 10
+  let yStart = 12
+  let widthPct = 40
+
+  if (layout.includes('left')) {
+    xStart = 5; yStart = 10; widthPct = 42
+  } else if (layout.includes('right')) {
+    xStart = 52; yStart = 10; widthPct = 42
+  } else if (layout.includes('bottom')) {
+    xStart = 5; yStart = 55; widthPct = 90
+  } else {
+    xStart = 10; yStart = 10; widthPct = 80
   }
-
-  // Fallback: hardcoded split-screen layout for legacy data
-  const xStart = 4
-  const widthPct = 42
 
   const elements: SlideTextElement[] = []
 
+  // Title element
   elements.push({
     id: genId(),
     type: 'title',
     content: `<p>${slide.title}</p>`,
     x: xStart,
-    y: 12,
+    y: yStart,
     width: widthPct,
-    style: { fontSize: 22, color: titleColor, align: 'left' },
+    style: { fontSize: 20, color: titleColor, align: 'left' },
   })
 
-  elements.push({
-    id: genId(),
-    type: 'text',
-    content: `<p>---</p>`,
-    x: xStart,
-    y: 22,
-    width: 12,
-    style: { fontSize: 10, color: accentColor, align: 'left' },
-  })
-
+  // Bullet elements — stacked below title
   slide.bullets.forEach((bullet, i) => {
     elements.push({
       id: genId(),
       type: 'bullet',
       content: `<p>${bullet}</p>`,
       x: xStart,
-      y: 28 + i * 12,
+      y: yStart + 10 + i * 8,
       width: widthPct,
       style: { fontSize: 14, color: bodyColor, align: 'left' },
     })
@@ -96,21 +78,16 @@ interface HybridSlideProps {
   style: string
   aspectRatio: string
   contentId: string
-  customPalette?: string[]
   onClick?: () => void
 }
 
-function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onClick }: HybridSlideProps) {
-  const palette: [string, string, string, string] = customPalette && customPalette.length >= 4
-    ? [customPalette[0], customPalette[1], customPalette[2], customPalette[3]]
-    : PALETTE_MAP[style] || PALETTE_MAP['neon-circuit']
+function HybridSlide({ slide, style, aspectRatio, contentId, onClick }: HybridSlideProps) {
+  const palette = PALETTE_MAP[style] || PALETTE_MAP['blueprint-dark']
   const [overlayBg] = palette
   const isDarkOverlay = overlayBg.startsWith('#0') || overlayBg.startsWith('#1') || overlayBg === '#0c0c0c'
-  const isTitleSlide = slide.slideNumber === 1
 
   const containerRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const latestElementsRef = useRef<SlideTextElement[]>([])
 
   const [editMode, setEditMode] = useState(false)
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
@@ -118,11 +95,10 @@ function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onCl
 
   // Initialize elements: use existing or migrate from title+bullets
   const [elements, setElements] = useState<SlideTextElement[]>(() => {
-    const initial = (slide.elements && slide.elements.length > 0)
-      ? slide.elements
-      : migrateToElements(slide, style)
-    latestElementsRef.current = initial
-    return initial
+    if (slide.elements && slide.elements.length > 0) {
+      return slide.elements
+    }
+    return migrateToElements(slide, style)
   })
 
   // Re-initialize if the slide changes (e.g., navigating to a different slide)
@@ -131,61 +107,43 @@ function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onCl
   useEffect(() => {
     if (prevSlideKeyRef.current !== slideKey) {
       prevSlideKeyRef.current = slideKey
-      const next = (slide.elements && slide.elements.length > 0)
-        ? slide.elements
-        : migrateToElements(slide, style)
-      setElements(next)
-      latestElementsRef.current = next
+      if (slide.elements && slide.elements.length > 0) {
+        setElements(slide.elements)
+      } else {
+        setElements(migrateToElements(slide, style))
+      }
       setSelectedElementId(null)
       setActiveEditor(null)
       setEditMode(false)
     }
   }, [slideKey, slide, style])
 
-  // Immediate save function (no debounce)
-  const saveNow = useCallback(
-    (els: SlideTextElement[]) => {
-      const titleEl = els.find((e) => e.type === 'title')
-      const bulletEls = els.filter((e) => e.type === 'bullet')
-      const title = titleEl
-        ? titleEl.content.replace(/<[^>]*>/g, '')
-        : slide.title
-      const bullets = bulletEls.length > 0
-        ? bulletEls.map((b) => b.content.replace(/<[^>]*>/g, ''))
-        : slide.bullets
-
-      window.api.imageSlidesUpdateText({
-        generatedContentId: contentId,
-        slideNumber: slide.slideNumber,
-        title,
-        bullets,
-        elements: els,
-      })
-    },
-    [contentId, slide.slideNumber, slide.title, slide.bullets]
-  )
-
   // Debounced save to backend
   const saveElements = useCallback(
     (updatedElements: SlideTextElement[]) => {
-      latestElementsRef.current = updatedElements
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
-        saveNow(updatedElements)
-        debounceRef.current = null
+        // Extract title and bullets for backward compat
+        const titleEl = updatedElements.find((e) => e.type === 'title')
+        const bulletEls = updatedElements.filter((e) => e.type === 'bullet')
+        const title = titleEl
+          ? titleEl.content.replace(/<[^>]*>/g, '')
+          : slide.title
+        const bullets = bulletEls.length > 0
+          ? bulletEls.map((b) => b.content.replace(/<[^>]*>/g, ''))
+          : slide.bullets
+
+        window.api.imageSlidesUpdateText({
+          generatedContentId: contentId,
+          slideNumber: slide.slideNumber,
+          title,
+          bullets,
+          elements: updatedElements,
+        })
       }, 800)
     },
-    [saveNow]
+    [contentId, slide.slideNumber, slide.title, slide.bullets]
   )
-
-  // Flush pending save immediately (used when exiting edit mode)
-  const flushSave = useCallback(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current)
-      debounceRef.current = null
-      saveNow(latestElementsRef.current)
-    }
-  }, [saveNow])
 
   const handleElementUpdate = useCallback(
     (elementId: string, partial: Partial<SlideTextElement>) => {
@@ -242,23 +200,6 @@ function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onCl
     }
   }, [editMode, onClick])
 
-  // Title slide (slide 1): render as full-image, no text overlays
-  if (isTitleSlide && !editMode) {
-    return (
-      <div
-        className="relative overflow-hidden rounded-lg cursor-pointer"
-        style={{ aspectRatio: aspectRatio === '4:3' ? '4/3' : '16/9' }}
-        onClick={onClick}
-      >
-        <img
-          src={`local-file://${slide.imagePath}`}
-          alt={slide.title}
-          className="w-full h-full object-cover"
-        />
-      </div>
-    )
-  }
-
   return (
     <div className="relative">
       {/* Toolbar (positioned above slide) */}
@@ -275,40 +216,26 @@ function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onCl
 
       <div
         ref={containerRef}
-        className={`relative rounded-lg ${editMode ? 'overflow-visible' : 'overflow-hidden'}`}
+        className="relative overflow-hidden rounded-lg"
         style={{ aspectRatio: aspectRatio === '4:3' ? '4/3' : '16/9' }}
         onClick={handleBackgroundClick}
       >
-        {/* Background image — own clipping for rounded corners */}
+        {/* Background image */}
         <img
           src={`local-file://${slide.imagePath}`}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover rounded-lg"
+          className="w-full h-full object-cover"
         />
 
-        {/* Split-screen overlay: solid left panel for text readability */}
+        {/* Semi-transparent overlay for text readability */}
         <div
-          className="absolute inset-0 pointer-events-none rounded-lg"
+          className="absolute inset-0 pointer-events-none"
           style={{
             background: isDarkOverlay
-              ? `linear-gradient(to right, ${overlayBg}e6 0%, ${overlayBg}cc 42%, ${overlayBg}40 52%, transparent 62%)`
-              : `linear-gradient(to right, ${overlayBg}f0 0%, ${overlayBg}dd 42%, ${overlayBg}60 52%, transparent 62%)`,
+              ? `linear-gradient(135deg, ${overlayBg}99 0%, transparent 60%)`
+              : `linear-gradient(135deg, ${overlayBg}cc 0%, transparent 60%)`,
           }}
         />
-
-        {/* Accent bar — thin vertical line at the split boundary */}
-        {!editMode && (
-          <div
-            className="absolute pointer-events-none rounded-lg"
-            style={{
-              left: '47%',
-              top: '8%',
-              bottom: '8%',
-              width: '2px',
-              backgroundColor: palette[2] + '60',
-            }}
-          />
-        )}
 
         {/* Elements */}
         {elements.map((el) => (
@@ -333,12 +260,11 @@ function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onCl
           }`}
           onClick={(e) => {
             e.stopPropagation()
+            setEditMode(!editMode)
             if (editMode) {
-              flushSave()
               setSelectedElementId(null)
               setActiveEditor(null)
             }
-            setEditMode(!editMode)
           }}
           title={editMode ? 'Exit edit mode' : 'Edit slide'}
         >
@@ -411,7 +337,6 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
             style={slidesData.style}
             aspectRatio={slidesData.aspectRatio}
             contentId={contentId || ''}
-            customPalette={slidesData.customPalette}
             onClick={() => setIsFullscreen(true)}
           />
         ) : (
@@ -462,31 +387,13 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
               {currentSlide + 1} / {slides.length}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                const allPaths = slides.map((s) =>
-                  isHybrid ? (s as HybridSlideData).imagePath : (s as ImageSlideData).imagePath
-                )
-                window.api.studioExportPdf({
-                  imagePaths: allPaths,
-                  aspectRatio: (slidesData.aspectRatio === '4:3' ? '4:3' : '16:9') as '16:9' | '4:3',
-                  defaultName: 'slide-deck.pdf',
-                })
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-            >
-              <FileDown size={12} />
-              PDF
-            </button>
-            <button
-              onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: `slide-${currentSlide + 1}.png` })}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-            >
-              <Download size={12} />
-              Slide
-            </button>
-          </div>
+          <button
+            onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: `slide-${currentSlide + 1}.png` })}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+          >
+            <Download size={12} />
+            Download slide
+          </button>
         </div>
 
         {/* Thumbnail strip */}
@@ -575,7 +482,6 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
                       style={slidesData.style}
                       aspectRatio={slidesData.aspectRatio}
                       contentId={contentId || ''}
-                      customPalette={slidesData.customPalette}
                     />
                   </div>
                 </div>

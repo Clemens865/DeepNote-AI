@@ -1,5 +1,5 @@
-appId: com.deepnote.ai
-productName: DeepNote AI
+appId: com.notebooklm.clone
+productName: NotebookLM
 directories:
   buildResources: build
 files:
@@ -13,14 +13,13 @@ asarUnpack:
   - resources/**
   - node_modules/better-sqlite3/**
 win:
-  executableName: DeepNote-AI
+  executableName: NotebookLM
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
-  identity: null
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
@@ -37,4 +36,3 @@ linux:
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: true
-afterPack: build/afterPack.cjs

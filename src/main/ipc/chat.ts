@@ -43,9 +43,6 @@ export function registerChatHandlers() {
       .where(eq(schema.sources.notebookId, args.notebookId))
 
     const selectedSources = sources.filter((s) => s.isSelected)
-    const hasSpreadsheetSources = selectedSources.some(
-      (s) => s.type === 'xlsx' || s.type === 'csv'
-    )
     const selectedSourceIds = selectedSources.map((s) => s.id)
     const sourceTitleMap: Record<string, string> = {}
     for (const s of sources) {
@@ -110,7 +107,6 @@ export function registerChatHandlers() {
       responseText = await aiService.chatStream(recentHistory, context, {
         description: notebook?.description,
         responseLength: notebook?.responseLength,
-        hasSpreadsheetSources,
       }, (chunk) => {
         _event.sender.send('chat:stream-chunk', { messageId: assistantId, chunk })
       })

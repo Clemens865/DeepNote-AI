@@ -8,9 +8,6 @@ export const notebooks = sqliteTable('notebooks', {
   chatMode: text('chat_mode', { enum: ['auto', 'custom'] }).notNull().default('auto'),
   responseLength: text('response_length', { enum: ['short', 'medium', 'long'] }).notNull().default('medium'),
   workspaceRootPath: text('workspace_root_path'),
-  cardBgImage: text('card_bg_image'),
-  cardGradientFrom: text('card_gradient_from'),
-  cardGradientTo: text('card_gradient_to'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 })
@@ -20,7 +17,7 @@ export const sources = sqliteTable('sources', {
   notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   filename: text('filename'),
-  type: text('type', { enum: ['pdf', 'docx', 'txt', 'md', 'url', 'youtube', 'paste', 'audio', 'xlsx', 'csv', 'image', 'pptx'] }).notNull(),
+  type: text('type', { enum: ['pdf', 'docx', 'txt', 'md', 'url', 'youtube', 'paste', 'audio'] }).notNull(),
   content: text('content').notNull().default(''),
   rawFilePath: text('raw_file_path'),
   isSelected: integer('is_selected', { mode: 'boolean' }).notNull().default(true),
@@ -62,7 +59,7 @@ export const generatedContent = sqliteTable('generated_content', {
   id: text('id').primaryKey(),
   notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
   type: text('type', {
-    enum: ['audio', 'video', 'slides', 'image-slides', 'quiz', 'flashcard', 'mindmap', 'infographic', 'datatable', 'report', 'dashboard', 'literature-review', 'competitive-analysis', 'diff', 'citation-graph'],
+    enum: ['audio', 'video', 'slides', 'image-slides', 'quiz', 'flashcard', 'mindmap', 'infographic', 'datatable', 'report'],
   }).notNull(),
   title: text('title').notNull(),
   data: text('data', { mode: 'json' }).notNull().default('{}'),

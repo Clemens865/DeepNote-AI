@@ -13,8 +13,6 @@ import { registerStudioHandlers } from './ipc/studio'
 import { registerConfigHandlers } from './ipc/config'
 import { registerResearchHandlers } from './ipc/research'
 import { registerWorkspaceHandlers } from './ipc/workspace'
-import { registerSearchHandlers } from './ipc/search'
-import { fileWatcherService } from './services/fileWatcher'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -85,7 +83,6 @@ app.whenReady().then(() => {
   registerConfigHandlers()
   registerResearchHandlers()
   registerWorkspaceHandlers()
-  registerSearchHandlers()
 
   createWindow()
 
@@ -101,7 +98,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
-  fileWatcherService.stopAll()
   databaseService.close()
   vectorStoreService.close()
 })

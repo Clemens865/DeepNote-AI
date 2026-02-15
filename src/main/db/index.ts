@@ -114,17 +114,6 @@ function initializeDatabase() {
   if (!columns.some((c) => c.name === 'workspace_root_path')) {
     sqlite.exec('ALTER TABLE notebooks ADD COLUMN workspace_root_path TEXT')
   }
-
-  // Migration: add card customization columns
-  if (!columns.some((c) => c.name === 'card_bg_image')) {
-    sqlite.exec('ALTER TABLE notebooks ADD COLUMN card_bg_image TEXT')
-  }
-  if (!columns.some((c) => c.name === 'card_gradient_from')) {
-    sqlite.exec('ALTER TABLE notebooks ADD COLUMN card_gradient_from TEXT')
-  }
-  if (!columns.some((c) => c.name === 'card_gradient_to')) {
-    sqlite.exec('ALTER TABLE notebooks ADD COLUMN card_gradient_to TEXT')
-  }
 }
 
 export function closeDatabase() {

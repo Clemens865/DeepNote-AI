@@ -109,22 +109,6 @@ export class VectorStoreService {
     return results.slice(0, limit)
   }
 
-  async searchMultiple(
-    notebookIds: string[],
-    queryVector: number[],
-    limit: number = 10
-  ): Promise<{ id: string; sourceId: string; notebookId: string; text: string; score: number; chunkIndex: number; pageNumber?: number }[]> {
-    const allResults: { id: string; sourceId: string; notebookId: string; text: string; score: number; chunkIndex: number; pageNumber?: number }[] = []
-
-    for (const nbId of notebookIds) {
-      const results = await this.search(nbId, queryVector, limit)
-      allResults.push(...results.map(r => ({ ...r, notebookId: nbId })))
-    }
-
-    allResults.sort((a, b) => b.score - a.score)
-    return allResults.slice(0, limit)
-  }
-
   async deleteSource(notebookId: string, sourceId: string): Promise<void> {
     const filePath = this.getSourcePath(notebookId, sourceId)
     if (existsSync(filePath)) unlinkSync(filePath)

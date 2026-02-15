@@ -1,6 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
-import { Extension } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
@@ -11,28 +10,6 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Draggable from 'react-draggable'
 import type { SlideTextElement } from '@shared/types'
 import type { Editor } from '@tiptap/react'
-
-// Custom extension to register fontSize as a TextStyle attribute
-const FontSize = Extension.create({
-  name: 'fontSize',
-  addGlobalAttributes() {
-    return [
-      {
-        types: ['textStyle'],
-        attributes: {
-          fontSize: {
-            default: null,
-            parseHTML: (element) => element.style.fontSize || null,
-            renderHTML: (attributes) => {
-              if (!attributes.fontSize) return {}
-              return { style: `font-size: ${attributes.fontSize}` }
-            },
-          },
-        },
-      },
-    ]
-  },
-})
 
 interface DraggableTextElementProps {
   element: SlideTextElement
@@ -57,12 +34,6 @@ export function DraggableTextElement({
   const resizingRef = useRef(false)
   const resizeStartRef = useRef({ x: 0, width: 0 })
 
-  // Use refs for callbacks to avoid stale closures in useEditor
-  const onUpdateRef = useRef(onUpdate)
-  onUpdateRef.current = onUpdate
-  const onEditorReadyRef = useRef(onEditorReady)
-  onEditorReadyRef.current = onEditorReady
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false }),
@@ -70,7 +41,6 @@ export function DraggableTextElement({
       TextAlign.configure({ types: ['paragraph'] }),
       Color,
       TextStyle,
-      FontSize,
       Link.configure({ openOnClick: false }),
       Placeholder.configure({
         placeholder: element.type === 'title' ? 'Title...' : 'Type here...',
@@ -79,7 +49,7 @@ export function DraggableTextElement({
     content: element.content,
     editable: editMode,
     onUpdate: ({ editor: ed }) => {
-      onUpdateRef.current({ content: ed.getHTML() })
+      onUpdate({ content: ed.getHTML() })
     },
   })
 
@@ -92,10 +62,10 @@ export function DraggableTextElement({
 
   // Notify parent when editor is ready or selection changes
   useEffect(() => {
-    if (editor && isSelected && onEditorReadyRef.current) {
-      onEditorReadyRef.current(editor)
+    if (editor && isSelected && onEditorReady) {
+      onEditorReady(editor)
     }
-  }, [editor, isSelected])
+  }, [editor, isSelected, onEditorReady])
 
   // Convert percentage position to px for draggable
   const getPixelPosition = useCallback(() => {
@@ -115,9 +85,9 @@ export function DraggableTextElement({
       const rect = container.getBoundingClientRect()
       const xPct = Math.max(0, Math.min(100, (data.x / rect.width) * 100))
       const yPct = Math.max(0, Math.min(100, (data.y / rect.height) * 100))
-      onUpdateRef.current({ x: xPct, y: yPct })
+      onUpdate({ x: xPct, y: yPct })
     },
-    [containerRef]
+    [containerRef, onUpdate]
   )
 
   // Resize handler
@@ -139,7 +109,7 @@ export function DraggableTextElement({
         const delta = ev.clientX - resizeStartRef.current.x
         const newWidthPx = Math.max(60, resizeStartRef.current.width + delta)
         const newWidthPct = Math.min(100, Math.max(10, (newWidthPx / containerWidth) * 100))
-        onUpdateRef.current({ width: newWidthPct })
+        onUpdate({ width: newWidthPct })
       }
 
       const handleMouseUp = () => {
@@ -151,7 +121,7 @@ export function DraggableTextElement({
       window.addEventListener('mousemove', handleMouseMove)
       window.addEventListener('mouseup', handleMouseUp)
     },
-    [containerRef, element.width]
+    [containerRef, element.width, onUpdate]
   )
 
   const pixelPos = getPixelPosition()
@@ -192,7 +162,7 @@ export function DraggableTextElement({
       <div
         ref={nodeRef}
         className={`absolute group ${isSelected ? 'z-20' : 'z-10'}`}
-        style={{ top: 0, left: 0, width: widthPx }}
+        style={{ width: widthPx }}
         onClick={(e) => {
           e.stopPropagation()
           onSelect()
