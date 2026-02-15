@@ -5,6 +5,7 @@ import { ImageSlidesWizard } from './ImageSlidesWizard'
 import { StudioCustomizeDialog } from './StudioCustomizeDialog'
 import { ReportFormatDialog } from './ReportFormatDialog'
 import { InfographicWizard } from './InfographicWizard'
+import { WhitePaperWizard } from './WhitePaperWizard'
 import { useNotebookStore } from '../../stores/notebookStore'
 import {
   PanelRightOpen,
@@ -33,6 +34,7 @@ const TYPE_LABELS: Record<string, string> = {
   'competitive-analysis': 'Comp. Analysis',
   diff: 'Diff',
   'citation-graph': 'Citation Graph',
+  whitepaper: 'White Paper',
 }
 
 interface StudioPanelProps {
@@ -50,6 +52,7 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
   const [showReportFormat, setShowReportFormat] = useState(false)
   const [reportFormatGenerating, setReportFormatGenerating] = useState(false)
   const [showInfographicWizard, setShowInfographicWizard] = useState(false)
+  const [showWhitePaperWizard, setShowWhitePaperWizard] = useState(false)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -170,6 +173,15 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
     }
   }
 
+  const handleWhitePaperComplete = async (contentId: string) => {
+    setShowWhitePaperWizard(false)
+    const content = (await window.api.studioStatus(contentId)) as GeneratedContent | null
+    if (content) {
+      setGeneratedItems((prev) => [content, ...prev])
+      setViewing(content)
+    }
+  }
+
   const handleCustomizeGenerate = async (options: StudioToolOptions) => {
     if (!currentNotebook || !customizeTool) return
 
@@ -262,6 +274,7 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
               }
               onOpenReportFormat={() => setShowReportFormat(true)}
               onStartInfographic={() => setShowInfographicWizard(true)}
+              onStartWhitePaper={() => setShowWhitePaperWizard(true)}
             />
 
             {generatedItems.length > 0 && (
@@ -437,6 +450,14 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
           notebookId={currentNotebook.id}
           onComplete={handleInfographicComplete}
           onClose={() => setShowInfographicWizard(false)}
+        />
+      )}
+
+      {showWhitePaperWizard && currentNotebook && (
+        <WhitePaperWizard
+          notebookId={currentNotebook.id}
+          onComplete={handleWhitePaperComplete}
+          onClose={() => setShowWhitePaperWizard(false)}
         />
       )}
 

@@ -48,10 +48,84 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.STUDIO_GENERATE, args),
   studioSaveFile: (args: { sourcePath: string; defaultName: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.STUDIO_SAVE_FILE, args),
+  studioExportPdf: (args: { imagePaths: string[]; aspectRatio: '16:9' | '4:3'; defaultName: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.STUDIO_EXPORT_PDF, args),
   studioStatus: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.STUDIO_STATUS, id),
   studioList: (notebookId: string) => ipcRenderer.invoke(IPC_CHANNELS.STUDIO_LIST, notebookId),
   studioDelete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.STUDIO_DELETE, id),
   studioRename: (id: string, title: string) => ipcRenderer.invoke(IPC_CHANNELS.STUDIO_RENAME, id, title),
+  studioSuggestFormats: (notebookId: string) => ipcRenderer.invoke(IPC_CHANNELS.STUDIO_SUGGEST_FORMATS, notebookId),
+
+  // Infographic
+  infographicStart: (args: {
+    notebookId: string
+    stylePresetId: string
+    aspectRatio: '16:9' | '4:3' | '1:1'
+    userInstructions?: string
+    customStyleImagePath?: string
+    customStyleColors?: string[]
+    customStyleDescription?: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.INFOGRAPHIC_START, args),
+  onInfographicProgress: (
+    callback: (data: { generatedContentId: string; stage: string; message: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; stage: string; message: string }
+    ) => callback(data)
+    ipcRenderer.on('infographic:progress', handler)
+    return () => {
+      ipcRenderer.removeListener('infographic:progress', handler)
+    }
+  },
+  onInfographicComplete: (
+    callback: (data: { generatedContentId: string; success: boolean; error?: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; success: boolean; error?: string }
+    ) => callback(data)
+    ipcRenderer.on('infographic:complete', handler)
+    return () => {
+      ipcRenderer.removeListener('infographic:complete', handler)
+    }
+  },
+
+  // White Paper
+  whitepaperStart: (args: {
+    notebookId: string
+    tone: 'academic' | 'business' | 'technical'
+    length: 'concise' | 'standard' | 'comprehensive'
+    stylePresetId: string
+    userInstructions?: string
+    customStyleImagePath?: string
+    customStyleColors?: string[]
+    customStyleDescription?: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.WHITEPAPER_START, args),
+  onWhitepaperProgress: (
+    callback: (data: { generatedContentId: string; stage: string; currentSection?: number; totalSections?: number; message: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; stage: string; currentSection?: number; totalSections?: number; message: string }
+    ) => callback(data)
+    ipcRenderer.on('whitepaper:progress', handler)
+    return () => {
+      ipcRenderer.removeListener('whitepaper:progress', handler)
+    }
+  },
+  onWhitepaperComplete: (
+    callback: (data: { generatedContentId: string; success: boolean; error?: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; success: boolean; error?: string }
+    ) => callback(data)
+    ipcRenderer.on('whitepaper:complete', handler)
+    return () => {
+      ipcRenderer.removeListener('whitepaper:complete', handler)
+    }
+  },
 
   // Config
   getApiKey: () => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_GET_API_KEY),
@@ -95,6 +169,8 @@ const api = {
     userInstructions?: string
     customStyleImagePath?: string
     renderMode?: 'full-image' | 'hybrid'
+    customStyleColors?: string[]
+    customStyleDescription?: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.IMAGE_SLIDES_START, args),
   imageSlidesUpdateText: (args: {
     generatedContentId: string
@@ -176,6 +252,24 @@ const api = {
   // Editor AI
   editorAiRewrite: (args: { selectedText: string; instruction: string; fullContent: string; filePath: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.EDITOR_AI_REWRITE, args),
+
+  // Global Search
+  globalSearch: (args: { query: string; notebookIds?: string[]; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SEARCH_GLOBAL, args),
+
+  // Workspace auto-sync events
+  onWorkspaceAutoSync: (
+    callback: (data: { notebookId: string; status: string; message: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { notebookId: string; status: string; message: string }
+    ) => callback(data)
+    ipcRenderer.on('workspace:auto-sync', handler)
+    return () => {
+      ipcRenderer.removeListener('workspace:auto-sync', handler)
+    }
+  },
 }
 
 export type Api = typeof api

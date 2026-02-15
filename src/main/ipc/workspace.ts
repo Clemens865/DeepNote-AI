@@ -5,6 +5,7 @@ import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { getDatabase, schema } from '../db'
 import { vectorStoreService } from '../services/vectorStore'
 import { ingestSource } from '../services/sourceIngestion'
+import { fileWatcherService } from '../services/fileWatcher'
 import {
   validateAndResolve,
   classifyFile,
@@ -28,6 +29,62 @@ function getNotebookWithRoot(notebookId: string) {
   const nb = rows[0]
   if (!nb.workspaceRootPath) throw new Error('Notebook is not linked to a workspace')
   return nb
+}
+
+async function performWorkspaceSync(notebookId: string): Promise<void> {
+  const db = getDatabase()
+  const rows = db.select().from(schema.notebooks).where(eq(schema.notebooks.id, notebookId)).all()
+  if (rows.length === 0) return
+  const nb = rows[0]
+  if (!nb.workspaceRootPath) return
+
+  const now = new Date().toISOString()
+  const scanned = scanDirectory(nb.workspaceRootPath)
+  const manifest = getManifest(notebookId)
+  const diff = computeDiff(scanned, manifest)
+
+  for (const path of diff.deleted) {
+    const wf = manifest.get(path)
+    if (wf?.sourceId) {
+      await vectorStoreService.deleteSource(notebookId, wf.sourceId)
+      await db.delete(schema.sources).where(eq(schema.sources.id, wf.sourceId))
+    }
+  }
+
+  applyDiff(notebookId, scanned, diff)
+
+  const updatedManifest = getManifest(notebookId)
+  for (const [path, wf] of updatedManifest) {
+    if (wf.status !== 'stale') continue
+    if (!wf.sourceId) continue
+
+    const classification = classifyFile(path)
+    if (!classification.isIndexable || !classification.sourceType) continue
+
+    try {
+      await vectorStoreService.deleteSource(notebookId, wf.sourceId)
+      await db.delete(schema.sources).where(eq(schema.sources.id, wf.sourceId))
+
+      const absPath = validateAndResolve(nb.workspaceRootPath, path)
+      const source = await ingestSource({
+        notebookId,
+        type: classification.sourceType,
+        filePath: absPath,
+        title: path.split('/').pop() || path,
+      })
+
+      await db
+        .update(schema.workspaceFiles)
+        .set({ sourceId: source.id, status: 'indexed', updatedAt: now })
+        .where(eq(schema.workspaceFiles.id, wf.id))
+    } catch (err) {
+      console.warn(`[Workspace] Auto-sync re-index failed for ${path}:`, err)
+      await db
+        .update(schema.workspaceFiles)
+        .set({ status: 'error', updatedAt: now })
+        .where(eq(schema.workspaceFiles.id, wf.id))
+    }
+  }
 }
 
 export function registerWorkspaceHandlers() {
@@ -59,6 +116,9 @@ export function registerWorkspaceHandlers() {
       const diff = computeDiff(scanned, manifest)
       applyDiff(args.notebookId, scanned, diff)
 
+      // Start file watcher for auto-sync
+      fileWatcherService.start(args.notebookId, rootPath, performWorkspaceSync)
+
       const rows = await db.select().from(schema.notebooks).where(eq(schema.notebooks.id, args.notebookId))
       return rows[0]
     }
@@ -66,6 +126,8 @@ export function registerWorkspaceHandlers() {
 
   // Unlink workspace from notebook
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_UNLINK, async (_event, notebookId: string) => {
+      // Stop file watcher
+      fileWatcherService.stop(notebookId)
     const db = getDatabase()
     const now = new Date().toISOString()
 

@@ -72,6 +72,44 @@ export class ChunkerService {
 
     return results
   }
+
+  chunkTabular(text: string, options?: { rowsPerChunk?: number }): ChunkResult[] {
+    const rowsPerChunk = options?.rowsPerChunk ?? 50
+    const sections = text.split(/^## Sheet: .+$/m).filter((s) => s.trim())
+    const sheetHeaders = [...text.matchAll(/^## Sheet: (.+)$/gm)].map((m) => m[1])
+
+    const results: ChunkResult[] = []
+    let chunkIndex = 0
+
+    for (let si = 0; si < sections.length; si++) {
+      const lines = sections[si].trim().split('\n')
+      const headerIdx = lines.findIndex((l) => l.startsWith('|'))
+      if (headerIdx === -1 || headerIdx + 1 >= lines.length) {
+        const regularChunks = this.chunk(sections[si])
+        for (const c of regularChunks) {
+          results.push({ ...c, index: chunkIndex++ })
+        }
+        continue
+      }
+
+      const headerLine = lines[headerIdx]
+      const separatorLine = lines[headerIdx + 1]
+      const dataRows = lines.slice(headerIdx + 2).filter((l) => l.startsWith('|'))
+      const sheetLabel = sheetHeaders[si] ? `Sheet: ${sheetHeaders[si]}\n` : ''
+
+      for (let i = 0; i < dataRows.length; i += rowsPerChunk) {
+        const batch = dataRows.slice(i, i + rowsPerChunk)
+        const chunkText = `${sheetLabel}${headerLine}\n${separatorLine}\n${batch.join('\n')}`
+        results.push({
+          text: chunkText,
+          index: chunkIndex++,
+          tokenCount: Math.ceil(chunkText.length / 4),
+        })
+      }
+    }
+
+    return results.length > 0 ? results : this.chunk(text)
+  }
 }
 
 export const chunkerService = new ChunkerService()

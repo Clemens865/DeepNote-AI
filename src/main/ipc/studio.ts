@@ -1,5 +1,5 @@
 import { ipcMain, BrowserWindow, dialog } from 'electron'
-import { copyFile } from 'fs/promises'
+import { copyFile, readFile, writeFile } from 'fs/promises'
 import { extname } from 'path'
 import { randomUUID } from 'crypto'
 import { eq } from 'drizzle-orm'
@@ -18,6 +18,13 @@ const TYPE_TITLES: Record<string, string> = {
   slides: 'Slide Deck',
   'image-slides': 'Image Slide Deck',
   audio: 'Audio Overview',
+  infographic: 'Infographic',
+  dashboard: 'Dashboard',
+  'literature-review': 'Literature Review',
+  'competitive-analysis': 'Competitive Analysis',
+  diff: 'Document Comparison',
+  'citation-graph': 'Citation Graph',
+  whitepaper: 'White Paper',
 }
 
 function broadcastToWindows(channel: string, data: unknown): void {
@@ -168,6 +175,337 @@ export function registerStudioHandlers() {
     }
   )
 
+  // Suggest report formats based on sources
+  ipcMain.handle(IPC_CHANNELS.STUDIO_SUGGEST_FORMATS, async (_event, notebookId: string) => {
+    const db = getDatabase()
+    const sources = await db
+      .select()
+      .from(schema.sources)
+      .where(eq(schema.sources.notebookId, notebookId))
+
+    const selectedSources = sources.filter((s) => s.isSelected)
+    if (selectedSources.length === 0) return []
+
+    const sourceTexts = selectedSources.map((s) => s.content)
+    return aiService.suggestReportFormats(sourceTexts)
+  })
+
+  // Infographic — fire-and-forget pattern
+  ipcMain.handle(
+    IPC_CHANNELS.INFOGRAPHIC_START,
+    async (_event, args: {
+      notebookId: string
+      stylePresetId: string
+      aspectRatio: '16:9' | '4:3' | '1:1'
+      userInstructions?: string
+      customStyleImagePath?: string
+      customStyleColors?: string[]
+      customStyleDescription?: string
+    }) => {
+      const db = getDatabase()
+      const now = new Date().toISOString()
+      const generatedContentId = randomUUID()
+
+      const sources = await db
+        .select()
+        .from(schema.sources)
+        .where(eq(schema.sources.notebookId, args.notebookId))
+
+      const selectedSources = sources.filter((s) => s.isSelected)
+      if (selectedSources.length === 0) {
+        throw new Error('No sources selected. Please add and select at least one source.')
+      }
+
+      const sourceIds = selectedSources.map((s) => s.id)
+      const sourceTexts = selectedSources.map((s) => s.content)
+
+      // Resolve style
+      let styleDescription = ''
+      if (args.stylePresetId === 'custom-builder' && args.customStyleColors && args.customStyleDescription) {
+        const [bg, primary, accent, text] = args.customStyleColors
+        styleDescription = `with a ${bg} background, ${primary} as the primary accent color, ${accent} as the secondary accent color, ${text} for body text. ${args.customStyleDescription}. All elements share this exact same color scheme and visual style consistently`
+      } else {
+        const preset = STYLE_PRESETS.find((p) => p.id === args.stylePresetId)
+        styleDescription = preset ? preset.promptSuffix : 'with a clean, modern, professional design'
+      }
+
+      await db.insert(schema.generatedContent).values({
+        id: generatedContentId,
+        notebookId: args.notebookId,
+        type: 'infographic' as const,
+        title: `Infographic - ${new Date().toLocaleDateString()}`,
+        data: {} as unknown as string,
+        sourceIds: JSON.stringify(sourceIds),
+        status: 'generating' as const,
+        createdAt: now,
+      })
+
+      ;(async () => {
+        try {
+          // If custom style image was provided, extract style description
+          if (args.customStyleImagePath) {
+            broadcastToWindows('infographic:progress', {
+              generatedContentId,
+              stage: 'planning',
+              message: 'Analyzing reference image style...',
+            })
+            styleDescription = await aiService.describeImageStyle(args.customStyleImagePath)
+          }
+
+          broadcastToWindows('infographic:progress', {
+            generatedContentId,
+            stage: 'planning',
+            message: 'Planning infographic content...',
+          })
+
+          const plan = await aiService.planInfographic(sourceTexts)
+
+          broadcastToWindows('infographic:progress', {
+            generatedContentId,
+            stage: 'generating',
+            message: 'Generating infographic image...',
+          })
+
+          // Build image prompt from the plan + style
+          const keyPointsText = plan.keyPoints
+            .map((kp) => `- ${kp.heading}: ${kp.body} (visual: ${kp.visualDescription})`)
+            .join('\n')
+
+          const userInstr = args.userInstructions ? `\nUser instructions: ${args.userInstructions}` : ''
+
+          const imagePrompt = `Create a beautiful, professional infographic titled "${plan.title}" with subtitle "${plan.subtitle}". The infographic should include these key sections with their visuals:\n${keyPointsText}\n\nVisual style: ${styleDescription}\n\nDesign requirements: Clean infographic design with clear visual hierarchy, icons for each section, professional typography, data visualization elements where appropriate.${userInstr}`
+
+          const imagePath = await imagenService.generateSlideImage(imagePrompt, {
+            aspectRatio: args.aspectRatio === '1:1' ? '4:3' : args.aspectRatio,
+            contentId: generatedContentId,
+            slideNumber: 1,
+            referenceImagePath: args.customStyleImagePath,
+            shortSubject: `infographic about ${plan.title}`,
+            styleHint: args.customStyleImagePath ? styleDescription : undefined,
+          })
+
+          const currentDb = getDatabase()
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              data: { imagePath, plan, style: args.stylePresetId, aspectRatio: args.aspectRatio } as unknown as string,
+              status: 'completed',
+            })
+            .where(eq(schema.generatedContent.id, generatedContentId))
+
+          broadcastToWindows('infographic:complete', {
+            generatedContentId,
+            success: true,
+          })
+        } catch (err) {
+          const currentDb = getDatabase()
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              data: {
+                error: err instanceof Error ? err.message : 'Infographic generation failed',
+              } as unknown as string,
+              status: 'failed',
+            })
+            .where(eq(schema.generatedContent.id, generatedContentId))
+
+          broadcastToWindows('infographic:complete', {
+            generatedContentId,
+            success: false,
+            error: err instanceof Error ? err.message : 'Infographic generation failed',
+          })
+        }
+      })()
+
+      return { generatedContentId }
+    }
+  )
+
+  // White Paper — fire-and-forget pattern with image generation
+  ipcMain.handle(
+    IPC_CHANNELS.WHITEPAPER_START,
+    async (_event, args: {
+      notebookId: string
+      tone: 'academic' | 'business' | 'technical'
+      length: 'concise' | 'standard' | 'comprehensive'
+      stylePresetId: string
+      userInstructions?: string
+      customStyleImagePath?: string
+      customStyleColors?: string[]
+      customStyleDescription?: string
+    }) => {
+      const db = getDatabase()
+      const now = new Date().toISOString()
+      const generatedContentId = randomUUID()
+
+      const sources = await db
+        .select()
+        .from(schema.sources)
+        .where(eq(schema.sources.notebookId, args.notebookId))
+
+      const selectedSources = sources.filter((s) => s.isSelected)
+      if (selectedSources.length === 0) {
+        throw new Error('No sources selected. Please add and select at least one source.')
+      }
+
+      const sourceIds = selectedSources.map((s) => s.id)
+      const sourceTexts = selectedSources.map((s) => s.content)
+
+      // Resolve style
+      let styleDescription = ''
+      if (args.stylePresetId === 'custom-builder' && args.customStyleColors && args.customStyleDescription) {
+        const [bg, primary, accent, text] = args.customStyleColors
+        styleDescription = `with a ${bg} background, ${primary} as the primary accent color, ${accent} as the secondary accent color, ${text} for body text. ${args.customStyleDescription}. All elements share this exact same color scheme and visual style consistently`
+      } else {
+        const preset = STYLE_PRESETS.find((p) => p.id === args.stylePresetId)
+        styleDescription = preset ? preset.promptSuffix : 'with a clean, modern, professional design using subtle blue and white tones'
+      }
+
+      await db.insert(schema.generatedContent).values({
+        id: generatedContentId,
+        notebookId: args.notebookId,
+        type: 'whitepaper' as const,
+        title: `White Paper - ${new Date().toLocaleDateString()}`,
+        data: {} as unknown as string,
+        sourceIds: JSON.stringify(sourceIds),
+        status: 'generating' as const,
+        createdAt: now,
+      })
+
+      ;(async () => {
+        try {
+          // If custom style image was provided, extract style description
+          if (args.customStyleImagePath) {
+            broadcastToWindows('whitepaper:progress', {
+              generatedContentId,
+              stage: 'planning',
+              message: 'Analyzing reference image style...',
+            })
+            styleDescription = await aiService.describeImageStyle(args.customStyleImagePath)
+          }
+
+          // Phase A: Plan white paper content
+          broadcastToWindows('whitepaper:progress', {
+            generatedContentId,
+            stage: 'planning',
+            message: 'Planning white paper structure and content...',
+          })
+
+          const plan = await aiService.planWhitePaper(sourceTexts, {
+            tone: args.tone,
+            length: args.length,
+            userInstructions: args.userInstructions,
+          })
+
+          // Phase B: Generate cover image
+          broadcastToWindows('whitepaper:progress', {
+            generatedContentId,
+            stage: 'generating-cover',
+            message: 'Generating cover image...',
+          })
+
+          let coverImagePath: string | undefined
+          try {
+            const coverPrompt = `Create an elegant, professional white paper cover illustration. Topic: "${plan.title}". Style: ${styleDescription}. The image should be sophisticated and abstract — think high-end consulting report or academic publication cover. NO text, letters, or typography in the image. Clean, minimal, professional.`
+            coverImagePath = await imagenService.generateSlideImage(coverPrompt, {
+              aspectRatio: '16:9',
+              contentId: generatedContentId,
+              slideNumber: 0,
+              referenceImagePath: args.customStyleImagePath,
+              shortSubject: `abstract cover for ${plan.title}`,
+              styleHint: args.customStyleImagePath ? styleDescription : undefined,
+            })
+          } catch (err) {
+            console.warn('Cover image generation failed, continuing without:', err)
+          }
+
+          // Phase C: Generate section images
+          const sectionsWithImages: { number: string; title: string; content: string; imageDescription: string; imageCaption: string; imagePath?: string }[] = []
+          for (let i = 0; i < plan.sections.length; i++) {
+            const section = plan.sections[i]
+
+            broadcastToWindows('whitepaper:progress', {
+              generatedContentId,
+              stage: 'generating-images',
+              currentSection: i + 1,
+              totalSections: plan.sections.length,
+              message: `Generating illustration for section ${i + 1} of ${plan.sections.length}...`,
+            })
+
+            let imagePath: string | undefined
+            try {
+              const imagePrompt = `Create a professional illustration for a white paper section. ${section.imageDescription}. Visual style: ${styleDescription}. Make it look like a professional figure in a high-quality publication. NO text, letters, or typography in the image.`
+              imagePath = await imagenService.generateSlideImage(imagePrompt, {
+                aspectRatio: '16:9',
+                contentId: generatedContentId,
+                slideNumber: i + 1,
+                referenceImagePath: args.customStyleImagePath,
+                shortSubject: section.imageDescription.slice(0, 100),
+                styleHint: args.customStyleImagePath ? styleDescription : undefined,
+              })
+            } catch (err) {
+              console.warn(`Section ${i + 1} image failed, continuing without:`, err)
+            }
+
+            sectionsWithImages.push({
+              ...section,
+              imagePath,
+            })
+          }
+
+          // Save completed white paper
+          const currentDb = getDatabase()
+          const wpData = {
+            title: plan.title,
+            subtitle: plan.subtitle,
+            abstract: plan.abstract,
+            date: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+            tableOfContents: plan.tableOfContents,
+            sections: sectionsWithImages,
+            references: plan.references,
+            keyFindings: plan.keyFindings,
+            conclusion: plan.conclusion,
+            coverImagePath,
+            style: args.stylePresetId,
+          }
+
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              title: `White Paper: ${plan.title}`,
+              data: wpData as unknown as string,
+              status: 'completed',
+            })
+            .where(eq(schema.generatedContent.id, generatedContentId))
+
+          broadcastToWindows('whitepaper:complete', {
+            generatedContentId,
+            success: true,
+          })
+        } catch (err) {
+          const currentDb = getDatabase()
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              data: {
+                error: err instanceof Error ? err.message : 'White paper generation failed',
+              } as unknown as string,
+              status: 'failed',
+            })
+            .where(eq(schema.generatedContent.id, generatedContentId))
+
+          broadcastToWindows('whitepaper:complete', {
+            generatedContentId,
+            success: false,
+            error: err instanceof Error ? err.message : 'White paper generation failed',
+          })
+        }
+      })()
+
+      return { generatedContentId }
+    }
+  )
+
   // Image Slides — fire-and-forget pattern (like deep research)
   ipcMain.handle(
     IPC_CHANNELS.IMAGE_SLIDES_START,
@@ -180,6 +518,8 @@ export function registerStudioHandlers() {
       userInstructions?: string
       customStyleImagePath?: string
       renderMode?: 'full-image' | 'hybrid'
+      customStyleColors?: string[]
+      customStyleDescription?: string
     }) => {
       const renderMode = args.renderMode || 'full-image'
       const db = getDatabase()
@@ -200,8 +540,17 @@ export function registerStudioHandlers() {
       const sourceIds = selectedSources.map((s) => s.id)
       const sourceTexts = selectedSources.map((s) => s.content)
 
-      // Find style preset
-      const stylePreset = STYLE_PRESETS.find((p) => p.id === args.stylePresetId)
+      // Find style preset (or build custom)
+      let stylePreset: { promptSuffix: string; colorPalette: string[] } | undefined
+      if (args.stylePresetId === 'custom-builder' && args.customStyleColors && args.customStyleDescription) {
+        const [bg, primary, accent, text] = args.customStyleColors
+        stylePreset = {
+          promptSuffix: `with a ${bg} background, ${primary} as the primary accent color, ${accent} as the secondary accent color, ${text} for body text. ${args.customStyleDescription}. All slides share this exact same color scheme and visual style consistently`,
+          colorPalette: args.customStyleColors,
+        }
+      } else {
+        stylePreset = STYLE_PRESETS.find((p) => p.id === args.stylePresetId)
+      }
       if (!stylePreset) {
         throw new Error(`Unknown style preset: ${args.stylePresetId}`)
       }
@@ -222,7 +571,7 @@ export function registerStudioHandlers() {
       ;(async () => {
         try {
           // If custom style image was provided, extract style description
-          let styleDescription = stylePreset.promptSuffix
+          let styleDescription = stylePreset!.promptSuffix
           if (args.customStyleImagePath) {
             broadcastToWindows('image-slides:progress', {
               generatedContentId,
@@ -245,12 +594,13 @@ export function registerStudioHandlers() {
             sourceTexts,
             slideCount,
             args.format,
-            args.userInstructions
+            args.userInstructions,
+            renderMode
           )
 
           // Phase B: Generate each slide image
           const slides: { slideNumber: number; title: string; bullets: string[]; imagePath: string; speakerNotes: string }[] = []
-          const hybridSlides: { slideNumber: number; title: string; bullets: string[]; imagePath: string; speakerNotes: string; layout: string }[] = []
+          const hybridSlides: { slideNumber: number; title: string; bullets: string[]; imagePath: string; speakerNotes: string; layout: string; elementLayout?: { type: string; content: string; x: number; y: number; width: number; fontSize: number; align: string }[] }[] = []
 
           for (const plan of contentPlan) {
             broadcastToWindows('image-slides:progress', {
@@ -263,18 +613,34 @@ export function registerStudioHandlers() {
 
             try {
               let prompt: string
+              const isTitleSlide = plan.slideNumber === 1
+              const isCustomStyle = !!args.customStyleImagePath
               if (renderMode === 'hybrid') {
-                prompt = buildHybridSlidePrompt(
-                  styleDescription,
-                  plan.visualCue,
-                  plan.layout
-                )
+                if (isTitleSlide) {
+                  // Title slide: generate full image with text baked in (like full-image mode)
+                  prompt = buildSlidePrompt(
+                    plan.content,
+                    styleDescription,
+                    plan.layout,
+                    plan.visualCue,
+                    isCustomStyle
+                  )
+                } else {
+                  prompt = buildHybridSlidePrompt(
+                    styleDescription,
+                    plan.visualCue,
+                    plan.layout,
+                    false,
+                    isCustomStyle
+                  )
+                }
               } else {
                 prompt = buildSlidePrompt(
                   plan.content,
                   styleDescription,
                   plan.layout,
-                  plan.visualCue
+                  plan.visualCue,
+                  isCustomStyle
                 )
               }
 
@@ -282,6 +648,9 @@ export function registerStudioHandlers() {
                 aspectRatio: args.aspectRatio,
                 contentId: generatedContentId,
                 slideNumber: plan.slideNumber,
+                referenceImagePath: args.customStyleImagePath,
+                shortSubject: plan.visualCue || plan.title,
+                styleHint: isCustomStyle ? styleDescription : undefined,
               })
 
               if (renderMode === 'hybrid') {
@@ -292,6 +661,7 @@ export function registerStudioHandlers() {
                   imagePath,
                   speakerNotes: plan.speakerNotes,
                   layout: plan.layout,
+                  ...(plan.elementLayout ? { elementLayout: plan.elementLayout } : {}),
                 })
               } else {
                 slides.push({
@@ -327,6 +697,9 @@ export function registerStudioHandlers() {
             totalSlides: totalGenerated,
             contentPlan,
             renderMode,
+            ...(args.stylePresetId === 'custom-builder' && args.customStyleColors
+              ? { customPalette: args.customStyleColors }
+              : {}),
           }
           if (renderMode === 'hybrid') {
             dbData.hybridSlides = hybridSlides
@@ -402,6 +775,69 @@ export function registerStudioHandlers() {
         .update(schema.generatedContent)
         .set({ data: data as unknown as string })
         .where(eq(schema.generatedContent.id, args.generatedContentId))
+    }
+  )
+
+  // Export all slides as PDF
+  ipcMain.handle(
+    IPC_CHANNELS.STUDIO_EXPORT_PDF,
+    async (_event, args: { imagePaths: string[]; aspectRatio: '16:9' | '4:3'; defaultName: string }) => {
+      const { PDFDocument } = await import('pdf-lib')
+
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        defaultPath: args.defaultName,
+        filters: [{ name: 'PDF', extensions: ['pdf'] }],
+      })
+
+      if (canceled || !filePath) {
+        return { success: false }
+      }
+
+      const pdfDoc = await PDFDocument.create()
+
+      // Page dimensions in points (72pt/inch)
+      const isWide = args.aspectRatio === '16:9'
+      const pageWidth = isWide ? 960 : 720
+      const pageHeight = isWide ? 540 : 540
+
+      for (const imgPath of args.imagePaths) {
+        try {
+          const imgBytes = await readFile(imgPath)
+
+          // Detect actual image format from magic bytes
+          const isPng = imgBytes[0] === 0x89 && imgBytes[1] === 0x50 && imgBytes[2] === 0x4e && imgBytes[3] === 0x47
+          const isJpeg = imgBytes[0] === 0xff && imgBytes[1] === 0xd8
+
+          let image
+          if (isPng) {
+            image = await pdfDoc.embedPng(imgBytes)
+          } else if (isJpeg) {
+            image = await pdfDoc.embedJpg(imgBytes)
+          } else {
+            // Try both — PNG first, then JPEG
+            try {
+              image = await pdfDoc.embedPng(imgBytes)
+            } catch {
+              image = await pdfDoc.embedJpg(imgBytes)
+            }
+          }
+
+          const page = pdfDoc.addPage([pageWidth, pageHeight])
+          page.drawImage(image, {
+            x: 0,
+            y: 0,
+            width: pageWidth,
+            height: pageHeight,
+          })
+        } catch (err) {
+          console.error(`Failed to embed slide image: ${imgPath}`, err)
+        }
+      }
+
+      const pdfBytes = await pdfDoc.save()
+      await writeFile(filePath, pdfBytes)
+
+      return { success: true, filePath }
     }
   )
 }

@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { BookmarkPlus, Copy, Check } from 'lucide-react'
 import type { ChatMessage as ChatMessageType } from '@shared/types'
+import { parseArtifacts } from '../../utils/artifactParser'
+import { ChatArtifactTable } from './ChatArtifactTable'
+import { ChatArtifactChart } from './ChatArtifactChart'
+import { ChatArtifactMermaid } from './ChatArtifactMermaid'
+import { ChatArtifactKanban } from './ChatArtifactKanban'
+import { ChatArtifactKpi } from './ChatArtifactKpi'
+import { ChatArtifactTimeline } from './ChatArtifactTimeline'
 
 interface ChatMessageProps {
   message: ChatMessageType
@@ -157,10 +164,34 @@ export function ChatMessage({ message, onSaveToNote }: ChatMessageProps) {
         {isUser ? (
           <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
         ) : (
-          <div
-            className="chat-markdown"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
-          />
+          <div className="chat-markdown">
+            {parseArtifacts(message.content).map((seg, i) => {
+              if (seg.type === 'artifact-table') {
+                return <ChatArtifactTable key={i} data={seg.data} />
+              }
+              if (seg.type === 'artifact-chart') {
+                return <ChatArtifactChart key={i} data={seg.data} />
+              }
+              if (seg.type === 'artifact-mermaid') {
+                return <ChatArtifactMermaid key={i} data={seg.data} />
+              }
+              if (seg.type === 'artifact-kanban') {
+                return <ChatArtifactKanban key={i} data={seg.data} />
+              }
+              if (seg.type === 'artifact-kpi') {
+                return <ChatArtifactKpi key={i} data={seg.data} />
+              }
+              if (seg.type === 'artifact-timeline') {
+                return <ChatArtifactTimeline key={i} data={seg.data} />
+              }
+              return (
+                <div
+                  key={i}
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(seg.content) }}
+                />
+              )
+            })}
+          </div>
         )}
 
         {/* Citations */}

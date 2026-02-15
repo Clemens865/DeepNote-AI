@@ -1,4 +1,4 @@
-import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement } from './index'
+import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion } from './index'
 
 export const IPC_CHANNELS = {
   // Notebooks
@@ -42,6 +42,15 @@ export const IPC_CHANNELS = {
   STUDIO_DELETE: 'studio:delete',
   STUDIO_RENAME: 'studio:rename',
 
+  // Studio (report format suggestions)
+  STUDIO_SUGGEST_FORMATS: 'studio:suggestFormats',
+
+  // Studio (infographic)
+  INFOGRAPHIC_START: 'infographic:start',
+
+  // Studio (white paper)
+  WHITEPAPER_START: 'whitepaper:start',
+
   // Config
   CONFIG_GET_API_KEY: 'config:getApiKey',
   CONFIG_SET_API_KEY: 'config:setApiKey',
@@ -49,6 +58,7 @@ export const IPC_CHANNELS = {
 
   // Save file (copy local file to user-chosen destination)
   STUDIO_SAVE_FILE: 'studio:saveFile',
+  STUDIO_EXPORT_PDF: 'studio:exportPdf',
 
   // Dialog
   DIALOG_OPEN_FILE: 'dialog:openFile',
@@ -71,6 +81,9 @@ export const IPC_CHANNELS = {
 
   // Editor AI
   EDITOR_AI_REWRITE: 'editor:ai-rewrite',
+
+  // Global Search
+  SEARCH_GLOBAL: 'search:global',
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
@@ -127,6 +140,36 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.STUDIO_LIST]: { args: [string]; return: GeneratedContent[] }
   [IPC_CHANNELS.STUDIO_DELETE]: { args: [string]; return: void }
   [IPC_CHANNELS.STUDIO_RENAME]: { args: [string, string]; return: void }
+  [IPC_CHANNELS.STUDIO_SUGGEST_FORMATS]: { args: [string]; return: ReportFormatSuggestion[] }
+
+  // Infographic
+  [IPC_CHANNELS.INFOGRAPHIC_START]: {
+    args: [{
+      notebookId: string
+      stylePresetId: string
+      aspectRatio: '16:9' | '4:3' | '1:1'
+      userInstructions?: string
+      customStyleImagePath?: string
+      customStyleColors?: string[]
+      customStyleDescription?: string
+    }]
+    return: { generatedContentId: string }
+  }
+
+  // White Paper
+  [IPC_CHANNELS.WHITEPAPER_START]: {
+    args: [{
+      notebookId: string
+      tone: 'academic' | 'business' | 'technical'
+      length: 'concise' | 'standard' | 'comprehensive'
+      stylePresetId: string
+      userInstructions?: string
+      customStyleImagePath?: string
+      customStyleColors?: string[]
+      customStyleDescription?: string
+    }]
+    return: { generatedContentId: string }
+  }
 
   // Notebooks (extra)
   [IPC_CHANNELS.NOTEBOOKS_EXPORT]: {
@@ -151,6 +194,8 @@ export interface IpcHandlerMap {
       userInstructions?: string
       customStyleImagePath?: string
       renderMode?: SlideRenderMode
+      customStyleColors?: string[]
+      customStyleDescription?: string
     }]
     return: { generatedContentId: string }
   }
@@ -167,6 +212,10 @@ export interface IpcHandlerMap {
   // Save file
   [IPC_CHANNELS.STUDIO_SAVE_FILE]: {
     args: [{ sourcePath: string; defaultName: string }]
+    return: { success: boolean; filePath?: string }
+  }
+  [IPC_CHANNELS.STUDIO_EXPORT_PDF]: {
+    args: [{ imagePaths: string[]; aspectRatio: '16:9' | '4:3'; defaultName: string }]
     return: { success: boolean; filePath?: string }
   }
 
@@ -238,5 +287,21 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.EDITOR_AI_REWRITE]: {
     args: [{ selectedText: string; instruction: string; fullContent: string; filePath: string }]
     return: { rewrittenText: string }
+  }
+
+  // Global Search
+  [IPC_CHANNELS.SEARCH_GLOBAL]: {
+    args: [{ query: string; notebookIds?: string[]; limit?: number }]
+    return: {
+      results: {
+        notebookId: string
+        notebookTitle: string
+        sourceId: string
+        sourceTitle: string
+        text: string
+        score: number
+        pageNumber?: number
+      }[]
+    }
   }
 }
