@@ -267,6 +267,69 @@ const api = {
   editorAiRewrite: (args: { selectedText: string; instruction: string; fullContent: string; filePath: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.EDITOR_AI_REWRITE, args),
 
+  // Memory
+  memoryList: (notebookId?: string | null) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MEMORY_LIST, notebookId),
+  memoryDelete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.MEMORY_DELETE, id),
+  memoryClear: (notebookId?: string | null) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MEMORY_CLEAR, notebookId),
+
+  // Studio generation progress (pipeline)
+  onStudioGenerationProgress: (
+    callback: (data: { generatedContentId: string; stage: string; message: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; stage: string; message: string }
+    ) => callback(data)
+    ipcRenderer.on('studio:generation-progress', handler)
+    return () => {
+      ipcRenderer.removeListener('studio:generation-progress', handler)
+    }
+  },
+
+  // Chat-to-Source
+  chatGenerateFromContext: (args: { notebookId: string; content: string; type: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CHAT_GENERATE_FROM_CONTEXT, args),
+
+  // Source Recommendations
+  sourceRecommendations: (args: { notebookId: string; sourceId: string; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SOURCES_RECOMMENDATIONS, args),
+
+  // Clipboard Quick-Capture
+  clipboardHistory: () => ipcRenderer.invoke(IPC_CHANNELS.CLIPBOARD_HISTORY),
+  clipboardAddToNotebook: (args: { notebookId: string; text: string; title?: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CLIPBOARD_ADD_TO_NOTEBOOK, args),
+  onClipboardCaptured: (callback: (data: { text: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { text: string }) => callback(data)
+    ipcRenderer.on('clipboard:captured', handler)
+    return () => {
+      ipcRenderer.removeListener('clipboard:captured', handler)
+    }
+  },
+
+  // Voice Q&A
+  voiceStart: (args: { notebookId: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.VOICE_START, args),
+  voiceSendAudio: (args: { sessionId: string; audioData: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.VOICE_SEND_AUDIO, args),
+  voiceStop: (args: { sessionId: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.VOICE_STOP, args),
+  onVoiceResponseText: (callback: (data: { sessionId: string; text: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { sessionId: string; text: string }) => callback(data)
+    ipcRenderer.on('voice:response-text', handler)
+    return () => {
+      ipcRenderer.removeListener('voice:response-text', handler)
+    }
+  },
+  onVoiceResponseAudio: (callback: (data: { sessionId: string; audioPath: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { sessionId: string; audioPath: string }) => callback(data)
+    ipcRenderer.on('voice:response-audio', handler)
+    return () => {
+      ipcRenderer.removeListener('voice:response-audio', handler)
+    }
+  },
+
   // Global Search
   globalSearch: (args: { query: string; notebookIds?: string[]; limit?: number }) =>
     ipcRenderer.invoke(IPC_CHANNELS.SEARCH_GLOBAL, args),

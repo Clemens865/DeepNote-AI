@@ -1,5 +1,8 @@
 import { GoogleGenAI } from '@google/genai'
 import { configService } from './config'
+import { generateWithValidation, resetMiddlewareClient } from './aiMiddleware'
+import { shouldUsePipeline, executePipeline } from './generationPipeline'
+import { memoryService } from './memory'
 import type { SlideContentPlan, ReportFormatSuggestion, WhitePaperReference } from '../../shared/types'
 
 let client: GoogleGenAI | null = null
@@ -15,12 +18,14 @@ function getClient(): GoogleGenAI {
 
 export function resetAiClient(): void {
   client = null
+  resetMiddlewareClient()
 }
 
-function buildSystemPrompt(
+async function buildSystemPrompt(
   context: string,
-  notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean }
-): string {
+  notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
+  notebookId?: string
+): Promise<string> {
   let systemPrompt = `You are a helpful AI assistant analyzing the user's sources in a notebook application.`
   if (notebook?.description) {
     systemPrompt += `\nNotebook description: ${notebook.description}`
@@ -93,6 +98,19 @@ TIMELINE FORMAT — renders as a horizontal scrollable timeline with date marker
         ? 'Provide a detailed, comprehensive response.'
         : 'Provide a moderately detailed response.'
   systemPrompt += `\n\n${lengthHint}`
+
+  // Inject cross-session memory context
+  if (notebookId) {
+    try {
+      const memoryContext = await memoryService.buildMemoryContext(notebookId)
+      if (memoryContext) {
+        systemPrompt += memoryContext
+      }
+    } catch {
+      // Non-critical — continue without memory
+    }
+  }
+
   return systemPrompt
 }
 
@@ -100,10 +118,11 @@ export class AiService {
   async chat(
     messages: { role: string; content: string }[],
     context: string,
-    notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean }
+    notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
+    notebookId?: string
   ): Promise<string> {
     const ai = getClient()
-    const systemPrompt = buildSystemPrompt(context, notebook)
+    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId)
 
     const contents = messages.map((m) => ({
       role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
@@ -123,10 +142,11 @@ export class AiService {
     messages: { role: string; content: string }[],
     context: string,
     notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
-    onChunk?: (text: string) => void
+    onChunk?: (text: string) => void,
+    notebookId?: string
   ): Promise<string> {
     const ai = getClient()
-    const systemPrompt = buildSystemPrompt(context, notebook)
+    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId)
 
     const contents = messages.map((m) => ({
       role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
@@ -177,7 +197,6 @@ export class AiService {
     sourceTexts: string[],
     options?: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
-    const ai = getClient()
     const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 100000)
     const userDescription = options?.description ? `\nUser instructions: ${options.description}` : ''
 
@@ -481,19 +500,13 @@ Output ONLY valid JSON, no markdown fences.`
         throw new Error(`Unsupported content type: ${type}`)
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    })
-
-    const responseText = response.text ?? '{}'
-
-    const cleaned = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    try {
-      return JSON.parse(cleaned)
-    } catch {
-      return { raw: responseText }
+    // Use multi-agent pipeline for complex types
+    if (shouldUsePipeline(type)) {
+      return executePipeline(type, prompt, sourceTexts, options)
     }
+
+    // Use validation middleware for all other types
+    return generateWithValidation(type, prompt, sourceTexts, options)
   }
 
   async generatePodcastScript(

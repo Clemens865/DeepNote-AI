@@ -94,6 +94,18 @@ function initializeDatabase() {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS user_memory (
+      id TEXT PRIMARY KEY,
+      notebook_id TEXT REFERENCES notebooks(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      key TEXT NOT NULL,
+      value TEXT NOT NULL,
+      confidence REAL DEFAULT 0.5,
+      last_used_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS workspace_files (
       id TEXT PRIMARY KEY,
       notebook_id TEXT NOT NULL REFERENCES notebooks(id) ON DELETE CASCADE,

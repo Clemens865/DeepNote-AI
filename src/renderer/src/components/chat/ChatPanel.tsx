@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ChatInput } from './ChatInput'
 import { ChatMessage } from './ChatMessage'
+import { VoiceOverlay } from './VoiceOverlay'
 import { Spinner } from '../common/Spinner'
 import { useNotebookStore } from '../../stores/notebookStore'
 import {
@@ -15,6 +16,7 @@ import {
   KanbanSquare,
   Gauge,
   Clock,
+  Mic,
 } from 'lucide-react'
 import type { ChatMessage as ChatMessageType, SourceType } from '@shared/types'
 
@@ -49,6 +51,7 @@ export function ChatPanel() {
   const [researchProgress, setResearchProgress] = useState<string | null>(null)
   const [uploadingFile, setUploadingFile] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [showVoice, setShowVoice] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
   const researchCleanupRef = useRef<Array<() => void>>([])
@@ -205,6 +208,58 @@ export function ChatPanel() {
       title,
       content,
     })
+    setToast({ message: 'Saved as note', type: 'success' })
+    setTimeout(() => setToast(null), 2000)
+  }
+
+  const handleSaveAsSource = async (content: string) => {
+    if (!currentNotebook) return
+    const title = content.slice(0, 60).replace(/[#*`\n]/g, '').trim() || 'AI Response'
+    try {
+      await window.api.addSource({
+        notebookId: currentNotebook.id,
+        type: 'paste',
+        content,
+        title: `Chat: ${title}`,
+      })
+      const updatedSources = await window.api.listSources(currentNotebook.id)
+      setSources(updatedSources)
+      setToast({ message: 'Saved as source', type: 'success' })
+    } catch {
+      setToast({ message: 'Failed to save as source', type: 'error' })
+    }
+    setTimeout(() => setToast(null), 2000)
+  }
+
+  const handleSaveToWorkspace = async (content: string) => {
+    if (!currentNotebook?.workspaceRootPath) return
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    try {
+      await window.api.workspaceCreateFile({
+        notebookId: currentNotebook.id,
+        relativePath: `ai-response-${timestamp}.md`,
+        content,
+      })
+      setToast({ message: 'Saved to workspace', type: 'success' })
+    } catch {
+      setToast({ message: 'Failed to save to workspace', type: 'error' })
+    }
+    setTimeout(() => setToast(null), 2000)
+  }
+
+  const handleGenerateFrom = async (content: string) => {
+    if (!currentNotebook) return
+    try {
+      await window.api.chatGenerateFromContext({
+        notebookId: currentNotebook.id,
+        content,
+        type: 'report',
+      })
+      setToast({ message: 'Generated report from chat response', type: 'success' })
+    } catch {
+      setToast({ message: 'Generation failed', type: 'error' })
+    }
+    setTimeout(() => setToast(null), 3000)
   }
 
   const handleFileUpload = async () => {
@@ -306,7 +361,14 @@ export function ChatPanel() {
           ) : (
             <div className="space-y-6">
               {messages.map((msg) => (
-                <ChatMessage key={msg.id} message={msg} onSaveToNote={handleSaveToNote} />
+                <ChatMessage
+                  key={msg.id}
+                  message={msg}
+                  onSaveToNote={handleSaveToNote}
+                  onSaveAsSource={handleSaveAsSource}
+                  onSaveToWorkspace={currentNotebook?.workspaceRootPath ? handleSaveToWorkspace : undefined}
+                  onGenerateFrom={handleGenerateFrom}
+                />
               ))}
               {sending && messages[messages.length - 1]?.content === '' && (
                 <div className="flex justify-start">
@@ -363,8 +425,24 @@ export function ChatPanel() {
         </div>
       )}
 
-      {/* Chat input */}
-      <ChatInput onSend={handleSend} disabled={sending} onUpload={handleFileUpload} uploadingFile={uploadingFile} />
+      {/* Chat input with mic button */}
+      <div className="flex items-end gap-2 max-w-3xl mx-auto w-full px-6">
+        <div className="flex-1">
+          <ChatInput onSend={handleSend} disabled={sending} onUpload={handleFileUpload} uploadingFile={uploadingFile} />
+        </div>
+        <button
+          onClick={() => setShowVoice(true)}
+          className="mb-3 p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/15 transition-colors"
+          title="Voice Q&A"
+        >
+          <Mic size={18} />
+        </button>
+      </div>
+
+      {/* Voice overlay */}
+      {showVoice && currentNotebook && (
+        <VoiceOverlay notebookId={currentNotebook.id} onClose={() => setShowVoice(false)} />
+      )}
 
       {/* Toast notification */}
       {toast && (

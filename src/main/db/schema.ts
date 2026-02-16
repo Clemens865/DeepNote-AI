@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
 
 export const notebooks = sqliteTable('notebooks', {
   id: text('id').primaryKey(),
@@ -69,6 +69,18 @@ export const generatedContent = sqliteTable('generated_content', {
   sourceIds: text('source_ids', { mode: 'json' }).notNull().default('[]'),
   status: text('status', { enum: ['pending', 'generating', 'completed', 'failed'] }).notNull().default('pending'),
   createdAt: text('created_at').notNull(),
+})
+
+export const userMemory = sqliteTable('user_memory', {
+  id: text('id').primaryKey(),
+  notebookId: text('notebook_id').references(() => notebooks.id, { onDelete: 'cascade' }),
+  type: text('type', { enum: ['preference', 'learning', 'context', 'feedback'] }).notNull(),
+  key: text('key').notNull(),
+  value: text('value').notNull(),
+  confidence: real('confidence').default(0.5),
+  lastUsedAt: text('last_used_at').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
 })
 
 export const workspaceFiles = sqliteTable('workspace_files', {

@@ -1,4 +1,4 @@
-import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion } from './index'
+import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation } from './index'
 
 export const IPC_CHANNELS = {
   // Notebooks
@@ -83,6 +83,26 @@ export const IPC_CHANNELS = {
 
   // Editor AI
   EDITOR_AI_REWRITE: 'editor:ai-rewrite',
+
+  // Memory
+  MEMORY_LIST: 'memory:list',
+  MEMORY_DELETE: 'memory:delete',
+  MEMORY_CLEAR: 'memory:clear',
+
+  // Chat-to-Source
+  CHAT_GENERATE_FROM_CONTEXT: 'chat:generateFromContext',
+
+  // Source Recommendations
+  SOURCES_RECOMMENDATIONS: 'sources:recommendations',
+
+  // Clipboard Quick-Capture
+  CLIPBOARD_HISTORY: 'clipboard:history',
+  CLIPBOARD_ADD_TO_NOTEBOOK: 'clipboard:addToNotebook',
+
+  // Voice Q&A
+  VOICE_START: 'voice:start',
+  VOICE_SEND_AUDIO: 'voice:sendAudio',
+  VOICE_STOP: 'voice:stop',
 
   // Global Search
   SEARCH_GLOBAL: 'search:global',
@@ -322,4 +342,33 @@ export interface IpcHandlerMap {
       }[]
     }
   }
+
+  // Memory
+  [IPC_CHANNELS.MEMORY_LIST]: { args: [string | null | undefined]; return: UserMemory[] }
+  [IPC_CHANNELS.MEMORY_DELETE]: { args: [string]; return: void }
+  [IPC_CHANNELS.MEMORY_CLEAR]: { args: [string | null | undefined]; return: void }
+
+  // Chat-to-Source
+  [IPC_CHANNELS.CHAT_GENERATE_FROM_CONTEXT]: {
+    args: [{ notebookId: string; content: string; type: string }]
+    return: GeneratedContent
+  }
+
+  // Source Recommendations
+  [IPC_CHANNELS.SOURCES_RECOMMENDATIONS]: {
+    args: [{ notebookId: string; sourceId: string; limit?: number }]
+    return: SourceRecommendation[]
+  }
+
+  // Clipboard
+  [IPC_CHANNELS.CLIPBOARD_HISTORY]: { args: []; return: string[] }
+  [IPC_CHANNELS.CLIPBOARD_ADD_TO_NOTEBOOK]: {
+    args: [{ notebookId: string; text: string; title?: string }]
+    return: Source
+  }
+
+  // Voice
+  [IPC_CHANNELS.VOICE_START]: { args: [{ notebookId: string }]; return: { sessionId: string } }
+  [IPC_CHANNELS.VOICE_SEND_AUDIO]: { args: [{ sessionId: string; audioData: string }]; return: void }
+  [IPC_CHANNELS.VOICE_STOP]: { args: [{ sessionId: string }]; return: void }
 }

@@ -5,6 +5,7 @@ import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { getDatabase, schema } from '../db'
 import { ragService } from '../services/rag'
 import { aiService } from '../services/ai'
+import { memoryService } from '../services/memory'
 
 export function registerChatHandlers() {
   ipcMain.handle(IPC_CHANNELS.CHAT_MESSAGES, async (_event, notebookId: string) => {
@@ -68,7 +69,8 @@ export function registerChatHandlers() {
           args.notebookId,
           args.message,
           selectedSourceIds,
-          sourceTitleMap
+          sourceTitleMap,
+          { agentic: true }
         )
         context = ragResult.context
         citations = ragResult.citations
@@ -113,7 +115,7 @@ export function registerChatHandlers() {
         hasSpreadsheetSources,
       }, (chunk) => {
         _event.sender.send('chat:stream-chunk', { messageId: assistantId, chunk })
-      })
+      }, args.notebookId)
     } catch (err) {
       responseText = `Error: ${err instanceof Error ? err.message : 'Failed to generate response. Please check your API key in Settings.'}`
       citations = []
@@ -133,8 +135,71 @@ export function registerChatHandlers() {
       citations: JSON.stringify(assistantMessage.citations),
     })
 
+    // Fire-and-forget: extract memories from conversation
+    memoryService.extractMemoriesFromChat(
+      args.notebookId,
+      recentHistory.concat([{ role: 'assistant', content: responseText }])
+    ).catch((err) => console.warn('[Chat] Memory extraction failed:', err))
+
     return assistantMessage
   })
+
+  // Chat-to-Source: generate content from a chat response
+  ipcMain.handle(
+    IPC_CHANNELS.CHAT_GENERATE_FROM_CONTEXT,
+    async (_event, args: { notebookId: string; content: string; type: string }) => {
+      const db = getDatabase()
+      const now = new Date().toISOString()
+
+      // Create a temporary paste source from the chat content
+      const sourceId = randomUUID()
+      await db.insert(schema.sources).values({
+        id: sourceId,
+        notebookId: args.notebookId,
+        title: `Chat Context - ${new Date().toLocaleString()}`,
+        filename: null,
+        type: 'paste',
+        content: args.content,
+        rawFilePath: null,
+        isSelected: true,
+        sourceGuide: null,
+        createdAt: now,
+      })
+
+      // Generate content using the chat context as source
+      const result = await aiService.generateContent(args.type, [args.content])
+
+      const contentId = randomUUID()
+      const TYPE_TITLES: Record<string, string> = {
+        report: 'Report', quiz: 'Quiz', flashcard: 'Flashcards', mindmap: 'Mind Map',
+        datatable: 'Data Table', slides: 'Slide Deck', dashboard: 'Dashboard',
+        'literature-review': 'Literature Review', 'competitive-analysis': 'Competitive Analysis',
+      }
+
+      const record = {
+        id: contentId,
+        notebookId: args.notebookId,
+        type: args.type as 'report',
+        title: `${TYPE_TITLES[args.type] || args.type} from Chat - ${new Date().toLocaleDateString()}`,
+        data: JSON.stringify(result),
+        sourceIds: JSON.stringify([sourceId]),
+        status: 'completed' as const,
+        createdAt: now,
+      }
+      await db.insert(schema.generatedContent).values(record)
+
+      return {
+        id: contentId,
+        notebookId: args.notebookId,
+        type: args.type,
+        title: record.title,
+        data: result,
+        sourceIds: [sourceId],
+        status: 'completed',
+        createdAt: now,
+      }
+    }
+  )
 
   ipcMain.handle(IPC_CHANNELS.CHAT_CLEAR, async (_event, notebookId: string) => {
     const db = getDatabase()

@@ -8,6 +8,7 @@ import { getDatabase, schema } from '../db'
 import { aiService } from '../services/ai'
 import { ttsService } from '../services/tts'
 import { imagenService, STYLE_PRESETS, buildSlidePrompt, buildHybridSlidePrompt } from '../services/imagen'
+import { shouldUsePipeline } from '../services/generationPipeline'
 
 const TYPE_TITLES: Record<string, string> = {
   report: 'Report',
@@ -85,7 +86,15 @@ export function registerStudioHandlers() {
           duration,
         }
       } else {
-        // Generate content via AI
+        // Broadcast pipeline progress for complex types
+        if (shouldUsePipeline(args.type)) {
+          broadcastToWindows('studio:generation-progress', {
+            generatedContentId: id,
+            stage: 'researching',
+            message: 'Researching sources...',
+          })
+        }
+        // Generate content via AI (uses pipeline for complex types, middleware for simple)
         generatedData = await aiService.generateContent(args.type, sourceTexts, args.options)
       }
 

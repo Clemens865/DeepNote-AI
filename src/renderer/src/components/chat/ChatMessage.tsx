@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookmarkPlus, Copy, Check } from 'lucide-react'
+import { BookmarkPlus, Copy, Check, FileText, FolderPlus, Sparkles } from 'lucide-react'
 import type { ChatMessage as ChatMessageType } from '@shared/types'
 import { parseArtifacts } from '../../utils/artifactParser'
 import { ChatArtifactTable } from './ChatArtifactTable'
@@ -12,6 +12,9 @@ import { ChatArtifactTimeline } from './ChatArtifactTimeline'
 interface ChatMessageProps {
   message: ChatMessageType
   onSaveToNote?: (content: string) => void
+  onSaveAsSource?: (content: string) => void
+  onSaveToWorkspace?: (content: string) => void
+  onGenerateFrom?: (content: string) => void
 }
 
 function escapeHtml(text: string): string {
@@ -125,10 +128,12 @@ function renderMarkdown(text: string): string {
   return html
 }
 
-export function ChatMessage({ message, onSaveToNote }: ChatMessageProps) {
+export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWorkspace, onGenerateFrom }: ChatMessageProps) {
   const isUser = message.role === 'user'
   const [copied, setCopied] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [savedSource, setSavedSource] = useState(false)
+  const [savedWorkspace, setSavedWorkspace] = useState(false)
 
   const citations = Array.isArray(message.citations)
     ? message.citations
@@ -150,6 +155,22 @@ export function ChatMessage({ message, onSaveToNote }: ChatMessageProps) {
     onSaveToNote?.(message.content)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleSaveAsSource = () => {
+    onSaveAsSource?.(message.content)
+    setSavedSource(true)
+    setTimeout(() => setSavedSource(false), 2000)
+  }
+
+  const handleSaveToWorkspace = () => {
+    onSaveToWorkspace?.(message.content)
+    setSavedWorkspace(true)
+    setTimeout(() => setSavedWorkspace(false), 2000)
+  }
+
+  const handleGenerateFrom = () => {
+    onGenerateFrom?.(message.content)
   }
 
   return (
@@ -230,7 +251,34 @@ export function ChatMessage({ message, onSaveToNote }: ChatMessageProps) {
                 className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
               >
                 {saved ? <Check size={12} /> : <BookmarkPlus size={12} />}
-                {saved ? 'Saved!' : 'Save to note'}
+                {saved ? 'Saved!' : 'Note'}
+              </button>
+            )}
+            {onSaveAsSource && (
+              <button
+                onClick={handleSaveAsSource}
+                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+              >
+                {savedSource ? <Check size={12} /> : <FileText size={12} />}
+                {savedSource ? 'Added!' : 'Source'}
+              </button>
+            )}
+            {onSaveToWorkspace && (
+              <button
+                onClick={handleSaveToWorkspace}
+                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+              >
+                {savedWorkspace ? <Check size={12} /> : <FolderPlus size={12} />}
+                {savedWorkspace ? 'Saved!' : 'Workspace'}
+              </button>
+            )}
+            {onGenerateFrom && (
+              <button
+                onClick={handleGenerateFrom}
+                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors"
+              >
+                <Sparkles size={12} />
+                Generate
               </button>
             )}
             <button

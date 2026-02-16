@@ -4,6 +4,7 @@ import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { getDatabase, schema } from '../db'
 import { vectorStoreService } from '../services/vectorStore'
 import { ingestSource } from '../services/sourceIngestion'
+import { recommendationsService } from '../services/recommendations'
 import type { SourceType } from '../../shared/types'
 
 export function registerSourceHandlers() {
@@ -58,4 +59,16 @@ export function registerSourceHandlers() {
     const rows = await db.select().from(schema.sources).where(eq(schema.sources.id, id))
     return rows[0]
   })
+
+  // Source Recommendations — find related sources across notebooks
+  ipcMain.handle(
+    IPC_CHANNELS.SOURCES_RECOMMENDATIONS,
+    async (_event, args: { notebookId: string; sourceId: string; limit?: number }) => {
+      return recommendationsService.findRelatedSources(
+        args.notebookId,
+        args.sourceId,
+        args.limit ?? 5
+      )
+    }
+  )
 }

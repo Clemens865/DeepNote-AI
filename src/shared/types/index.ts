@@ -281,6 +281,35 @@ export interface ReportFormatSuggestion {
   prompt: string
 }
 
+// User Memory (cross-session)
+export interface UserMemory {
+  id: string
+  notebookId: string | null
+  type: 'preference' | 'learning' | 'context' | 'feedback'
+  key: string
+  value: string
+  confidence: number
+  lastUsedAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+// Source Recommendations
+export interface SourceRecommendation {
+  notebookId: string
+  notebookTitle: string
+  sourceId: string
+  sourceTitle: string
+  score: number
+}
+
+// Studio generation pipeline progress
+export interface StudioGenerationProgress {
+  generatedContentId: string
+  stage: 'researching' | 'writing' | 'reviewing' | 'revising' | 'complete'
+  message: string
+}
+
 export type GeneratedContentStatus = 'pending' | 'generating' | 'completed' | 'failed'
 
 export interface GeneratedContent {

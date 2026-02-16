@@ -4,10 +4,12 @@ import { readFileSync, writeFileSync, existsSync } from 'fs'
 
 interface AppConfig {
   apiKey: string
+  embeddingsModel: 'auto' | 'gemini' | 'local'
 }
 
 const defaultConfig: AppConfig = {
   apiKey: '',
+  embeddingsModel: 'auto',
 }
 
 function getConfigPath(): string {
@@ -37,6 +39,16 @@ export class ConfigService {
   setApiKey(key: string): void {
     const config = readConfig()
     config.apiKey = key.trim()
+    writeConfig(config)
+  }
+
+  getEmbeddingsModel(): 'auto' | 'gemini' | 'local' {
+    return readConfig().embeddingsModel || 'auto'
+  }
+
+  setEmbeddingsModel(model: 'auto' | 'gemini' | 'local'): void {
+    const config = readConfig()
+    config.embeddingsModel = model
     writeConfig(config)
   }
 

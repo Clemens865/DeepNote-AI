@@ -14,9 +14,13 @@ import { registerConfigHandlers } from './ipc/config'
 import { registerResearchHandlers } from './ipc/research'
 import { registerWorkspaceHandlers } from './ipc/workspace'
 import { registerSearchHandlers } from './ipc/search'
+import { registerMemoryHandlers } from './ipc/memory'
+import { registerClipboardHandlers } from './ipc/clipboard'
+import { registerVoiceHandlers } from './ipc/voice'
+import { trayService } from './services/tray'
 import { fileWatcherService } from './services/fileWatcher'
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -47,6 +51,8 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return mainWindow
 }
 
 // Register custom protocol for serving local files (slides, audio, etc.)
@@ -86,8 +92,14 @@ app.whenReady().then(() => {
   registerResearchHandlers()
   registerWorkspaceHandlers()
   registerSearchHandlers()
+  registerMemoryHandlers()
+  registerClipboardHandlers()
+  registerVoiceHandlers()
 
-  createWindow()
+  const appWindow = createWindow()
+
+  // Initialize tray after window is created
+  trayService.init(appWindow)
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -101,6 +113,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  trayService.destroy()
   fileWatcherService.stopAll()
   databaseService.close()
   vectorStoreService.close()

@@ -1,5 +1,6 @@
 import { embeddingsService } from './embeddings'
 import { vectorStoreService } from './vectorStore'
+import { agenticQuery } from './agenticRag'
 import type { Citation } from '../../shared/types'
 
 interface RagResult {
@@ -7,13 +8,28 @@ interface RagResult {
   citations: Citation[]
 }
 
+export interface RagOptions {
+  agentic?: boolean
+}
+
 export class RagService {
   async query(
     notebookId: string,
     question: string,
     selectedSourceIds?: string[],
-    sourceTitleMap?: Record<string, string>
+    sourceTitleMap?: Record<string, string>,
+    options?: RagOptions
   ): Promise<RagResult> {
+    // Use agentic RAG when enabled (default for chat)
+    if (options?.agentic) {
+      try {
+        return await agenticQuery(notebookId, question, selectedSourceIds, sourceTitleMap)
+      } catch (err) {
+        console.warn('[RAG] Agentic query failed, falling back to standard:', err)
+      }
+    }
+
+    // Standard single-query RAG
     const queryVector = await embeddingsService.embedQuery(question)
 
     const results = await vectorStoreService.search(
