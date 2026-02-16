@@ -647,6 +647,14 @@ Remember: output EXACTLY ${slideCount} slide objects in the array.`
     try {
       const plans = JSON.parse(cleaned)
       if (!Array.isArray(plans)) throw new Error('Expected array')
+
+      // Ensure every slide has a non-empty content field
+      for (const plan of plans) {
+        if (!plan.content || !plan.content.trim()) {
+          plan.content = [plan.title || '', '', ...(plan.bullets || [])].join('\n')
+        }
+      }
+
       return plans
     } catch {
       throw new Error('Failed to parse slide content plan from AI response')

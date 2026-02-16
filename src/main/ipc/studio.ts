@@ -611,6 +611,11 @@ export function registerStudioHandlers() {
               message: `Generating slide ${plan.slideNumber} of ${contentPlan.length}...`,
             })
 
+            // Ensure content field is never empty — fallback to title + bullets
+            const slideContent = (plan.content && plan.content.trim())
+              ? plan.content
+              : [plan.title, '', ...(plan.bullets || [])].join('\n')
+
             try {
               let prompt: string
               const isTitleSlide = plan.slideNumber === 1
@@ -619,7 +624,7 @@ export function registerStudioHandlers() {
                 if (isTitleSlide) {
                   // Title slide: generate full image with text baked in (like full-image mode)
                   prompt = buildSlidePrompt(
-                    plan.content,
+                    slideContent,
                     styleDescription,
                     plan.layout,
                     plan.visualCue,
@@ -636,7 +641,7 @@ export function registerStudioHandlers() {
                 }
               } else {
                 prompt = buildSlidePrompt(
-                  plan.content,
+                  slideContent,
                   styleDescription,
                   plan.layout,
                   plan.visualCue,
