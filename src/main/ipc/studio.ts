@@ -649,6 +649,10 @@ export function registerStudioHandlers() {
                 )
               }
 
+              // Pass slideTextContent when text should be baked into the image
+              // (full-image mode always, hybrid mode only for title slide)
+              const needsTextOnImage = renderMode === 'full-image' || (renderMode === 'hybrid' && isTitleSlide)
+
               const imagePath = await imagenService.generateSlideImage(prompt, {
                 aspectRatio: args.aspectRatio,
                 contentId: generatedContentId,
@@ -656,6 +660,7 @@ export function registerStudioHandlers() {
                 referenceImagePath: args.customStyleImagePath,
                 shortSubject: plan.visualCue || plan.title,
                 styleHint: isCustomStyle ? styleDescription : undefined,
+                slideTextContent: needsTextOnImage ? slideContent : undefined,
               })
 
               if (renderMode === 'hybrid') {

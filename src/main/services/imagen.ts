@@ -190,6 +190,8 @@ export class ImagenService {
       shortSubject?: string
       /** The style description text from describeImageStyle() — first sentence used to anchor rendering medium */
       styleHint?: string
+      /** When provided, text will be rendered on the image even in reference-image mode (full-image slides) */
+      slideTextContent?: string
     }
   ): Promise<string> {
     const apiKey = configService.getApiKey()
@@ -226,6 +228,21 @@ export class ImagenService {
             .replace(/\s{2,}/g, ' ')
             .trim()
 
+          let refPromptText: string
+          if (config.slideTextContent) {
+            // Full-image mode: match reference style BUT include slide text on the image
+            refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}.
+
+CRITICAL TEXT REQUIREMENT — THIS IS THE MOST IMPORTANT PART:
+You MUST render the following text DIRECTLY on the image as large, clearly readable typography. This is a presentation slide — the text IS the slide content. Without this text, the slide is useless. Use high-contrast colors so the text is perfectly legible against the background. The title should be large and bold. Bullet points should be clearly spaced below.
+
+TEXT TO RENDER ON THE SLIDE:
+${config.slideTextContent}`
+          } else {
+            // Background-only mode (hybrid content slides, infographics, whitepaper images): no text
+            refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. No text in the image.`
+          }
+
           contents = [
             {
               role: 'user',
@@ -234,7 +251,7 @@ export class ImagenService {
                   inlineData: { data: refImageBase64, mimeType: refImageMime },
                 },
                 {
-                  text: `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. No text in the image.`,
+                  text: refPromptText,
                 },
               ],
             },
