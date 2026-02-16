@@ -1,6 +1,6 @@
 # DeepNote AI
 
-A feature-rich, open-source desktop application inspired by Google's NotebookLM. Built with Electron, React, and powered by Google Gemini AI. Upload documents, chat with your sources, and generate studio-quality content including AI podcasts, image slide decks with a drag-and-drop editor, flashcards, quizzes, mind maps, reports, and more.
+A feature-rich, open-source desktop application inspired by Google's NotebookLM. Built with Electron, React, and powered by Google Gemini AI. Upload documents, chat with your sources, and generate studio-quality content including AI podcasts, image slide decks with a drag-and-drop editor, flashcards, quizzes, mind maps, reports, and more — with agentic RAG, multi-agent generation pipelines, voice Q&A, cross-session memory, and local embeddings.
 
 ![DeepNote AI](Screenshots/Bildschirmfoto%202026-02-09%20um%2022.37.37.png)
 
@@ -9,6 +9,7 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 ## Table of Contents
 
 - [Features Overview](#features-overview)
+- [What's New — v2.0](#whats-new--v20)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
@@ -19,9 +20,12 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 - [Application Guide](#application-guide)
   - [Notebooks](#notebooks)
   - [Sources](#sources)
+    - [Smart Source Recommendations](#smart-source-recommendations)
   - [Chat](#chat)
     - [Interactive Artifacts](#interactive-artifacts)
     - [Artifact Shortcut Chips](#artifact-shortcut-chips)
+    - [Voice Q&A](#voice-qa)
+    - [Chat-to-Source Pipeline](#chat-to-source-pipeline)
   - [Deep Research](#deep-research)
   - [Notes](#notes)
   - [Studio](#studio)
@@ -33,6 +37,13 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
     - [Mind Map](#mind-map)
     - [Data Table](#data-table)
   - [Workspace (File Editor)](#workspace-file-editor)
+- [AI Architecture](#ai-architecture)
+  - [Agentic RAG](#agentic-rag)
+  - [Multi-Agent Generation Pipeline](#multi-agent-generation-pipeline)
+  - [AI Output Validation Middleware](#ai-output-validation-middleware)
+  - [Cross-Session Memory](#cross-session-memory)
+  - [Tiered Embeddings](#tiered-embeddings)
+- [Clipboard Quick-Capture](#clipboard-quick-capture)
 - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [Project Structure](#project-structure)
 - [Database Schema](#database-schema)
@@ -45,14 +56,35 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | Category | Features |
 |----------|----------|
 | **Source Ingestion** | PDF, DOCX, TXT, Markdown, Website URLs, YouTube transcripts, Audio files (MP3/WAV/M4A/OGG/FLAC), Paste text |
-| **AI Chat** | Streaming responses, source-grounded citations, conversation history, suggested prompts, 6 interactive artifact types (Table, Chart, Mermaid, Kanban, KPI, Timeline), one-click artifact shortcut chips |
+| **AI Chat** | Streaming responses, source-grounded citations, conversation history, suggested prompts, 6 interactive artifact types (Table, Chart, Mermaid, Kanban, KPI, Timeline), one-click artifact shortcut chips, voice Q&A |
 | **Deep Research** | Multi-step AI analysis with real-time progress updates |
 | **Audio Overview** | Multi-speaker AI podcast with 4 format styles (Deep Dive, Brief, Critical Analysis, Debate) |
 | **Image Slides** | AI-generated slide decks with 6 visual styles, 2 render modes, fullscreen presenter, rich text drag-and-drop editor |
 | **Study Tools** | Flashcards, Quizzes (multiple choice), Reports, Mind Maps, Data Tables, search/filter/sort for generated content |
 | **Notes** | Create, edit, auto-save notes; convert notes to sources for AI context |
 | **Workspace** | Link local folders, file tree browser, text editor with AI rewrite, .gitignore support |
-| **Export** | Download audio as WAV, slides as PNG, copy reports to clipboard |
+| **Export** | Download audio as WAV, slides as PNG, whitepapers as PDF, copy reports to clipboard |
+| **AI Architecture** | Agentic RAG (multi-query retrieval), multi-agent generation pipeline (Research → Write → Review), AI output validation with retry, cross-session memory |
+| **Embeddings** | Tiered embedding system: local ONNX (all-MiniLM-L6-v2) → Gemini API → hash fallback |
+| **Productivity** | Clipboard quick-capture via system tray (Cmd+Shift+N), chat-to-source pipeline, smart source recommendations |
+
+---
+
+## What's New — v2.0
+
+Nine major features have been added to transform DeepNote AI from a notebook tool into an intelligent research platform:
+
+| Feature | Description |
+|---------|-------------|
+| **Agentic RAG** | Multi-query retrieval where the AI reasons about what to search, generating 2-3 targeted sub-queries for better context |
+| **Multi-Agent Pipeline** | Complex studio content (reports, whitepapers, etc.) now goes through a Research → Write → Review pipeline with automatic revision |
+| **AI Output Validation** | Middleware pipeline validates all AI-generated JSON, strips markdown fences, retries with error feedback up to 3 times |
+| **Cross-Session Memory** | AI remembers your preferences and learning patterns across conversations per notebook |
+| **Voice Q&A** | Speak to your sources — audio transcription → RAG chat → TTS response cycle |
+| **Chat-to-Source Pipeline** | Save any AI chat response as a note, source, workspace file, or send it to studio for generation |
+| **Smart Recommendations** | Cross-notebook source recommendations via vector similarity search |
+| **Clipboard Quick-Capture** | System tray icon + Cmd+Shift+N global shortcut to capture clipboard content to your notebook |
+| **Local ONNX Embeddings** | Offline embeddings via all-MiniLM-L6-v2 with tiered fallback (ONNX → Gemini → hash) |
 
 ---
 
@@ -66,6 +98,7 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | **Routing** | react-router-dom v7 |
 | **Database** | SQLite (better-sqlite3 v12.6) + Drizzle ORM |
 | **AI** | Google Gemini (`@google/genai`) |
+| **Local Embeddings** | ONNX Runtime (all-MiniLM-L6-v2, 384-dim) |
 | **Rich Text** | Tiptap (ProseMirror-based) |
 | **Drag & Drop** | react-draggable |
 | **Document Parsing** | pdf-parse, mammoth (DOCX) |
@@ -73,9 +106,10 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | **Font** | Inter (bundled via @fontsource-variable) |
 
 **AI Models Used:**
-- `gemini-2.0-flash` - Chat, content generation, document analysis
+- `gemini-2.0-flash` - Chat, content generation, document analysis, sub-query generation, memory extraction, voice transcription
 - `gemini-2.5-flash-preview-tts` - Multi-speaker text-to-speech
-- `gemini-embedding-exp-03-07` - Text embeddings for RAG
+- `gemini-embedding-exp-03-07` - Text embeddings for RAG (cloud tier)
+- `all-MiniLM-L6-v2` - Local ONNX embeddings (offline tier)
 - Image generation model - AI slide backgrounds
 
 ---
@@ -169,6 +203,10 @@ Sources are the knowledge base for your notebook. All AI features (chat, studio)
 - **Auto-chunking** - Documents are split into chunks with embeddings for RAG retrieval
 - **Delete** sources individually
 
+#### Smart Source Recommendations
+
+When viewing a source, DeepNote AI can recommend related sources from your other notebooks using vector similarity search. This helps you discover connections between different areas of research.
+
 ---
 
 ### Chat
@@ -181,6 +219,7 @@ The **Chat Panel** is the main interaction mode. Ask questions and get AI-genera
 - **Upload from chat** - Add new documents or audio files directly from the chat input
 - **Save to Note** - Save any AI response as a note for later reference
 - **Clear history** - Reset the conversation
+- **Cross-session memory** - The AI remembers your preferences and learning patterns
 
 **Interactive Artifacts:**
 
@@ -198,6 +237,29 @@ The AI can embed rich visualizations directly in its responses:
 **Artifact Shortcut Chips:**
 
 Six quick-action buttons appear above the chat input (when sources are selected). Click any chip to instantly request that artifact type - Table, Chart, Diagram, Kanban, KPIs, or Timeline.
+
+#### Voice Q&A
+
+Click the **microphone button** next to the chat input to start a voice conversation with your sources.
+
+- **Record** - Tap the mic button to start recording your question
+- **Transcription** - Audio is transcribed via Gemini AI
+- **RAG-powered response** - Your question is answered using selected source context
+- **TTS playback** - The AI's response is spoken back to you
+- **Transcript display** - Full text transcript of the conversation appears in the overlay
+- **Multiple turns** - Continue asking follow-up questions in the same session
+
+#### Chat-to-Source Pipeline
+
+Every AI response has action buttons to integrate it into your workflow:
+
+| Action | Description |
+|--------|-------------|
+| **Note** | Save the response as a note in your notebook |
+| **Source** | Add the response as a new source (with full embedding ingestion) |
+| **Workspace** | Write the response as a Markdown file to your workspace folder |
+| **Generate** | Send the response to studio as context for content generation |
+| **Copy** | Copy the response text to clipboard |
 
 ---
 
@@ -236,6 +298,7 @@ All studio tools support:
 - **Delete** generated content
 - **Generation history** - All past outputs are accessible
 - **Search & filter** - Find generated items by title, filter by type, sort by newest/oldest/title/type
+- **Multi-agent pipeline** - Complex types (report, whitepaper, literature review) use a Research → Write → Review pipeline with real-time progress indicators
 
 ---
 
@@ -355,6 +418,7 @@ Generate a structured written report from your sources.
 
 - **Executive Summary** + 3-6 detailed sections
 - **Custom focus** - Use instructions to target specific topics or audiences
+- **Multi-agent pipeline** - Research → Write → Review for higher quality
 - **Copy to clipboard** - One-click copy of the full report text
 
 ---
@@ -413,15 +477,86 @@ Link a local folder to your notebook and browse, edit, and AI-index files withou
 
 ---
 
+## AI Architecture
+
+DeepNote AI uses several advanced AI patterns under the hood to deliver high-quality results.
+
+### Agentic RAG
+
+Traditional RAG uses a single query to search for relevant context. DeepNote AI's **Agentic RAG** system reasons about your question first:
+
+1. **Sub-query generation** - The AI generates 2-3 targeted search queries from your question
+2. **Multi-query search** - Each sub-query is embedded and searched independently
+3. **Deduplication & ranking** - Results are merged by chunk ID and ranked by combined score
+4. **Sufficiency check** - The AI evaluates whether enough context was retrieved, and can request one additional retrieval round
+
+This produces significantly better context for complex, multi-faceted questions.
+
+### Multi-Agent Generation Pipeline
+
+For complex studio content types (report, literature review, competitive analysis, dashboard, whitepaper), generation uses a three-stage pipeline:
+
+| Stage | Role | Description |
+|-------|------|-------------|
+| **Research** | Analyst | Extracts key themes, facts, data points, and relationships from source material |
+| **Write** | Writer | Generates structured content using research findings + source material |
+| **Review** | Reviewer | Validates quality, checks structure, grades output (1-10). If score < 6, feeds back to writer for revision |
+
+Real-time progress updates show which stage is currently executing.
+
+### AI Output Validation Middleware
+
+All AI-generated structured content passes through a validation middleware pipeline:
+
+- **JSON validation** - Strips markdown fences, validates JSON parsing
+- **Structure validation** - Per-type schema checks (quiz must have questions with options, flashcards must have front/back, etc.)
+- **Retry with feedback** - On validation failure, the error message is appended to the prompt and the AI retries (up to 3 attempts)
+
+### Cross-Session Memory
+
+The AI learns from your conversations and remembers preferences across sessions:
+
+- **Automatic extraction** - After each conversation, the AI extracts preferences, learning patterns, and context
+- **Memory types** - Preference, learning, context, and feedback memories
+- **Confidence scoring** - Each memory has a confidence score (0.0-1.0) that updates over time
+- **Per-notebook + global** - Memories can be scoped to a specific notebook or applied globally
+- **System prompt injection** - Relevant memories are automatically included in the AI's context
+
+### Tiered Embeddings
+
+DeepNote AI supports a tiered embedding system for flexibility between online and offline use:
+
+| Tier | Model | Dimensions | Requirement |
+|------|-------|-----------|-------------|
+| **1. Local ONNX** | all-MiniLM-L6-v2 | 384 | Auto-downloads model (~80MB) |
+| **2. Gemini API** | gemini-embedding-exp-03-07 | 768 | API key + internet |
+| **3. Hash fallback** | Content hash | 768 | Always available |
+
+The system automatically selects the best available tier. Configurable via Settings (`auto`, `gemini`, or `local`).
+
+---
+
+## Clipboard Quick-Capture
+
+A **system tray icon** provides quick access to capture clipboard content without opening the main window.
+
+- **Global shortcut** - Press `Cmd+Shift+N` from any app to capture clipboard text
+- **Clipboard history** - Last 10 captured items stored in the tray menu
+- **Add to notebook** - Send any captured text directly as a source to your current notebook
+- **Always accessible** - Works even when the main window is minimized
+
+---
+
 ## Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
 | `Cmd/Ctrl + S` | Save file in workspace editor |
 | `Cmd/Ctrl + K` | Open AI rewrite popup (with text selected) |
+| `Cmd + Shift + N` | Capture clipboard to notebook (global) |
 | `Arrow Right` / `Space` | Next slide (fullscreen) |
 | `Arrow Left` | Previous slide (fullscreen) |
-| `Escape` | Close fullscreen / close modals |
+| `Escape` | Close fullscreen / close modals / close voice overlay |
 | `Enter` | Submit in dialogs |
 
 ---
@@ -432,33 +567,45 @@ Link a local folder to your notebook and browse, edit, and AI-index files withou
 src/
   shared/
     types/              # Shared TypeScript interfaces & IPC channel definitions
-      index.ts          # Core types (Notebook, Source, Note, ChatMessage, etc.)
+      index.ts          # Core types (Notebook, Source, Note, ChatMessage, UserMemory, etc.)
       ipc.ts            # IPC channel names & handler type map
   main/                 # Electron main process
-    index.ts            # App entry, window creation, protocol registration
+    index.ts            # App entry, window creation, protocol registration, tray init
     db/
       index.ts          # SQLite database initialization (auto-create tables)
-      schema.ts         # Drizzle ORM schema definitions
+      schema.ts         # Drizzle ORM schema definitions (including user_memory)
     ipc/
-      chat.ts           # Chat message handlers (streaming)
+      chat.ts           # Chat message handlers (streaming, agentic RAG)
+      clipboard.ts      # Clipboard history & add-to-notebook handlers
       config.ts         # API key management
+      memory.ts         # Cross-session memory CRUD handlers
       notebooks.ts      # CRUD for notebooks
       notes.ts          # CRUD for notes
       research.ts       # Deep research pipeline
-      sources.ts        # Source ingestion, parsing, embedding
-      studio.ts         # Content generation & image slides
+      sources.ts        # Source ingestion, parsing, embedding, recommendations
+      studio.ts         # Content generation & image slides (with pipeline progress)
+      voice.ts          # Voice Q&A session handlers
       workspace.ts      # File tree, editing, syncing
     services/
-      ai.ts             # Gemini AI (chat, generation, planning)
+      ai.ts             # Gemini AI (chat, generation, planning, memory-aware prompts)
+      agenticRag.ts     # Multi-query agentic RAG system
+      aiMiddleware.ts   # AI output validation & retry middleware pipeline
       chunker.ts        # Document chunking with token counts
-      config.ts         # Persistent config store
+      config.ts         # Persistent config store (API key, embeddings model)
       documentParser.ts # PDF, DOCX, TXT/MD parsing
       embeddings.ts     # Gemini embedding generation
+      generationPipeline.ts  # Multi-agent Research → Write → Review pipeline
       imagen.ts         # AI image generation for slides
-      rag.ts            # Retrieval-Augmented Generation
-      sourceIngestion.ts# Shared source processing pipeline
+      localEmbeddings.ts     # ONNX local embedding inference
+      memory.ts         # Cross-session memory service
+      rag.ts            # Retrieval-Augmented Generation (with agentic option)
+      recommendations.ts     # Cross-notebook source recommendations
+      sourceIngestion.ts     # Shared source processing pipeline
+      tieredEmbeddings.ts    # Tiered ONNX → Gemini → hash embedding system
+      tray.ts           # System tray icon & clipboard quick-capture
       tts.ts            # Multi-speaker text-to-speech
       vectorStore.ts    # In-memory vector similarity search
+      voiceSession.ts   # Voice Q&A session management
       webScraper.ts     # URL content extraction
       workspace.ts      # Filesystem scanning & .gitignore
   preload/
@@ -476,7 +623,7 @@ src/
       hooks/
         useNotebooks.ts # Notebook listing hook
       components/
-        chat/           # ChatPanel, ChatInput, ChatMessage
+        chat/           # ChatPanel, ChatInput, ChatMessage, VoiceOverlay
         common/         # Button, Modal, Spinner, Toast, SettingsModal
         dashboard/      # Dashboard, NotebookCard
         layout/         # AppLayout, Header, ResizablePanel
@@ -494,7 +641,7 @@ src/
 
 ## Database Schema
 
-DeepNote AI uses SQLite with 7 tables:
+DeepNote AI uses SQLite with 8 tables:
 
 | Table | Description |
 |-------|-------------|
@@ -505,6 +652,7 @@ DeepNote AI uses SQLite with 7 tables:
 | `chat_messages` | Chat history with citations (role, content, citations JSON) |
 | `generated_content` | Studio outputs (type, data JSON, status, source IDs) |
 | `workspace_files` | Workspace file manifest (path, hash, status, linked source ID) |
+| `user_memory` | Cross-session AI memory (type, key, value, confidence score, timestamps) |
 
 All data is stored locally in `~/.config/deepnote-ai/` (or platform equivalent). No data is sent to external servers except Gemini API calls for AI features.
 
