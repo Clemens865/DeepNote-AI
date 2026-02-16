@@ -93,21 +93,27 @@ export function buildSlidePrompt(
     return `MANDATORY VISUAL STYLE — follow this EXACTLY, do not deviate:
 ${styleDescription}
 
-Generate an image that looks like it belongs in the same art series as described above. This image will be used as a presentation visual. It must match the described rendering medium, color palette, saturation level, lighting, and texture PRECISELY.
+Generate an image of a PRESENTATION SLIDE that looks like it belongs in the same art series as described above. It must match the described rendering medium, color palette, saturation level, lighting, and texture PRECISELY.
 
-${visualCue ? `SCENE/SUBJECT for this image: ${visualCue}` : ''}
+${visualCue ? `SCENE/SUBJECT for the slide illustration: ${visualCue}` : ''}
 
-TEXT CONTENT (Render exactly as shown, high contrast, legible):
+CRITICAL TEXT REQUIREMENT — THIS IS THE MOST IMPORTANT PART:
+You MUST render the following text DIRECTLY on the image as large, clearly readable typography. This is a presentation slide — the text IS the slide content. Without this text, the slide is useless. Use high-contrast colors so the text is perfectly legible against the background. The title should be large and bold. Bullet points should be clearly spaced below.
+
+TEXT TO RENDER ON THE SLIDE:
 ${slideContent}`
   }
 
-  return `VISUAL STYLE (you MUST follow this precisely): ${styleDescription}.
+  return `Generate a professional PRESENTATION SLIDE image. This must look like an actual slide from a keynote or PowerPoint presentation, with text and visuals combined in one image.
 
-Generate a professional presentation slide image in EXACTLY the style described above.
+VISUAL STYLE (you MUST follow this precisely): ${styleDescription}.
 
-${visualCue ? `ILLUSTRATION: ${visualCue}` : ''}
+${visualCue ? `ILLUSTRATION/VISUAL ELEMENT: Include a visual related to: ${visualCue}` : ''}
 
-TEXT CONTENT (Render exactly as shown, high contrast, legible):
+CRITICAL TEXT REQUIREMENT — THIS IS THE MOST IMPORTANT PART:
+You MUST render the following text DIRECTLY on the slide image as large, clearly readable typography. This is a presentation slide — the text IS the main content. Without this text, the slide is INCOMPLETE and USELESS. Use a clean sans-serif font. The title should be LARGE and BOLD at the top. Bullet points should be clearly listed below with good spacing. Text must have HIGH CONTRAST against the background so it is perfectly legible.
+
+TEXT TO RENDER ON THE SLIDE:
 ${slideContent}`
 }
 
@@ -236,7 +242,7 @@ export class ImagenService {
         } else {
           const currentPrompt = attempt === 0
             ? prompt
-            : `Visualize this as a clean presentation slide: ${prompt.slice(0, 800)}`
+            : `Generate a presentation slide image with readable text. ${prompt.slice(0, 1200)}`
           contents = currentPrompt
         }
 
