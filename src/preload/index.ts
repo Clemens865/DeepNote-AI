@@ -11,6 +11,8 @@ const api = {
   updateNotebook: (id: string, data: Record<string, unknown>) =>
     ipcRenderer.invoke(IPC_CHANNELS.NOTEBOOKS_UPDATE, id, data),
   deleteNotebook: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.NOTEBOOKS_DELETE, id),
+  uploadNotebookCover: (notebookId: string, base64: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTEBOOK_UPLOAD_COVER, notebookId, base64),
   exportNotebook: (args: { notebookId: string; format: 'json' | 'html' }) =>
     ipcRenderer.invoke(IPC_CHANNELS.NOTEBOOKS_EXPORT, args),
 

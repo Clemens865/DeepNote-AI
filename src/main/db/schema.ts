@@ -8,6 +8,9 @@ export const notebooks = sqliteTable('notebooks', {
   chatMode: text('chat_mode', { enum: ['auto', 'custom'] }).notNull().default('auto'),
   responseLength: text('response_length', { enum: ['short', 'medium', 'long'] }).notNull().default('medium'),
   workspaceRootPath: text('workspace_root_path'),
+  cardBgImage: text('card_bg_image'),
+  cardGradientFrom: text('card_gradient_from'),
+  cardGradientTo: text('card_gradient_to'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 })

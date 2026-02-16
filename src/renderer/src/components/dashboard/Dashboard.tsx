@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useNotebooks } from '../../hooks/useNotebooks'
 import { NotebookCard } from './NotebookCard'
+import { CardCustomizeModal } from './CardCustomizeModal'
 import { Modal } from '../common/Modal'
 import { Button } from '../common/Button'
 import { Spinner } from '../common/Spinner'
@@ -33,6 +34,7 @@ export function Dashboard() {
   const [newEmoji, setNewEmoji] = useState('notebook')
   const [workspaceMode, setWorkspaceMode] = useState(false)
   const [workspacePath, setWorkspacePath] = useState<string | null>(null)
+  const [customizingNotebookId, setCustomizingNotebookId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchNotebooks()
@@ -132,6 +134,7 @@ export function Dashboard() {
                 notebook={nb}
                 onClick={() => navigate(`/notebook/${nb.id}`)}
                 onDelete={() => deleteNotebook(nb.id)}
+                onCustomize={() => setCustomizingNotebookId(nb.id)}
               />
             ))}
           </div>
@@ -221,6 +224,18 @@ export function Dashboard() {
           </div>
         </div>
       </Modal>
+
+      {customizingNotebookId && (
+        <CardCustomizeModal
+          notebook={notebooks.find((nb) => nb.id === customizingNotebookId)!}
+          isOpen={true}
+          onClose={() => setCustomizingNotebookId(null)}
+          onSave={() => {
+            setCustomizingNotebookId(null)
+            fetchNotebooks()
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -6,6 +6,9 @@ export interface Notebook {
   chatMode: 'auto' | 'custom'
   responseLength: 'short' | 'medium' | 'long'
   workspaceRootPath: string | null
+  cardBgImage?: string | null
+  cardGradientFrom?: string | null
+  cardGradientTo?: string | null
   createdAt: string
   updatedAt: string
   sourceCount?: number

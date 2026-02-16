@@ -1,6 +1,7 @@
-import { ipcMain, dialog } from 'electron'
+import { ipcMain, dialog, app } from 'electron'
 import { randomUUID } from 'crypto'
-import { writeFileSync } from 'fs'
+import { writeFileSync, existsSync, mkdirSync } from 'fs'
+import { join } from 'path'
 import { eq, desc } from 'drizzle-orm'
 import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { getDatabase, schema } from '../db'
@@ -89,6 +90,31 @@ export function registerNotebookHandlers() {
     await vectorStoreService.deleteNotebook(id)
     await db.delete(schema.notebooks).where(eq(schema.notebooks.id, id))
   })
+
+  ipcMain.handle(
+    IPC_CHANNELS.NOTEBOOK_UPLOAD_COVER,
+    async (_event, notebookId: string, base64Data: string) => {
+      const coversDir = join(app.getPath('userData'), 'notebook-covers')
+      if (!existsSync(coversDir)) {
+        mkdirSync(coversDir, { recursive: true })
+      }
+
+      const filePath = join(coversDir, `${notebookId}.png`)
+
+      // Remove data URI prefix if present
+      const raw = base64Data.replace(/^data:image\/\w+;base64,/, '')
+      writeFileSync(filePath, Buffer.from(raw, 'base64'))
+
+      const db = getDatabase()
+      const now = new Date().toISOString()
+      await db
+        .update(schema.notebooks)
+        .set({ cardBgImage: filePath, updatedAt: now })
+        .where(eq(schema.notebooks.id, notebookId))
+
+      return filePath
+    }
+  )
 
   ipcMain.handle(
     IPC_CHANNELS.NOTEBOOKS_EXPORT,

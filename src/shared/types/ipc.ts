@@ -7,6 +7,7 @@ export const IPC_CHANNELS = {
   NOTEBOOKS_GET: 'notebooks:get',
   NOTEBOOKS_UPDATE: 'notebooks:update',
   NOTEBOOKS_DELETE: 'notebooks:delete',
+  NOTEBOOK_UPLOAD_COVER: 'notebooks:upload-cover',
 
   // Sources
   SOURCES_LIST: 'sources:list',
@@ -98,10 +99,11 @@ export interface IpcHandlerMap {
   }
   [IPC_CHANNELS.NOTEBOOKS_GET]: { args: [string]; return: Notebook | null }
   [IPC_CHANNELS.NOTEBOOKS_UPDATE]: {
-    args: [string, Partial<Pick<Notebook, 'title' | 'emoji' | 'description' | 'chatMode' | 'responseLength'>>]
+    args: [string, Partial<Pick<Notebook, 'title' | 'emoji' | 'description' | 'chatMode' | 'responseLength' | 'cardBgImage' | 'cardGradientFrom' | 'cardGradientTo'>>]
     return: Notebook
   }
   [IPC_CHANNELS.NOTEBOOKS_DELETE]: { args: [string]; return: void }
+  [IPC_CHANNELS.NOTEBOOK_UPLOAD_COVER]: { args: [string, string]; return: string }
 
   // Sources
   [IPC_CHANNELS.SOURCES_LIST]: { args: [string]; return: Source[] }
