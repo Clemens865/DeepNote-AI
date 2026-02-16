@@ -114,6 +114,18 @@ const api = {
       ipcRenderer.removeListener('whitepaper:progress', handler)
     }
   },
+  whitepaperExportPdf: (args: {
+    title: string
+    subtitle: string
+    abstract: string
+    date: string
+    sections: { number: string; title: string; content: string; imagePath?: string; imageCaption?: string }[]
+    references: { number: number; citation: string }[]
+    keyFindings: string[]
+    conclusion: string
+    coverImagePath?: string
+    defaultName: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.WHITEPAPER_EXPORT_PDF, args),
   onWhitepaperComplete: (
     callback: (data: { generatedContentId: string; success: boolean; error?: string }) => void
   ) => {

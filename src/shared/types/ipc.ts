@@ -50,6 +50,7 @@ export const IPC_CHANNELS = {
 
   // Studio (white paper)
   WHITEPAPER_START: 'whitepaper:start',
+  WHITEPAPER_EXPORT_PDF: 'whitepaper:exportPdf',
 
   // Config
   CONFIG_GET_API_KEY: 'config:getApiKey',
@@ -169,6 +170,21 @@ export interface IpcHandlerMap {
       customStyleDescription?: string
     }]
     return: { generatedContentId: string }
+  }
+  [IPC_CHANNELS.WHITEPAPER_EXPORT_PDF]: {
+    args: [{
+      title: string
+      subtitle: string
+      abstract: string
+      date: string
+      sections: { number: string; title: string; content: string; imagePath?: string; imageCaption?: string }[]
+      references: { number: number; citation: string }[]
+      keyFindings: string[]
+      conclusion: string
+      coverImagePath?: string
+      defaultName: string
+    }]
+    return: { success: boolean; filePath?: string }
   }
 
   // Notebooks (extra)

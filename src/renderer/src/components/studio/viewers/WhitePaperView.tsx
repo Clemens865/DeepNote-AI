@@ -2,7 +2,7 @@ import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { FullscreenWrapper } from './FullscreenWrapper'
-import { ChevronDown, ChevronRight, BookOpen, Lightbulb, ListOrdered, Quote } from 'lucide-react'
+import { ChevronDown, ChevronRight, BookOpen, Lightbulb, ListOrdered, Quote, Download, Loader2 } from 'lucide-react'
 
 interface WhitePaperViewProps {
   data: Record<string, unknown>
@@ -250,11 +250,74 @@ function WhitePaperContent({ data }: { data: Record<string, unknown> }) {
 }
 
 export function WhitePaperView({ data, isFullscreen, onCloseFullscreen, title }: WhitePaperViewProps) {
+  const [exporting, setExporting] = useState(false)
+
+  const handleExportPdf = async () => {
+    setExporting(true)
+    try {
+      const sections = ((data.sections as Section[]) || []).map((s) => ({
+        number: s.number,
+        title: s.title,
+        content: s.content,
+        imagePath: s.imagePath,
+        imageCaption: s.imageCaption,
+      }))
+      const references = ((data.references as Reference[]) || []).map((r) => ({
+        number: r.number,
+        citation: r.citation,
+      }))
+
+      await window.api.whitepaperExportPdf({
+        title: (data.title as string) || 'White Paper',
+        subtitle: (data.subtitle as string) || '',
+        abstract: (data.abstract as string) || '',
+        date: (data.date as string) || '',
+        sections,
+        references,
+        keyFindings: (data.keyFindings as string[]) || [],
+        conclusion: (data.conclusion as string) || '',
+        coverImagePath: (data.coverImagePath as string) || undefined,
+        defaultName: `${((data.title as string) || 'White Paper').replace(/[^a-zA-Z0-9 ]/g, '').trim()}.pdf`,
+      })
+    } catch (err) {
+      console.error('PDF export failed:', err)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const exportAction = (
+    <button
+      onClick={handleExportPdf}
+      disabled={exporting}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white transition-colors disabled:opacity-50"
+      title="Export as PDF"
+    >
+      {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+      {exporting ? 'Exporting...' : 'Export PDF'}
+    </button>
+  )
+
   return (
     <>
-      <WhitePaperContent data={data} />
-      <FullscreenWrapper isOpen={isFullscreen} onClose={onCloseFullscreen} title={title}>
+      <div className="relative">
+        <div className="absolute top-0 right-0 z-10">
+          <button
+            onClick={handleExportPdf}
+            disabled={exporting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-50"
+            title="Export as PDF"
+          >
+            {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            {exporting ? 'Exporting...' : 'Export PDF'}
+          </button>
+        </div>
         <WhitePaperContent data={data} />
+      </div>
+      <FullscreenWrapper isOpen={isFullscreen} onClose={onCloseFullscreen} title={title} actions={exportAction}>
+        <div className="bg-white rounded-xl p-6 shadow-lg max-w-4xl mx-auto">
+          <WhitePaperContent data={data} />
+        </div>
       </FullscreenWrapper>
     </>
   )

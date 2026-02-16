@@ -778,6 +778,331 @@ export function registerStudioHandlers() {
     }
   )
 
+  // Export White Paper as A4 PDF
+  ipcMain.handle(
+    IPC_CHANNELS.WHITEPAPER_EXPORT_PDF,
+    async (_event, args: {
+      title: string
+      subtitle: string
+      abstract: string
+      date: string
+      sections: { number: string; title: string; content: string; imagePath?: string; imageCaption?: string }[]
+      references: { number: number; citation: string }[]
+      keyFindings: string[]
+      conclusion: string
+      coverImagePath?: string
+      defaultName: string
+    }) => {
+      const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
+
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        defaultPath: args.defaultName,
+        filters: [{ name: 'PDF', extensions: ['pdf'] }],
+      })
+
+      if (canceled || !filePath) {
+        return { success: false }
+      }
+
+      const pdfDoc = await PDFDocument.create()
+      const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica)
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+      const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique)
+
+      // A4 dimensions in points (72pt/inch): 595.28 x 841.89
+      const A4_WIDTH = 595.28
+      const A4_HEIGHT = 841.89
+      const MARGIN = 56 // ~20mm margins
+      const CONTENT_WIDTH = A4_WIDTH - 2 * MARGIN
+      const FOOTER_HEIGHT = 30
+
+      const colors = {
+        title: rgb(0.15, 0.15, 0.25),
+        heading: rgb(0.2, 0.2, 0.35),
+        body: rgb(0.25, 0.25, 0.3),
+        accent: rgb(0.31, 0.35, 0.87), // indigo
+        light: rgb(0.55, 0.55, 0.6),
+        rule: rgb(0.85, 0.85, 0.88),
+      }
+
+      let currentPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT])
+      let y = A4_HEIGHT - MARGIN
+      let pageNum = 1
+
+      // Helper: ensure space, add new page if needed
+      function ensureSpace(needed: number): void {
+        if (y - needed < MARGIN + FOOTER_HEIGHT) {
+          drawFooter()
+          currentPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT])
+          y = A4_HEIGHT - MARGIN
+          pageNum++
+        }
+      }
+
+      // Helper: draw page footer
+      function drawFooter(): void {
+        const pageText = `${pageNum}`
+        const textWidth = fontRegular.widthOfTextAtSize(pageText, 8)
+        currentPage.drawText(pageText, {
+          x: A4_WIDTH / 2 - textWidth / 2,
+          y: MARGIN / 2,
+          size: 8,
+          font: fontRegular,
+          color: colors.light,
+        })
+      }
+
+      // Helper: word-wrap text and draw it, returns final y position
+      function drawWrappedText(
+        text: string,
+        opts: { x: number; size: number; font: typeof fontRegular; color: ReturnType<typeof rgb>; lineHeight?: number; indent?: number }
+      ): number {
+        const lineHeight = opts.lineHeight || opts.size * 1.5
+        const maxWidth = CONTENT_WIDTH - (opts.indent || 0)
+        const words = text.split(/\s+/)
+        let line = ''
+
+        for (const word of words) {
+          const testLine = line ? `${line} ${word}` : word
+          const testWidth = opts.font.widthOfTextAtSize(testLine, opts.size)
+          if (testWidth > maxWidth && line) {
+            ensureSpace(lineHeight)
+            currentPage.drawText(line, { x: opts.x, y, size: opts.size, font: opts.font, color: opts.color })
+            y -= lineHeight
+            line = word
+          } else {
+            line = testLine
+          }
+        }
+        if (line) {
+          ensureSpace(lineHeight)
+          currentPage.drawText(line, { x: opts.x, y, size: opts.size, font: opts.font, color: opts.color })
+          y -= lineHeight
+        }
+        return y
+      }
+
+      // Helper: strip markdown formatting for plain text PDF
+      function stripMarkdown(md: string): string {
+        return md
+          .replace(/#{1,6}\s+/g, '')
+          .replace(/\*\*(.+?)\*\*/g, '$1')
+          .replace(/\*(.+?)\*/g, '$1')
+          .replace(/`(.+?)`/g, '$1')
+          .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+          .replace(/^[-*+]\s+/gm, '  - ')
+          .replace(/^\d+\.\s+/gm, (m) => `  ${m}`)
+          .replace(/^>\s+/gm, '  ')
+          .replace(/\n{3,}/g, '\n\n')
+      }
+
+      // Helper: embed image
+      async function embedImage(imgPath: string): Promise<{ image: Awaited<ReturnType<typeof pdfDoc.embedPng>>; width: number; height: number } | null> {
+        try {
+          const imgBytes = await readFile(imgPath)
+          const isPng = imgBytes[0] === 0x89 && imgBytes[1] === 0x50 && imgBytes[2] === 0x4e && imgBytes[3] === 0x47
+          const isJpeg = imgBytes[0] === 0xff && imgBytes[1] === 0xd8
+          let image
+          if (isPng) {
+            image = await pdfDoc.embedPng(imgBytes)
+          } else if (isJpeg) {
+            image = await pdfDoc.embedJpg(imgBytes)
+          } else {
+            try { image = await pdfDoc.embedPng(imgBytes) } catch { image = await pdfDoc.embedJpg(imgBytes) }
+          }
+          const { width, height } = image.scale(1)
+          return { image, width, height }
+        } catch (err) {
+          console.warn('Failed to embed image:', imgPath, err)
+          return null
+        }
+      }
+
+      // ===== COVER PAGE =====
+      if (args.coverImagePath) {
+        const cover = await embedImage(args.coverImagePath)
+        if (cover) {
+          const imgMaxWidth = CONTENT_WIDTH
+          const scale = Math.min(imgMaxWidth / cover.width, 200 / cover.height)
+          const imgW = cover.width * scale
+          const imgH = cover.height * scale
+          ensureSpace(imgH + 20)
+          y -= 20
+          currentPage.drawImage(cover.image, { x: MARGIN + (CONTENT_WIDTH - imgW) / 2, y: y - imgH, width: imgW, height: imgH })
+          y -= imgH + 20
+        }
+      }
+
+      // Title
+      y -= 30
+      drawWrappedText(args.title, { x: MARGIN, size: 24, font: fontBold, color: colors.title, lineHeight: 30 })
+      y -= 6
+
+      // Subtitle
+      if (args.subtitle) {
+        drawWrappedText(args.subtitle, { x: MARGIN, size: 13, font: fontItalic, color: colors.light, lineHeight: 18 })
+      }
+      y -= 6
+
+      // Date
+      if (args.date) {
+        drawWrappedText(args.date, { x: MARGIN, size: 10, font: fontRegular, color: colors.light })
+      }
+
+      // Divider
+      y -= 12
+      ensureSpace(2)
+      currentPage.drawRectangle({ x: MARGIN, y, width: CONTENT_WIDTH, height: 0.5, color: colors.rule })
+      y -= 20
+
+      // ===== ABSTRACT =====
+      if (args.abstract) {
+        ensureSpace(30)
+        drawWrappedText('ABSTRACT', { x: MARGIN, size: 9, font: fontBold, color: colors.accent, lineHeight: 14 })
+        y -= 4
+        drawWrappedText(args.abstract, { x: MARGIN, size: 10, font: fontRegular, color: colors.body, lineHeight: 15 })
+        y -= 16
+      }
+
+      // ===== KEY FINDINGS =====
+      if (args.keyFindings.length > 0) {
+        ensureSpace(30)
+        drawWrappedText('KEY FINDINGS', { x: MARGIN, size: 9, font: fontBold, color: colors.accent, lineHeight: 14 })
+        y -= 4
+        for (const finding of args.keyFindings) {
+          ensureSpace(16)
+          drawWrappedText(`\u2022  ${finding}`, { x: MARGIN + 8, size: 10, font: fontRegular, color: colors.body, lineHeight: 14, indent: 8 })
+          y -= 2
+        }
+        y -= 12
+      }
+
+      // ===== TABLE OF CONTENTS =====
+      ensureSpace(30)
+      drawWrappedText('TABLE OF CONTENTS', { x: MARGIN, size: 9, font: fontBold, color: colors.accent, lineHeight: 14 })
+      y -= 4
+      for (const section of args.sections) {
+        ensureSpace(16)
+        drawWrappedText(`${section.number}.  ${section.title}`, { x: MARGIN + 8, size: 10, font: fontRegular, color: colors.body, lineHeight: 14 })
+      }
+      ensureSpace(16)
+      drawWrappedText('Conclusion', { x: MARGIN + 8, size: 10, font: fontItalic, color: colors.light, lineHeight: 14 })
+      if (args.references.length > 0) {
+        ensureSpace(16)
+        drawWrappedText('References', { x: MARGIN + 8, size: 10, font: fontItalic, color: colors.light, lineHeight: 14 })
+      }
+      y -= 16
+
+      // ===== SECTIONS =====
+      for (const section of args.sections) {
+        // Start each section on a new page if less than 30% space remains
+        if (y < A4_HEIGHT * 0.3) {
+          drawFooter()
+          currentPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT])
+          y = A4_HEIGHT - MARGIN
+          pageNum++
+        }
+
+        // Section heading
+        ensureSpace(30)
+        drawWrappedText(`${section.number}. ${section.title}`, { x: MARGIN, size: 15, font: fontBold, color: colors.heading, lineHeight: 20 })
+        y -= 6
+
+        // Divider under heading
+        ensureSpace(2)
+        currentPage.drawRectangle({ x: MARGIN, y: y + 4, width: CONTENT_WIDTH, height: 0.5, color: colors.rule })
+        y -= 8
+
+        // Section image
+        if (section.imagePath) {
+          const img = await embedImage(section.imagePath)
+          if (img) {
+            const imgMaxWidth = CONTENT_WIDTH - 40
+            const imgMaxHeight = 220
+            const scale = Math.min(imgMaxWidth / img.width, imgMaxHeight / img.height)
+            const imgW = img.width * scale
+            const imgH = img.height * scale
+            ensureSpace(imgH + 30)
+            const imgX = MARGIN + (CONTENT_WIDTH - imgW) / 2
+            currentPage.drawImage(img.image, { x: imgX, y: y - imgH, width: imgW, height: imgH })
+            y -= imgH + 6
+            if (section.imageCaption) {
+              drawWrappedText(section.imageCaption, { x: MARGIN + 20, size: 8, font: fontItalic, color: colors.light, lineHeight: 11, indent: 40 })
+            }
+            y -= 10
+          }
+        }
+
+        // Section content paragraphs
+        const plainText = stripMarkdown(section.content)
+        const paragraphs = plainText.split(/\n\n+/)
+        for (const para of paragraphs) {
+          const trimmed = para.trim()
+          if (!trimmed) continue
+          drawWrappedText(trimmed, { x: MARGIN, size: 10, font: fontRegular, color: colors.body, lineHeight: 15 })
+          y -= 8
+        }
+        y -= 8
+      }
+
+      // ===== CONCLUSION =====
+      if (args.conclusion) {
+        if (y < A4_HEIGHT * 0.3) {
+          drawFooter()
+          currentPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT])
+          y = A4_HEIGHT - MARGIN
+          pageNum++
+        }
+
+        ensureSpace(30)
+        drawWrappedText('Conclusion', { x: MARGIN, size: 15, font: fontBold, color: colors.heading, lineHeight: 20 })
+        y -= 6
+        currentPage.drawRectangle({ x: MARGIN, y: y + 4, width: CONTENT_WIDTH, height: 0.5, color: colors.rule })
+        y -= 8
+
+        const plainConclusion = stripMarkdown(args.conclusion)
+        const paragraphs = plainConclusion.split(/\n\n+/)
+        for (const para of paragraphs) {
+          const trimmed = para.trim()
+          if (!trimmed) continue
+          drawWrappedText(trimmed, { x: MARGIN, size: 10, font: fontRegular, color: colors.body, lineHeight: 15 })
+          y -= 8
+        }
+        y -= 8
+      }
+
+      // ===== REFERENCES =====
+      if (args.references.length > 0) {
+        if (y < A4_HEIGHT * 0.3) {
+          drawFooter()
+          currentPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT])
+          y = A4_HEIGHT - MARGIN
+          pageNum++
+        }
+
+        ensureSpace(30)
+        drawWrappedText('References', { x: MARGIN, size: 15, font: fontBold, color: colors.heading, lineHeight: 20 })
+        y -= 6
+        currentPage.drawRectangle({ x: MARGIN, y: y + 4, width: CONTENT_WIDTH, height: 0.5, color: colors.rule })
+        y -= 8
+
+        for (const ref of args.references) {
+          ensureSpace(16)
+          drawWrappedText(`[${ref.number}]  ${ref.citation}`, { x: MARGIN, size: 9, font: fontRegular, color: colors.body, lineHeight: 13, indent: 0 })
+          y -= 4
+        }
+      }
+
+      // Draw footer on last page
+      drawFooter()
+
+      const pdfBytes = await pdfDoc.save()
+      await writeFile(filePath, pdfBytes)
+
+      return { success: true, filePath }
+    }
+  )
+
   // Export all slides as PDF
   ipcMain.handle(
     IPC_CHANNELS.STUDIO_EXPORT_PDF,
