@@ -144,6 +144,24 @@ export function registerChatHandlers() {
     return assistantMessage
   })
 
+  // Save a single message (used by voice transcription)
+  ipcMain.handle(
+    IPC_CHANNELS.CHAT_SAVE_MESSAGE,
+    async (_event, args: { notebookId: string; role: 'user' | 'assistant'; content: string }) => {
+      const db = getDatabase()
+      const msg = {
+        id: randomUUID(),
+        notebookId: args.notebookId,
+        role: args.role,
+        content: args.content,
+        citations: JSON.stringify([]),
+        createdAt: new Date().toISOString(),
+      }
+      await db.insert(schema.chatMessages).values(msg)
+      return { ...msg, citations: [] }
+    }
+  )
+
   // Chat-to-Source: generate content from a chat response
   ipcMain.handle(
     IPC_CHANNELS.CHAT_GENERATE_FROM_CONTEXT,

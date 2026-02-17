@@ -425,24 +425,65 @@ export function ChatPanel() {
         </div>
       )}
 
+      {/* Voice bar (inline above input when active) */}
+      {showVoice && currentNotebook && (
+        <div className="flex justify-center px-6 py-1.5 max-w-3xl mx-auto w-full">
+          <VoiceOverlay
+            notebookId={currentNotebook.id}
+            onClose={() => setShowVoice(false)}
+            onUserMessage={(text) => {
+              const voiceUserMsg: ChatMessageType = {
+                id: `voice-user-${Date.now()}`,
+                notebookId: currentNotebook.id,
+                role: 'user',
+                content: text,
+                citations: [],
+                createdAt: new Date().toISOString(),
+              }
+              setMessages((prev) => [...prev, voiceUserMsg])
+              // Persist to DB
+              window.api.chatSaveMessage({
+                notebookId: currentNotebook.id,
+                role: 'user',
+                content: text,
+              }).catch(() => {})
+            }}
+            onAiMessage={(text) => {
+              const voiceAiMsg: ChatMessageType = {
+                id: `voice-ai-${Date.now()}`,
+                notebookId: currentNotebook.id,
+                role: 'assistant',
+                content: text,
+                citations: [],
+                createdAt: new Date().toISOString(),
+              }
+              setMessages((prev) => [...prev, voiceAiMsg])
+              // Persist to DB
+              window.api.chatSaveMessage({
+                notebookId: currentNotebook.id,
+                role: 'assistant',
+                content: text,
+              }).catch(() => {})
+            }}
+          />
+        </div>
+      )}
+
       {/* Chat input with mic button */}
       <div className="flex items-end gap-2 max-w-3xl mx-auto w-full px-6">
         <div className="flex-1">
           <ChatInput onSend={handleSend} disabled={sending} onUpload={handleFileUpload} uploadingFile={uploadingFile} />
         </div>
-        <button
-          onClick={() => setShowVoice(true)}
-          className="mb-3 p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/15 transition-colors"
-          title="Voice Q&A"
-        >
-          <Mic size={18} />
-        </button>
+        {!showVoice && (
+          <button
+            onClick={() => setShowVoice(true)}
+            className="mb-3 p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/15 transition-colors"
+            title="Voice Q&A"
+          >
+            <Mic size={18} />
+          </button>
+        )}
       </div>
-
-      {/* Voice overlay */}
-      {showVoice && currentNotebook && (
-        <VoiceOverlay notebookId={currentNotebook.id} onClose={() => setShowVoice(false)} />
-      )}
 
       {/* Toast notification */}
       {toast && (

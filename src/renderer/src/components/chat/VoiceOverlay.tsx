@@ -1,14 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Mic, MicOff, X, Loader2 } from 'lucide-react'
 
-interface VoiceOverlayProps {
+interface VoiceBarProps {
   notebookId: string
   onClose: () => void
-}
-
-interface TranscriptEntry {
-  role: 'user' | 'ai' | 'status'
-  text: string
+  onUserMessage: (text: string) => void
+  onAiMessage: (text: string) => void
 }
 
 // Convert Float32 audio samples to Int16 PCM
@@ -63,17 +60,15 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
   return bytes.buffer
 }
 
-export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
+export function VoiceOverlay({ notebookId, onClose, onUserMessage, onAiMessage }: VoiceBarProps) {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [connected, setConnected] = useState(false)
   const [muted, setMuted] = useState(false)
   const [aiSpeaking, setAiSpeaking] = useState(false)
-  const [transcript, setTranscript] = useState<TranscriptEntry[]>([])
   const [error, setError] = useState<string | null>(null)
   const [audioLevel, setAudioLevel] = useState(0)
 
   const cleanupRefs = useRef<Array<() => void>>([])
-  const transcriptEndRef = useRef<HTMLDivElement>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const micStreamRef = useRef<MediaStream | null>(null)
   const processorRef = useRef<ScriptProcessorNode | null>(null)
@@ -81,6 +76,8 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
   const playbackTimeRef = useRef(0)
   const sessionIdRef = useRef<string | null>(null)
   const mutedRef = useRef(false)
+  const pendingUserTextRef = useRef('')
+  const pendingAiTextRef = useRef('')
 
   // Keep refs in sync
   useEffect(() => {
@@ -90,14 +87,8 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
     mutedRef.current = muted
   }, [muted])
 
-  // Auto-scroll transcript
-  useEffect(() => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [transcript])
-
   // --- Audio Playback ---
   const playAudioChunk = useCallback((audioBase64: string, mimeType: string) => {
-    // Parse sample rate from mimeType (e.g. "audio/pcm;rate=24000")
     const rateMatch = mimeType.match(/rate=(\d+)/)
     const sampleRate = rateMatch ? parseInt(rateMatch[1]) : 24000
 
@@ -116,10 +107,8 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
 
     const source = ctx.createBufferSource()
     source.buffer = audioBuffer
-
     source.connect(ctx.destination)
 
-    // Schedule playback sequentially
     const now = ctx.currentTime
     const startTime = Math.max(now, playbackTimeRef.current)
     source.start(startTime)
@@ -132,12 +121,10 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
 
     async function init() {
       try {
-        // 1. Start voice session (gets RAG context + connects to Gemini Live)
         const result = await window.api.voiceStart({ notebookId })
         if (!mounted) return
         setSessionId(result.sessionId)
 
-        // 2. Start microphone capture
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             channelCount: 1,
@@ -152,7 +139,6 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
         }
         micStreamRef.current = stream
 
-        // Create audio context (browser may not honor 16kHz, so we downsample)
         const ctx = new AudioContext({ sampleRate: 16000 })
         audioContextRef.current = ctx
         const actualRate = ctx.sampleRate
@@ -162,26 +148,22 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
         analyser.fftSize = 256
         micSource.connect(analyser)
 
-        // ScriptProcessor for capturing PCM chunks (4096 samples ~= 256ms at 16kHz)
         const processor = ctx.createScriptProcessor(4096, 1, 1)
         processorRef.current = processor
 
         processor.onaudioprocess = (e) => {
           if (mutedRef.current || !sessionIdRef.current) return
 
-          // Get audio level for visualization
           const dataArray = new Uint8Array(analyser.frequencyBinCount)
           analyser.getByteFrequencyData(dataArray)
           const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
           setAudioLevel(avg / 255)
 
-          // Get raw audio and downsample to 16kHz if needed
           const inputData = e.inputBuffer.getChannelData(0)
           const downsampled = downsample(inputData, actualRate, 16000)
           const pcm = float32ToInt16(downsampled)
           const base64 = arrayBufferToBase64(pcm.buffer as ArrayBuffer)
 
-          // Send to main process
           window.api.voiceSendAudio({
             sessionId: sessionIdRef.current!,
             audioData: base64,
@@ -189,12 +171,10 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
         }
 
         micSource.connect(processor)
-        processor.connect(ctx.destination) // Required for ScriptProcessor to fire
+        processor.connect(ctx.destination)
       } catch (err) {
         if (mounted) {
-          setError(
-            err instanceof Error ? err.message : 'Failed to start voice session'
-          )
+          setError(err instanceof Error ? err.message : 'Failed to start voice session')
         }
       }
     }
@@ -210,33 +190,16 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
           setConnected(true)
           return
         }
-
         if (data.type === 'error') {
           setError(data.text)
           return
         }
-
-        if (data.type === 'input' && data.text.trim()) {
-          setTranscript((prev) => {
-            // Append to last user entry or create new one
-            const last = prev[prev.length - 1]
-            if (last?.role === 'user') {
-              return [...prev.slice(0, -1), { role: 'user', text: last.text + data.text }]
-            }
-            return [...prev, { role: 'user', text: data.text }]
-          })
+        if (data.type === 'input' && data.text) {
+          pendingUserTextRef.current += data.text
         }
-
-        if (data.type === 'output' && data.text.trim()) {
+        if (data.type === 'output' && data.text) {
           setAiSpeaking(true)
-          setTranscript((prev) => {
-            // Append to last AI entry or create new one
-            const last = prev[prev.length - 1]
-            if (last?.role === 'ai') {
-              return [...prev.slice(0, -1), { role: 'ai', text: last.text + data.text }]
-            }
-            return [...prev, { role: 'ai', text: data.text }]
-          })
+          pendingAiTextRef.current += data.text
         }
       }
     )
@@ -254,13 +217,27 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
     const turnCleanup = window.api.onVoiceTurnComplete(() => {
       if (!mounted) return
       setAiSpeaking(false)
+
+      // Flush pending transcriptions to chat
+      if (pendingUserTextRef.current.trim()) {
+        onUserMessage(pendingUserTextRef.current.trim())
+        pendingUserTextRef.current = ''
+      }
+      if (pendingAiTextRef.current.trim()) {
+        onAiMessage(pendingAiTextRef.current.trim())
+        pendingAiTextRef.current = ''
+      }
     })
     cleanupRefs.current.push(turnCleanup)
 
     const interruptCleanup = window.api.onVoiceInterrupted(() => {
       if (!mounted) return
       setAiSpeaking(false)
-      // Clear playback queue
+      // Flush any partial AI text
+      if (pendingAiTextRef.current.trim()) {
+        onAiMessage(pendingAiTextRef.current.trim())
+        pendingAiTextRef.current = ''
+      }
       if (playbackCtxRef.current) {
         playbackCtxRef.current.close().catch(() => {})
         playbackCtxRef.current = null
@@ -274,7 +251,6 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
       cleanupRefs.current.forEach((fn) => fn())
       cleanupRefs.current = []
 
-      // Clean up audio
       if (processorRef.current) {
         processorRef.current.disconnect()
         processorRef.current = null
@@ -292,128 +268,94 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
         playbackCtxRef.current = null
       }
     }
-  }, [notebookId, playAudioChunk])
+  }, [notebookId, playAudioChunk, onUserMessage, onAiMessage])
 
   const toggleMute = useCallback(() => {
     setMuted((prev) => !prev)
   }, [])
 
   const handleClose = useCallback(() => {
+    // Flush any remaining text
+    if (pendingUserTextRef.current.trim()) {
+      onUserMessage(pendingUserTextRef.current.trim())
+      pendingUserTextRef.current = ''
+    }
+    if (pendingAiTextRef.current.trim()) {
+      onAiMessage(pendingAiTextRef.current.trim())
+      pendingAiTextRef.current = ''
+    }
     if (sessionId) {
       window.api.voiceStop({ sessionId }).catch(() => {})
     }
     onClose()
-  }, [sessionId, onClose])
+  }, [sessionId, onClose, onUserMessage, onAiMessage])
 
-  // Generate animated bars based on audio level
-  const bars = 7
+  // Animated level bars
+  const bars = 5
   const barHeights = Array.from({ length: bars }, (_, i) => {
-    if (!connected || muted) return 4
-    if (aiSpeaking) {
-      // Gentle wave animation for AI speaking
-      return 12 + Math.sin(Date.now() / 200 + i * 0.8) * 16
-    }
-    // React to actual mic input level
-    const base = audioLevel * 40
-    const variation = Math.sin(Date.now() / 150 + i * 1.2) * (audioLevel * 12)
-    return Math.max(4, base + variation)
+    if (!connected || muted) return 3
+    if (aiSpeaking) return 6 + Math.sin(Date.now() / 200 + i * 0.8) * 8
+    const base = audioLevel * 20
+    return Math.max(3, base + Math.sin(Date.now() / 150 + i * 1.2) * (audioLevel * 6))
   })
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center">
-      {/* Close button */}
-      <button
-        onClick={handleClose}
-        className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-      >
-        <X size={20} />
-      </button>
+    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+      {/* Status indicator */}
+      {!connected ? (
+        <Loader2 size={14} className="text-indigo-400 animate-spin shrink-0" />
+      ) : (
+        <div className={`w-2 h-2 rounded-full shrink-0 ${aiSpeaking ? 'bg-indigo-500 animate-pulse' : muted ? 'bg-red-400' : 'bg-emerald-500 animate-pulse'}`} />
+      )}
 
-      {/* Title + Status */}
-      <h2 className="text-white text-xl font-semibold mb-2">Live Voice</h2>
-      <p className="text-white/40 text-xs mb-8">
+      {/* Status text */}
+      <span className="text-[11px] text-slate-500 dark:text-slate-400 min-w-0 truncate">
         {!connected
           ? 'Connecting...'
-          : aiSpeaking
-            ? 'AI is speaking...'
-            : muted
-              ? 'Microphone muted'
-              : 'Listening...'}
-      </p>
+          : error
+            ? error
+            : aiSpeaking
+              ? 'AI speaking...'
+              : muted
+                ? 'Muted'
+                : 'Listening...'}
+      </span>
 
-      {/* Audio Visualization */}
-      <div className="mb-8 flex items-center justify-center gap-1.5 h-16">
-        {!connected ? (
-          <Loader2 size={32} className="text-indigo-400 animate-spin" />
-        ) : (
-          barHeights.map((h, i) => (
-            <div
-              key={i}
-              className={`w-1.5 rounded-full transition-all duration-100 ${
-                aiSpeaking
-                  ? 'bg-indigo-400'
-                  : muted
-                    ? 'bg-white/20'
-                    : 'bg-emerald-400'
-              }`}
-              style={{ height: `${h}px` }}
-            />
-          ))
-        )}
+      {/* Audio level bars */}
+      <div className="flex items-center gap-0.5 h-4 shrink-0">
+        {barHeights.map((h, i) => (
+          <div
+            key={i}
+            className={`w-1 rounded-full transition-all duration-75 ${
+              aiSpeaking ? 'bg-indigo-400' : muted ? 'bg-slate-300 dark:bg-slate-600' : 'bg-emerald-400'
+            }`}
+            style={{ height: `${h}px` }}
+          />
+        ))}
       </div>
 
-      {/* Mute button */}
+      {/* Mute toggle */}
       <button
         onClick={toggleMute}
         disabled={!connected}
-        className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-lg ${
+        className={`p-1.5 rounded-lg transition-colors shrink-0 ${
           muted
-            ? 'bg-red-500 hover:bg-red-600'
-            : 'bg-emerald-600 hover:bg-emerald-700 animate-pulse'
-        } disabled:opacity-50 disabled:cursor-not-allowed`}
+            ? 'bg-red-100 dark:bg-red-500/15 text-red-500 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-500/25'
+            : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-500/25'
+        } disabled:opacity-40`}
+        title={muted ? 'Unmute' : 'Mute'}
       >
-        {muted ? (
-          <MicOff size={32} className="text-white" />
-        ) : (
-          <Mic size={32} className="text-white" />
-        )}
+        {muted ? <MicOff size={14} /> : <Mic size={14} />}
       </button>
 
-      <p className="text-white/40 text-xs mt-3">
-        {connected
-          ? muted
-            ? 'Tap to unmute'
-            : 'Tap to mute'
-          : 'Setting up...'}
-      </p>
-
-      {/* Error */}
-      {error && (
-        <p className="text-red-400 text-sm mt-4 max-w-sm text-center">{error}</p>
-      )}
-
-      {/* Transcript */}
-      {transcript.length > 0 && (
-        <div className="mt-6 w-full max-w-lg max-h-52 overflow-auto rounded-xl bg-white/5 border border-white/10 p-4 space-y-2">
-          {transcript.map((entry, i) => (
-            <div key={i} className="flex gap-2">
-              <span
-                className={`text-[10px] font-bold uppercase mt-0.5 shrink-0 ${
-                  entry.role === 'user'
-                    ? 'text-emerald-400'
-                    : entry.role === 'ai'
-                      ? 'text-indigo-400'
-                      : 'text-white/30'
-                }`}
-              >
-                {entry.role === 'user' ? 'You' : entry.role === 'ai' ? 'AI' : ''}
-              </span>
-              <p className="text-white/80 text-sm leading-relaxed">{entry.text}</p>
-            </div>
-          ))}
-          <div ref={transcriptEndRef} />
-        </div>
-      )}
+      {/* Close */}
+      <button
+        onClick={handleClose}
+        className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0"
+        title="End voice session"
+      >
+        <X size={14} />
+      </button>
     </div>
   )
 }

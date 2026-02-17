@@ -34,6 +34,7 @@ export const IPC_CHANNELS = {
   // Chat
   CHAT_MESSAGES: 'chat:messages',
   CHAT_SEND: 'chat:send',
+  CHAT_SAVE_MESSAGE: 'chat:saveMessage',
   CHAT_CLEAR: 'chat:clear',
 
   // Studio
@@ -150,6 +151,10 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.CHAT_MESSAGES]: { args: [string]; return: ChatMessage[] }
   [IPC_CHANNELS.CHAT_SEND]: {
     args: [{ notebookId: string; message: string }]
+    return: ChatMessage
+  }
+  [IPC_CHANNELS.CHAT_SAVE_MESSAGE]: {
+    args: [{ notebookId: string; role: 'user' | 'assistant'; content: string }]
     return: ChatMessage
   }
   [IPC_CHANNELS.CHAT_CLEAR]: { args: [string]; return: void }

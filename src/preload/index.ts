@@ -43,6 +43,8 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.CHAT_MESSAGES, notebookId),
   chatSend: (args: { notebookId: string; message: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.CHAT_SEND, args),
+  chatSaveMessage: (args: { notebookId: string; role: 'user' | 'assistant'; content: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CHAT_SAVE_MESSAGE, args),
   chatClear: (notebookId: string) => ipcRenderer.invoke(IPC_CHANNELS.CHAT_CLEAR, notebookId),
 
   // Studio

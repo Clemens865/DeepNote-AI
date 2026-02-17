@@ -120,6 +120,8 @@ async function connectLiveSession(
           prebuiltVoiceConfig: { voiceName: 'Kore' },
         },
       },
+      inputAudioTranscription: {},
+      outputAudioTranscription: {},
     },
     callbacks: {
       onopen: () => {
