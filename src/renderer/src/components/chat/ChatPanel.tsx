@@ -41,6 +41,16 @@ const ARTIFACT_SHORTCUTS = [
   { icon: Clock, label: 'Timeline', prompt: 'Create a timeline of the key events and milestones from my sources' },
 ]
 
+// Map voice action tags to artifact prompts
+const VOICE_ACTION_MAP: Record<string, string> = {
+  table: ARTIFACT_SHORTCUTS[0].prompt,
+  chart: ARTIFACT_SHORTCUTS[1].prompt,
+  diagram: ARTIFACT_SHORTCUTS[2].prompt,
+  kanban: ARTIFACT_SHORTCUTS[3].prompt,
+  kpis: ARTIFACT_SHORTCUTS[4].prompt,
+  timeline: ARTIFACT_SHORTCUTS[5].prompt,
+}
+
 export function ChatPanel() {
   const currentNotebook = useNotebookStore((s) => s.currentNotebook)
   const sources = useNotebookStore((s) => s.sources)
@@ -449,11 +459,15 @@ export function ChatPanel() {
               }).catch(() => {})
             }}
             onAiMessage={(text) => {
+              // Detect [ACTION:type] tags and strip them from display text
+              const actionMatch = text.match(/\[ACTION:(\w+)\]/i)
+              const cleanText = text.replace(/\[ACTION:\w+\]/gi, '').trim()
+
               const voiceAiMsg: ChatMessageType = {
                 id: `voice-ai-${Date.now()}`,
                 notebookId: currentNotebook.id,
                 role: 'assistant',
-                content: text,
+                content: cleanText,
                 citations: [],
                 createdAt: new Date().toISOString(),
               }
@@ -462,8 +476,18 @@ export function ChatPanel() {
               window.api.chatSaveMessage({
                 notebookId: currentNotebook.id,
                 role: 'assistant',
-                content: text,
+                content: cleanText,
               }).catch(() => {})
+
+              // Trigger the artifact tool if an action tag was found
+              if (actionMatch) {
+                const actionType = actionMatch[1].toLowerCase()
+                const artifactPrompt = VOICE_ACTION_MAP[actionType]
+                if (artifactPrompt) {
+                  // Small delay so the voice message appears first
+                  setTimeout(() => handleSend(artifactPrompt), 500)
+                }
+              }
             }}
           />
         </div>

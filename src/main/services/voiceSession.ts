@@ -95,25 +95,29 @@ export async function startVoiceSession(notebookId: string): Promise<{ sessionId
   // Get all sources in notebook (even unselected) for awareness
   const allSourceTitles = sources.map((s) => `- ${s.title} (${s.isSelected ? 'selected' : 'available'})`).join('\n')
 
-  const toolsInfo = `You are part of DeepNote AI, an AI-powered notebook app. The user has these studio tools available that they can ask you about:
-- Report: Generate detailed written reports
-- Quiz: Create interactive quizzes with multiple choice questions
-- Flashcards: Generate study flashcards
-- Mind Map: Create visual mind maps of concepts
-- Data Table: Generate structured data tables
-- Slide Deck: Create presentation slide decks with AI-generated images
-- Dashboard: Build KPI dashboards with charts and metrics
-- Literature Review: Academic literature analysis
-- Competitive Analysis: Business competitor comparison
-- Timeline: Create visual timelines of events
-- Kanban Board: Organize tasks and action items
-- Chart: Generate data visualizations (bar, line, pie charts)
-- Diagram: Create mermaid diagrams showing relationships
-- Infographic: AI-generated visual infographics
-- White Paper: In-depth technical or business documents
-- Podcast: Multi-speaker audio content
+  const toolsInfo = `You are part of DeepNote AI, an AI-powered notebook app.
 
-If the user asks about creating any of these, explain that they can use the Studio panel to generate them from their sources.`
+IMPORTANT — IN-CHAT ARTIFACT TOOLS:
+The user has these tools available DIRECTLY in the chat. When the user asks you to create one of these, you MUST include the exact action tag in your spoken response so the system can trigger it automatically. Always confirm what you're doing and include the tag naturally.
+
+Available in-chat tools and their action tags:
+- Table: [ACTION:table] — Summarize data in a structured table
+- Chart: [ACTION:chart] — Visualize data as a bar/line/pie chart
+- Diagram: [ACTION:diagram] — Create a mermaid diagram of concepts and relationships
+- Kanban: [ACTION:kanban] — Organize action items on a kanban board
+- KPIs: [ACTION:kpis] — Show key performance indicators as metric cards
+- Timeline: [ACTION:timeline] — Create a visual timeline of events and milestones
+
+Example: If the user says "Can you make me a chart?", respond with something like:
+"Sure, I'll create a chart from your sources now. [ACTION:chart]"
+
+The action tag will be hidden from the user and the tool will execute automatically.
+
+STUDIO TOOLS (available in the Studio panel on the right):
+These are more advanced generation tools that require the user to go to the Studio panel:
+- Report, Quiz, Flashcards, Mind Map, Slide Deck, Dashboard, Literature Review, Competitive Analysis, Infographic, White Paper, Podcast
+
+For Studio tools, tell the user to use the Studio panel. For in-chat tools (table, chart, diagram, kanban, kpis, timeline), use the action tags above to trigger them directly.`
 
   const systemInstruction = sourceContext
     ? `You are a helpful, knowledgeable voice assistant for DeepNote AI. Answer concisely and conversationally — keep responses under 3 sentences when possible. Be natural and friendly.
