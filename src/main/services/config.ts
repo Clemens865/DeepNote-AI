@@ -5,11 +5,19 @@ import { readFileSync, writeFileSync, existsSync } from 'fs'
 interface AppConfig {
   apiKey: string
   embeddingsModel: 'auto' | 'gemini' | 'local'
+  superbrainPort: number
+  superbrainToken: string
+  deepnoteApiPort: number
+  deepnoteApiToken: string
 }
 
 const defaultConfig: AppConfig = {
   apiKey: '',
   embeddingsModel: 'auto',
+  superbrainPort: 19519,
+  superbrainToken: '',
+  deepnoteApiPort: 19520,
+  deepnoteApiToken: '',
 }
 
 function getConfigPath(): string {
@@ -53,6 +61,10 @@ export class ConfigService {
   }
 
   getConfig(): AppConfig {
+    return readConfig()
+  }
+
+  getAll(): AppConfig {
     return readConfig()
   }
 

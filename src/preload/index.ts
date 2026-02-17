@@ -350,6 +350,24 @@ const api = {
   globalSearch: (args: { query: string; notebookIds?: string[]; limit?: number }) =>
     ipcRenderer.invoke(IPC_CHANNELS.SEARCH_GLOBAL, args),
 
+  // SuperBrain Integration
+  superbrainStatus: () => ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_STATUS),
+  superbrainRecall: (args: { query: string; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_RECALL, args),
+  superbrainSearch: (args: { query: string; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_SEARCH, args),
+  superbrainClipboard: (args?: { limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_CLIPBOARD, args),
+  superbrainRemember: (args: { content: string; memoryType?: string; importance?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_REMEMBER, args),
+  superbrainThink: (args: { input: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_THINK, args),
+  superbrainConfigure: (args: { port?: number; token?: string | null }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_CONFIGURE, args),
+
+  // DeepNote API
+  deepnoteApiStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEEPNOTE_API_STATUS),
+
   // Workspace auto-sync events
   onWorkspaceAutoSync: (
     callback: (data: { notebookId: string; status: string; message: string }) => void

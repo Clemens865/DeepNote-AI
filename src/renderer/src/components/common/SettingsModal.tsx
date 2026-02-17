@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Settings, Info } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Settings, Info, Brain, Server } from 'lucide-react'
 import { Modal } from './Modal'
 import { Button } from './Button'
 import { Spinner } from './Spinner'
@@ -9,7 +9,17 @@ interface SettingsModalProps {
   onClose: () => void
 }
 
-type Tab = 'settings' | 'about'
+type Tab = 'settings' | 'integrations' | 'about'
+
+interface SuperBrainStatus {
+  available: boolean
+  memoryCount: number
+  thoughtCount: number
+  aiProvider: string
+  embeddingProvider: string
+  learningTrend: string
+  indexedFiles: number
+}
 
 const FEATURES = [
   { label: 'Agentic RAG', desc: 'Multi-query retrieval with AI-reasoned sub-queries' },
@@ -35,6 +45,25 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null)
 
+  // SuperBrain state
+  const [sbStatus, setSbStatus] = useState<SuperBrainStatus | null>(null)
+  const [sbLoading, setSbLoading] = useState(false)
+  const [dnApiPort, setDnApiPort] = useState<number | null>(null)
+
+  const loadSuperBrainStatus = useCallback(async () => {
+    setSbLoading(true)
+    try {
+      const status = await window.api.superbrainStatus() as SuperBrainStatus | null
+      setSbStatus(status)
+      const apiStatus = await window.api.deepnoteApiStatus() as { port: number }
+      setDnApiPort(apiStatus.port)
+    } catch {
+      setSbStatus(null)
+    } finally {
+      setSbLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (isOpen) {
       window.api.getApiKey().then((key: string) => {
@@ -42,8 +71,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         setSaved(false)
         setTestResult(null)
       })
+      loadSuperBrainStatus()
     }
-  }, [isOpen])
+  }, [isOpen, loadSuperBrainStatus])
 
   const handleSave = async () => {
     await window.api.setApiKey(apiKey)
@@ -80,6 +110,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           >
             <Settings size={14} />
             Settings
+          </button>
+          <button
+            onClick={() => setTab('integrations')}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+              tab === 'integrations'
+                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <Brain size={14} />
+            Integrations
           </button>
           <button
             onClick={() => setTab('about')}
@@ -151,6 +192,99 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 Save
               </Button>
               <div className="flex-1" />
+              <Button variant="ghost" onClick={onClose}>
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {tab === 'integrations' && (
+          <div className="space-y-5">
+            {/* SuperBrain */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Brain size={16} className="text-purple-500" />
+                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">SuperBrain</h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  {sbLoading ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <div className={`flex items-center gap-1.5 text-xs ${sbStatus?.available ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                      <div className={`w-2 h-2 rounded-full ${sbStatus?.available ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                      {sbStatus?.available ? 'Connected' : 'Not connected'}
+                    </div>
+                  )}
+                  <button
+                    onClick={loadSuperBrainStatus}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              </div>
+
+              {sbStatus?.available ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20">
+                    <p className="text-[10px] text-purple-500 dark:text-purple-400 uppercase tracking-wide">Memories</p>
+                    <p className="text-lg font-bold text-purple-700 dark:text-purple-300">{sbStatus.memoryCount.toLocaleString()}</p>
+                  </div>
+                  <div className="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20">
+                    <p className="text-[10px] text-purple-500 dark:text-purple-400 uppercase tracking-wide">Indexed Files</p>
+                    <p className="text-lg font-bold text-purple-700 dark:text-purple-300">{sbStatus.indexedFiles.toLocaleString()}</p>
+                  </div>
+                  <div className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">AI Provider</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{sbStatus.aiProvider}</p>
+                  </div>
+                  <div className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">Embeddings</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{sbStatus.embeddingProvider}</p>
+                  </div>
+                  <div className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 col-span-2">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">Learning Trend</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200 capitalize">{sbStatus.learningTrend}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
+                  SuperBrain provides system-wide memory, file indexing, clipboard history, and Ollama integration.
+                  Start SuperBrain to enable OS-level AI features.
+                </p>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-slate-100 dark:border-slate-700" />
+
+            {/* DeepNote API */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Server size={16} className="text-indigo-500" />
+                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">DeepNote API</h4>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Listening
+                </div>
+              </div>
+
+              <div className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Endpoint</p>
+                <code className="text-xs text-indigo-600 dark:text-indigo-400 font-mono">
+                  http://127.0.0.1:{dnApiPort || 19520}
+                </code>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed">
+                  SuperBrain, shell scripts, Raycast, and other tools can query your notebooks via this API.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
               <Button variant="ghost" onClick={onClose}>
                 Close
               </Button>

@@ -107,6 +107,18 @@ export const IPC_CHANNELS = {
 
   // Global Search
   SEARCH_GLOBAL: 'search:global',
+
+  // SuperBrain Integration
+  SUPERBRAIN_STATUS: 'superbrain:status',
+  SUPERBRAIN_RECALL: 'superbrain:recall',
+  SUPERBRAIN_SEARCH: 'superbrain:search',
+  SUPERBRAIN_CLIPBOARD: 'superbrain:clipboard',
+  SUPERBRAIN_REMEMBER: 'superbrain:remember',
+  SUPERBRAIN_THINK: 'superbrain:think',
+  SUPERBRAIN_CONFIGURE: 'superbrain:configure',
+
+  // DeepNote API
+  DEEPNOTE_API_STATUS: 'deepnote-api:status',
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
@@ -376,4 +388,51 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.VOICE_START]: { args: [{ notebookId: string }]; return: { sessionId: string } }
   [IPC_CHANNELS.VOICE_SEND_AUDIO]: { args: [{ sessionId: string; audioData: string }]; return: void }
   [IPC_CHANNELS.VOICE_STOP]: { args: [{ sessionId: string }]; return: void }
+
+  // SuperBrain
+  [IPC_CHANNELS.SUPERBRAIN_STATUS]: {
+    args: []
+    return: {
+      available: boolean
+      memoryCount: number
+      thoughtCount: number
+      aiProvider: string
+      aiAvailable: boolean
+      embeddingProvider: string
+      learningTrend: string
+      indexedFiles: number
+      indexedChunks: number
+      uptimeMs: number
+    } | null
+  }
+  [IPC_CHANNELS.SUPERBRAIN_RECALL]: {
+    args: [{ query: string; limit?: number }]
+    return: { id: string; content: string; similarity: number; memoryType: string }[]
+  }
+  [IPC_CHANNELS.SUPERBRAIN_SEARCH]: {
+    args: [{ query: string; limit?: number }]
+    return: { path: string; name: string; chunk: string; similarity: number; fileType: string }[]
+  }
+  [IPC_CHANNELS.SUPERBRAIN_CLIPBOARD]: {
+    args: [{ limit?: number }?]
+    return: { content: string; timestamp: number }[]
+  }
+  [IPC_CHANNELS.SUPERBRAIN_REMEMBER]: {
+    args: [{ content: string; memoryType?: string; importance?: number }]
+    return: { id: string; memoryCount: number } | null
+  }
+  [IPC_CHANNELS.SUPERBRAIN_THINK]: {
+    args: [{ input: string }]
+    return: { response: string; confidence: number; thoughtId: string; memoryCount: number; aiEnhanced: boolean } | null
+  }
+  [IPC_CHANNELS.SUPERBRAIN_CONFIGURE]: {
+    args: [{ port?: number; token?: string | null }]
+    return: void
+  }
+
+  // DeepNote API
+  [IPC_CHANNELS.DEEPNOTE_API_STATUS]: {
+    args: []
+    return: { port: number }
+  }
 }

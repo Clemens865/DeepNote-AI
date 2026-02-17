@@ -17,8 +17,10 @@ import { registerSearchHandlers } from './ipc/search'
 import { registerMemoryHandlers } from './ipc/memory'
 import { registerClipboardHandlers } from './ipc/clipboard'
 import { registerVoiceHandlers } from './ipc/voice'
+import { registerSuperBrainHandlers } from './ipc/superbrain'
 import { trayService } from './services/tray'
 import { fileWatcherService } from './services/fileWatcher'
+import { deepnoteApiServer } from './services/deepnoteApi'
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -95,6 +97,10 @@ app.whenReady().then(() => {
   registerMemoryHandlers()
   registerClipboardHandlers()
   registerVoiceHandlers()
+  registerSuperBrainHandlers()
+
+  // Start DeepNote REST API server for bidirectional integration
+  deepnoteApiServer.start()
 
   const appWindow = createWindow()
 
@@ -113,6 +119,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  deepnoteApiServer.stop()
   trayService.destroy()
   fileWatcherService.stopAll()
   databaseService.close()
