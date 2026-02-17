@@ -121,8 +121,10 @@ export function VoiceOverlay({ notebookId, onClose, onUserMessage, onAiMessage }
 
     async function init() {
       try {
+        console.log('[Voice] Starting voice session for notebook:', notebookId)
         const result = await window.api.voiceStart({ notebookId })
         if (!mounted) return
+        console.log('[Voice] Session started, id:', result.sessionId)
         setSessionId(result.sessionId)
 
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -172,7 +174,9 @@ export function VoiceOverlay({ notebookId, onClose, onUserMessage, onAiMessage }
 
         micSource.connect(processor)
         processor.connect(ctx.destination)
+        console.log('[Voice] Mic connected, actual sample rate:', actualRate)
       } catch (err) {
+        console.error('[Voice] Init error:', err)
         if (mounted) {
           setError(err instanceof Error ? err.message : 'Failed to start voice session')
         }
@@ -184,13 +188,20 @@ export function VoiceOverlay({ notebookId, onClose, onUserMessage, onAiMessage }
     // --- Listen for events ---
     const textCleanup = window.api.onVoiceResponseText(
       (data: { sessionId: string; text: string; type: string }) => {
+        if (data.type === 'debug') {
+          console.log('[Voice:main]', data.text)
+          return
+        }
+        console.log('[Voice] Event:', data.type, data.text?.slice(0, 100))
         if (!mounted) return
 
         if (data.type === 'ready') {
+          console.log('[Voice] Connection ready!')
           setConnected(true)
           return
         }
         if (data.type === 'error') {
+          console.error('[Voice] Error from server:', data.text)
           setError(data.text)
           return
         }
@@ -207,6 +218,7 @@ export function VoiceOverlay({ notebookId, onClose, onUserMessage, onAiMessage }
 
     const audioCleanup = window.api.onVoiceResponseAudio(
       (data: { sessionId: string; audioData: string; mimeType: string }) => {
+        console.log('[Voice] Audio chunk received, size:', data.audioData?.length, 'mime:', data.mimeType)
         if (!mounted) return
         setAiSpeaking(true)
         playAudioChunk(data.audioData, data.mimeType)
@@ -215,6 +227,7 @@ export function VoiceOverlay({ notebookId, onClose, onUserMessage, onAiMessage }
     cleanupRefs.current.push(audioCleanup)
 
     const turnCleanup = window.api.onVoiceTurnComplete(() => {
+      console.log('[Voice] Turn complete')
       if (!mounted) return
       setAiSpeaking(false)
 

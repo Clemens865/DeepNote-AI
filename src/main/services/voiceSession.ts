@@ -25,6 +25,15 @@ function broadcastToWindows(channel: string, data: unknown): void {
   })
 }
 
+function debugLog(sessionId: string, message: string): void {
+  console.log(`[Voice Live] ${message}`)
+  broadcastToWindows('voice:response-text', {
+    sessionId,
+    text: `[debug] ${message}`,
+    type: 'debug',
+  })
+}
+
 // --- Active Sessions ---
 
 interface LiveVoiceSession {
@@ -56,9 +65,10 @@ export async function startVoiceSession(notebookId: string): Promise<{ sessionId
   const sourceTitleMap: Record<string, string> = {}
   for (const s of sources) sourceTitleMap[s.id] = s.title
 
-  // Get RAG context from selected sources
-  let ragContext = ''
-  if (selectedSourceIds.length > 0) {
+  // Build source context — use raw content for richer context in voice conversations
+  let sourceContext = ''
+  if (selectedSources.length > 0) {
+    // First try RAG for semantic context
     try {
       const ragResult = await ragService.query(
         notebookId,
@@ -66,19 +76,60 @@ export async function startVoiceSession(notebookId: string): Promise<{ sessionId
         selectedSourceIds,
         sourceTitleMap
       )
-      ragContext = ragResult.context
+      sourceContext = ragResult.context
     } catch (err) {
       console.warn('[Voice Live] RAG context failed:', err)
-      ragContext = selectedSources
-        .map((s) => `[${s.title}]\n${(s.content || '').slice(0, 5000)}`)
-        .join('\n\n---\n\n')
-        .slice(0, 30000)
     }
+
+    // Supplement with raw source content for broader coverage
+    const rawContext = selectedSources
+      .map((s) => `[Source: ${s.title}]\n${(s.content || '').slice(0, 8000)}`)
+      .join('\n\n---\n\n')
+
+    // Combine RAG + raw content, prioritizing RAG results
+    sourceContext = sourceContext
+      ? `${sourceContext}\n\n--- Additional source content ---\n\n${rawContext}`.slice(0, 40000)
+      : rawContext.slice(0, 40000)
   }
 
-  const systemInstruction = ragContext
-    ? `You are a helpful voice assistant. Answer concisely and conversationally — keep responses under 3 sentences when possible. Be natural and friendly.\n\nContext from user's sources:\n${ragContext.slice(0, 20000)}`
-    : 'You are a helpful voice assistant. Answer concisely and conversationally — keep responses under 3 sentences when possible. Be natural and friendly.'
+  // Get all sources in notebook (even unselected) for awareness
+  const allSourceTitles = sources.map((s) => `- ${s.title} (${s.isSelected ? 'selected' : 'available'})`).join('\n')
+
+  const toolsInfo = `You are part of DeepNote AI, an AI-powered notebook app. The user has these studio tools available that they can ask you about:
+- Report: Generate detailed written reports
+- Quiz: Create interactive quizzes with multiple choice questions
+- Flashcards: Generate study flashcards
+- Mind Map: Create visual mind maps of concepts
+- Data Table: Generate structured data tables
+- Slide Deck: Create presentation slide decks with AI-generated images
+- Dashboard: Build KPI dashboards with charts and metrics
+- Literature Review: Academic literature analysis
+- Competitive Analysis: Business competitor comparison
+- Timeline: Create visual timelines of events
+- Kanban Board: Organize tasks and action items
+- Chart: Generate data visualizations (bar, line, pie charts)
+- Diagram: Create mermaid diagrams showing relationships
+- Infographic: AI-generated visual infographics
+- White Paper: In-depth technical or business documents
+- Podcast: Multi-speaker audio content
+
+If the user asks about creating any of these, explain that they can use the Studio panel to generate them from their sources.`
+
+  const systemInstruction = sourceContext
+    ? `You are a helpful, knowledgeable voice assistant for DeepNote AI. Answer concisely and conversationally — keep responses under 3 sentences when possible. Be natural and friendly.
+
+${toolsInfo}
+
+The user's notebook contains these sources:
+${allSourceTitles}
+
+Content from the user's selected sources:
+${sourceContext.slice(0, 30000)}`
+    : `You are a helpful, knowledgeable voice assistant for DeepNote AI. Answer concisely and conversationally — keep responses under 3 sentences when possible. Be natural and friendly.
+
+${toolsInfo}
+
+The user has no sources selected in their current notebook. Suggest they add or select sources to get source-aware answers.`
 
   // Register session before connecting (renderer needs sessionId immediately)
   const voiceSession: LiveVoiceSession = {
@@ -110,8 +161,10 @@ async function connectLiveSession(
   const voiceSession = sessions.get(sessionId)
   if (!voiceSession || !voiceSession.active) return
 
+  const modelName = 'gemini-2.5-flash-native-audio-preview-12-2025'
+  debugLog(sessionId, `Connecting to Gemini Live API with model: ${modelName}`)
   const session = await ai.live.connect({
-    model: 'gemini-live-2.5-flash-preview',
+    model: modelName,
     config: {
       responseModalities: [Modality.AUDIO],
       systemInstruction,
@@ -125,36 +178,60 @@ async function connectLiveSession(
     },
     callbacks: {
       onopen: () => {
-        console.log('[Voice Live] WebSocket connected for session', sessionId)
-        broadcastToWindows('voice:response-text', {
-          sessionId,
-          text: '',
-          type: 'ready',
-        })
+        debugLog(sessionId, 'WebSocket connected')
       },
       onmessage: (msg: LiveServerMessage) => {
         handleLiveMessage(sessionId, msg)
       },
-      onerror: (err) => {
-        console.error('[Voice Live] WebSocket error:', err)
+      onerror: (err: unknown) => {
+        let errStr: string
+        try {
+          errStr = JSON.stringify(err, Object.getOwnPropertyNames(err instanceof Error ? err : {}))
+        } catch {
+          errStr = String(err)
+        }
+        debugLog(sessionId, `WebSocket ERROR: ${errStr}`)
         broadcastToWindows('voice:response-text', {
           sessionId,
-          text: 'Connection error occurred.',
+          text: `Connection error: ${err instanceof Error ? err.message : String(err)}`,
           type: 'error',
         })
       },
-      onclose: () => {
-        console.log('[Voice Live] WebSocket closed for session', sessionId)
+      onclose: (ev: unknown) => {
+        let closeStr: string
+        try {
+          closeStr = JSON.stringify(ev)
+        } catch {
+          closeStr = String(ev)
+        }
+        debugLog(sessionId, `WebSocket CLOSED: ${closeStr}`)
         const s = sessions.get(sessionId)
         if (s) s.active = false
       },
     },
   })
 
+  // Session is now fully ready — assign it and THEN notify renderer
   voiceSession.session = session
+  debugLog(sessionId, 'Session fully initialized, ready to receive audio')
+  broadcastToWindows('voice:response-text', {
+    sessionId,
+    text: '',
+    type: 'ready',
+  })
 }
 
+let msgCount = 0
+
 function handleLiveMessage(sessionId: string, msg: LiveServerMessage): void {
+  msgCount++
+
+  // Log first message shape for debugging
+  if (msgCount === 1) {
+    const keys = Object.keys(msg).filter((k) => (msg as unknown as Record<string, unknown>)[k] != null)
+    debugLog(sessionId, `First msg keys: [${keys.join(', ')}]`)
+  }
+
   const content = msg.serverContent
 
   if (content) {
@@ -173,6 +250,7 @@ function handleLiveMessage(sessionId: string, msg: LiveServerMessage): void {
 
     // Handle input transcription (what the user said)
     if (content.inputTranscription?.text) {
+      debugLog(sessionId, `Input transcript: "${content.inputTranscription.text}"`)
       broadcastToWindows('voice:response-text', {
         sessionId,
         text: content.inputTranscription.text,
@@ -182,6 +260,7 @@ function handleLiveMessage(sessionId: string, msg: LiveServerMessage): void {
 
     // Handle output transcription (what the AI said)
     if (content.outputTranscription?.text) {
+      debugLog(sessionId, `Output transcript: "${content.outputTranscription.text}"`)
       broadcastToWindows('voice:response-text', {
         sessionId,
         text: content.outputTranscription.text,
@@ -191,13 +270,20 @@ function handleLiveMessage(sessionId: string, msg: LiveServerMessage): void {
 
     // Handle turn completion
     if (content.turnComplete) {
+      debugLog(sessionId, 'Turn complete')
       broadcastToWindows('voice:turn-complete', { sessionId })
     }
 
     // Handle interruption
     if (content.interrupted) {
+      debugLog(sessionId, 'Interrupted')
       broadcastToWindows('voice:interrupted', { sessionId })
     }
+  }
+
+  // Handle setupComplete
+  if (msg.setupComplete) {
+    debugLog(sessionId, 'Setup complete')
   }
 }
 
@@ -205,9 +291,22 @@ function handleLiveMessage(sessionId: string, msg: LiveServerMessage): void {
  * Send a real-time audio chunk to the live session.
  * Audio should be PCM 16-bit mono at 16kHz, base64-encoded.
  */
+let chunkCount = 0
+
 export function sendAudioChunk(sessionId: string, audioBase64: string): void {
   const voiceSession = sessions.get(sessionId)
-  if (!voiceSession?.session || !voiceSession.active) return
+  if (!voiceSession?.session || !voiceSession.active) {
+    chunkCount++
+    if (chunkCount <= 3) {
+      debugLog(sessionId, `Audio chunk #${chunkCount} DROPPED (session not ready yet)`)
+    }
+    return
+  }
+
+  chunkCount++
+  if (chunkCount === 1) {
+    debugLog(sessionId, 'Sending audio chunks...')
+  }
 
   try {
     voiceSession.session.sendRealtimeInput({
@@ -217,7 +316,7 @@ export function sendAudioChunk(sessionId: string, audioBase64: string): void {
       },
     })
   } catch (err) {
-    console.error('[Voice Live] Failed to send audio chunk:', err)
+    debugLog(sessionId, `Failed to send chunk: ${err instanceof Error ? err.message : String(err)}`)
   }
 }
 
@@ -236,5 +335,8 @@ export function stopVoiceSession(sessionId: string): void {
       }
     }
     sessions.delete(sessionId)
+    // Reset chunk counter for next session
+    chunkCount = 0
+    msgCount = 0
   }
 }
