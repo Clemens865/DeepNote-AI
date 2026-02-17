@@ -308,25 +308,39 @@ const api = {
     }
   },
 
-  // Voice Q&A
+  // Voice Q&A (Live API)
   voiceStart: (args: { notebookId: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.VOICE_START, args),
   voiceSendAudio: (args: { sessionId: string; audioData: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.VOICE_SEND_AUDIO, args),
   voiceStop: (args: { sessionId: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.VOICE_STOP, args),
-  onVoiceResponseText: (callback: (data: { sessionId: string; text: string }) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, data: { sessionId: string; text: string }) => callback(data)
+  onVoiceResponseText: (callback: (data: { sessionId: string; text: string; type: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { sessionId: string; text: string; type: string }) => callback(data)
     ipcRenderer.on('voice:response-text', handler)
     return () => {
       ipcRenderer.removeListener('voice:response-text', handler)
     }
   },
-  onVoiceResponseAudio: (callback: (data: { sessionId: string; audioPath: string }) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, data: { sessionId: string; audioPath: string }) => callback(data)
+  onVoiceResponseAudio: (callback: (data: { sessionId: string; audioData: string; mimeType: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { sessionId: string; audioData: string; mimeType: string }) => callback(data)
     ipcRenderer.on('voice:response-audio', handler)
     return () => {
       ipcRenderer.removeListener('voice:response-audio', handler)
+    }
+  },
+  onVoiceTurnComplete: (callback: (data: { sessionId: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { sessionId: string }) => callback(data)
+    ipcRenderer.on('voice:turn-complete', handler)
+    return () => {
+      ipcRenderer.removeListener('voice:turn-complete', handler)
+    }
+  },
+  onVoiceInterrupted: (callback: (data: { sessionId: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { sessionId: string }) => callback(data)
+    ipcRenderer.on('voice:interrupted', handler)
+    return () => {
+      ipcRenderer.removeListener('voice:interrupted', handler)
     }
   },
 

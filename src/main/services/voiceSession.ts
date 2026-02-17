@@ -1,10 +1,9 @@
 import { randomUUID } from 'crypto'
 import { BrowserWindow } from 'electron'
 import { eq } from 'drizzle-orm'
-import { GoogleGenAI } from '@google/genai'
+import { GoogleGenAI, Modality, type Session, type LiveServerMessage } from '@google/genai'
 import { configService } from './config'
 import { ragService } from './rag'
-import { ttsService } from './tts'
 import { getDatabase, schema } from '../db'
 
 let client: GoogleGenAI | null = null
@@ -28,22 +27,23 @@ function broadcastToWindows(channel: string, data: unknown): void {
 
 // --- Active Sessions ---
 
-interface VoiceSessionState {
+interface LiveVoiceSession {
   id: string
   notebookId: string
-  ragContext: string
+  session: Session | null
   active: boolean
 }
 
-const sessions = new Map<string, VoiceSessionState>()
+const sessions = new Map<string, LiveVoiceSession>()
 
 /**
- * Start a voice session.
- * Loads RAG context for the notebook to use as system instruction.
+ * Start a live voice session using Gemini Live API.
+ * Opens a persistent WebSocket connection for real-time bidirectional audio.
  */
 export async function startVoiceSession(notebookId: string): Promise<{ sessionId: string }> {
   const db = getDatabase()
   const sessionId = randomUUID()
+  const ai = getClient()
 
   // Get selected sources for RAG context
   const sources = await db
@@ -68,8 +68,7 @@ export async function startVoiceSession(notebookId: string): Promise<{ sessionId
       )
       ragContext = ragResult.context
     } catch (err) {
-      console.warn('[Voice] RAG context failed:', err)
-      // Fallback: use raw source content
+      console.warn('[Voice Live] RAG context failed:', err)
       ragContext = selectedSources
         .map((s) => `[${s.title}]\n${(s.content || '').slice(0, 5000)}`)
         .join('\n\n---\n\n')
@@ -77,121 +76,163 @@ export async function startVoiceSession(notebookId: string): Promise<{ sessionId
     }
   }
 
-  const session: VoiceSessionState = {
+  const systemInstruction = ragContext
+    ? `You are a helpful voice assistant. Answer concisely and conversationally — keep responses under 3 sentences when possible. Be natural and friendly.\n\nContext from user's sources:\n${ragContext.slice(0, 20000)}`
+    : 'You are a helpful voice assistant. Answer concisely and conversationally — keep responses under 3 sentences when possible. Be natural and friendly.'
+
+  // Register session before connecting (renderer needs sessionId immediately)
+  const voiceSession: LiveVoiceSession = {
     id: sessionId,
     notebookId,
-    ragContext,
+    session: null,
     active: true,
   }
-  sessions.set(sessionId, session)
+  sessions.set(sessionId, voiceSession)
+
+  // Connect to Gemini Live API asynchronously
+  connectLiveSession(ai, sessionId, systemInstruction).catch((err) => {
+    console.error('[Voice Live] Connection failed:', err)
+    broadcastToWindows('voice:response-text', {
+      sessionId,
+      text: `Connection failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      type: 'error',
+    })
+  })
 
   return { sessionId }
 }
 
-/**
- * Process audio input — fallback approach:
- * Transcribe audio → text chat → TTS response
- */
-export async function processAudioInput(
+async function connectLiveSession(
+  ai: GoogleGenAI,
   sessionId: string,
-  audioBase64: string
+  systemInstruction: string
 ): Promise<void> {
-  const session = sessions.get(sessionId)
-  if (!session || !session.active) {
-    throw new Error('Voice session not found or inactive')
-  }
+  const voiceSession = sessions.get(sessionId)
+  if (!voiceSession || !voiceSession.active) return
 
-  const ai = getClient()
-
-  try {
-    // Step 1: Transcribe audio using Gemini
-    const transcribeResponse = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              inlineData: {
-                mimeType: 'audio/webm',
-                data: audioBase64,
-              },
-            },
-            {
-              text: 'Transcribe this audio. Output ONLY the transcribed text, nothing else.',
-            },
-          ],
+  const session = await ai.live.connect({
+    model: 'gemini-live-2.5-flash-preview',
+    config: {
+      responseModalities: [Modality.AUDIO],
+      systemInstruction,
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: { voiceName: 'Kore' },
         },
-      ],
-    })
+      },
+    },
+    callbacks: {
+      onopen: () => {
+        console.log('[Voice Live] WebSocket connected for session', sessionId)
+        broadcastToWindows('voice:response-text', {
+          sessionId,
+          text: '',
+          type: 'ready',
+        })
+      },
+      onmessage: (msg: LiveServerMessage) => {
+        handleLiveMessage(sessionId, msg)
+      },
+      onerror: (err) => {
+        console.error('[Voice Live] WebSocket error:', err)
+        broadcastToWindows('voice:response-text', {
+          sessionId,
+          text: 'Connection error occurred.',
+          type: 'error',
+        })
+      },
+      onclose: () => {
+        console.log('[Voice Live] WebSocket closed for session', sessionId)
+        const s = sessions.get(sessionId)
+        if (s) s.active = false
+      },
+    },
+  })
 
-    const transcribedText = transcribeResponse.text?.trim()
-    if (!transcribedText) {
+  voiceSession.session = session
+}
+
+function handleLiveMessage(sessionId: string, msg: LiveServerMessage): void {
+  const content = msg.serverContent
+
+  if (content) {
+    // Handle audio response chunks from model
+    if (content.modelTurn?.parts) {
+      for (const part of content.modelTurn.parts) {
+        if (part.inlineData?.data && part.inlineData.mimeType) {
+          broadcastToWindows('voice:response-audio', {
+            sessionId,
+            audioData: part.inlineData.data,
+            mimeType: part.inlineData.mimeType,
+          })
+        }
+      }
+    }
+
+    // Handle input transcription (what the user said)
+    if (content.inputTranscription?.text) {
       broadcastToWindows('voice:response-text', {
         sessionId,
-        text: "I couldn't understand the audio. Please try again.",
+        text: content.inputTranscription.text,
+        type: 'input',
       })
-      return
     }
 
-    // Broadcast the transcription
-    broadcastToWindows('voice:response-text', {
-      sessionId,
-      text: `You said: ${transcribedText}`,
-    })
-
-    // Step 2: Generate AI response with RAG context
-    const systemPrompt = session.ragContext
-      ? `You are a helpful voice assistant. Answer concisely and conversationally — keep responses under 3 sentences when possible.\n\nContext from user's sources:\n${session.ragContext.slice(0, 20000)}`
-      : 'You are a helpful voice assistant. Answer concisely and conversationally — keep responses under 3 sentences when possible.'
-
-    const chatResponse = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      config: { systemInstruction: systemPrompt },
-      contents: [{ role: 'user', parts: [{ text: transcribedText }] }],
-    })
-
-    const responseText = chatResponse.text ?? 'I could not generate a response.'
-
-    // Broadcast the text response
-    broadcastToWindows('voice:response-text', {
-      sessionId,
-      text: responseText,
-    })
-
-    // Step 3: Convert response to speech using existing TTS service
-    try {
-      const script = {
-        speakers: [{ name: 'Assistant', voice: 'Kore' }],
-        turns: [{ speaker: 'Assistant', text: responseText }],
-      }
-      const { audioPath } = await ttsService.generatePodcastAudio(script)
-
-      // Broadcast the audio path for the renderer to play
-      broadcastToWindows('voice:response-audio', {
+    // Handle output transcription (what the AI said)
+    if (content.outputTranscription?.text) {
+      broadcastToWindows('voice:response-text', {
         sessionId,
-        audioPath,
+        text: content.outputTranscription.text,
+        type: 'output',
       })
-    } catch (ttsErr) {
-      console.warn('[Voice] TTS failed:', ttsErr)
-      // Text response already sent, audio is optional
     }
-  } catch (err) {
-    console.error('[Voice] Processing failed:', err)
-    broadcastToWindows('voice:response-text', {
-      sessionId,
-      text: `Error: ${err instanceof Error ? err.message : 'Voice processing failed'}`,
-    })
+
+    // Handle turn completion
+    if (content.turnComplete) {
+      broadcastToWindows('voice:turn-complete', { sessionId })
+    }
+
+    // Handle interruption
+    if (content.interrupted) {
+      broadcastToWindows('voice:interrupted', { sessionId })
+    }
   }
 }
 
 /**
- * Stop a voice session.
+ * Send a real-time audio chunk to the live session.
+ * Audio should be PCM 16-bit mono at 16kHz, base64-encoded.
+ */
+export function sendAudioChunk(sessionId: string, audioBase64: string): void {
+  const voiceSession = sessions.get(sessionId)
+  if (!voiceSession?.session || !voiceSession.active) return
+
+  try {
+    voiceSession.session.sendRealtimeInput({
+      audio: {
+        data: audioBase64,
+        mimeType: 'audio/pcm;rate=16000',
+      },
+    })
+  } catch (err) {
+    console.error('[Voice Live] Failed to send audio chunk:', err)
+  }
+}
+
+/**
+ * Stop a voice session and close the WebSocket.
  */
 export function stopVoiceSession(sessionId: string): void {
-  const session = sessions.get(sessionId)
-  if (session) {
-    session.active = false
+  const voiceSession = sessions.get(sessionId)
+  if (voiceSession) {
+    voiceSession.active = false
+    if (voiceSession.session) {
+      try {
+        voiceSession.session.conn.close()
+      } catch {
+        // Already closed
+      }
+    }
     sessions.delete(sessionId)
   }
 }
