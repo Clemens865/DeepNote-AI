@@ -6,6 +6,7 @@ import { getDatabase, schema } from '../db'
 import { ragService } from '../services/rag'
 import { aiService } from '../services/ai'
 import { memoryService } from '../services/memory'
+import { superbrainService } from '../services/superbrain'
 
 export function registerChatHandlers() {
   ipcMain.handle(IPC_CHANNELS.CHAT_MESSAGES, async (_event, notebookId: string) => {
@@ -89,6 +90,26 @@ export function registerChatHandlers() {
       }
     }
 
+    // SuperBrain: recall system-wide context (gracefully skips if offline)
+    let superbrainContext = ''
+    try {
+      const sbMemories = await superbrainService.recall(args.message, 5)
+      if (sbMemories && sbMemories.length > 0) {
+        const sbParts = sbMemories.map(
+          (m) => `[${m.memoryType || 'memory'}] ${m.content}`
+        )
+        superbrainContext = `\n\n--- System-wide context (from SuperBrain) ---\n${sbParts.join('\n')}`
+        console.log(`[Chat] SuperBrain provided ${sbMemories.length} memories`)
+      }
+    } catch {
+      // SuperBrain offline — continue without system-wide context
+    }
+
+    // Combine RAG context with SuperBrain context
+    if (superbrainContext) {
+      context = context + superbrainContext
+    }
+
     // Get chat history for context
     const history = await db
       .select()
@@ -140,6 +161,13 @@ export function registerChatHandlers() {
       args.notebookId,
       recentHistory.concat([{ role: 'assistant', content: responseText }])
     ).catch((err) => console.warn('[Chat] Memory extraction failed:', err))
+
+    // Fire-and-forget: store Q&A in SuperBrain as episodic memory
+    superbrainService.remember(
+      `[DeepNote Chat | ${notebook?.title || args.notebookId}] Q: ${args.message}\nA: ${responseText.slice(0, 500)}`,
+      'episodic',
+      0.6
+    ).catch(() => { /* SuperBrain offline — silently skip */ })
 
     return assistantMessage
   })

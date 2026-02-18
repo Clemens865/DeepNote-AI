@@ -5,6 +5,7 @@ import { GoogleGenAI, Modality, type Session, type LiveServerMessage } from '@go
 import { configService } from './config'
 import { ragService } from './rag'
 import { getDatabase, schema } from '../db'
+import { superbrainService } from './superbrain'
 
 let client: GoogleGenAI | null = null
 
@@ -95,6 +96,31 @@ export async function startVoiceSession(notebookId: string): Promise<{ sessionId
   // Get all sources in notebook (even unselected) for awareness
   const allSourceTitles = sources.map((s) => `- ${s.title} (${s.isSelected ? 'selected' : 'available'})`).join('\n')
 
+  // SuperBrain: recall system-wide memories + clipboard for voice context
+  let superbrainContext = ''
+  try {
+    const [sbMemories, sbClipboard] = await Promise.all([
+      superbrainService.recall('voice conversation context, recent activity', 5),
+      superbrainService.getClipboardHistory(),
+    ])
+    const parts: string[] = []
+    if (sbMemories && sbMemories.length > 0) {
+      parts.push('System-wide memories:\n' + sbMemories.map(
+        (m) => `- [${m.memoryType || 'memory'}] ${m.content}`
+      ).join('\n'))
+    }
+    if (sbClipboard && sbClipboard.length > 0) {
+      parts.push('Recent clipboard:\n' + sbClipboard.slice(0, 3).map(
+        (c) => `- ${c.content.slice(0, 200)}`
+      ).join('\n'))
+    }
+    if (parts.length > 0) {
+      superbrainContext = `\n\n--- System-wide context (SuperBrain) ---\n${parts.join('\n\n')}`
+    }
+  } catch {
+    // SuperBrain offline — continue without system-wide context
+  }
+
   const toolsInfo = `You are part of DeepNote AI, an AI-powered notebook app.
 
 IMPORTANT — IN-CHAT ARTIFACT TOOLS:
@@ -128,12 +154,12 @@ The user's notebook contains these sources:
 ${allSourceTitles}
 
 Content from the user's selected sources:
-${sourceContext.slice(0, 30000)}`
+${sourceContext.slice(0, 30000)}${superbrainContext}`
     : `You are a helpful, knowledgeable voice assistant for DeepNote AI. Answer concisely and conversationally — keep responses under 3 sentences when possible. Be natural and friendly.
 
 ${toolsInfo}
 
-The user has no sources selected in their current notebook. Suggest they add or select sources to get source-aware answers.`
+The user has no sources selected in their current notebook. Suggest they add or select sources to get source-aware answers.${superbrainContext}`
 
   // Register session before connecting (renderer needs sessionId immediately)
   const voiceSession: LiveVoiceSession = {
