@@ -90,16 +90,34 @@ export function registerChatHandlers() {
       }
     }
 
-    // SuperBrain: recall system-wide context (gracefully skips if offline)
+    // SuperBrain: recall memories + search files in parallel (gracefully skips if offline)
     let superbrainContext = ''
     try {
-      const sbMemories = await superbrainService.recall(args.message, 5)
-      if (sbMemories && sbMemories.length > 0) {
-        const sbParts = sbMemories.map(
-          (m) => `[${m.memoryType || 'memory'}] ${m.content}`
-        )
-        superbrainContext = `\n\n--- System-wide context (from SuperBrain) ---\n${sbParts.join('\n')}`
+      const [sbMemories, sbFiles] = await Promise.all([
+        superbrainService.recall(args.message, 8).catch(() => []),
+        superbrainService.searchFiles(args.message, 5).catch(() => []),
+      ])
+
+      const sbParts: string[] = []
+
+      if (sbMemories.length > 0) {
+        sbParts.push('System memories:')
+        for (const m of sbMemories) {
+          sbParts.push(`  [${m.memoryType}] ${m.content}`)
+        }
         console.log(`[Chat] SuperBrain provided ${sbMemories.length} memories`)
+      }
+
+      if (sbFiles.length > 0) {
+        sbParts.push('System files (emails, documents, indexed files):')
+        for (const f of sbFiles) {
+          sbParts.push(`  [File: ${f.name}] (${f.path})\n  ${f.chunk}`)
+        }
+        console.log(`[Chat] SuperBrain provided ${sbFiles.length} file matches`)
+      }
+
+      if (sbParts.length > 0) {
+        superbrainContext = `\n\n--- System-wide context (from SuperBrain — includes emails, files, clipboard, app memories) ---\n${sbParts.join('\n')}`
       }
     } catch {
       // SuperBrain offline — continue without system-wide context

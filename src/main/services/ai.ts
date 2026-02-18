@@ -26,7 +26,7 @@ async function buildSystemPrompt(
   notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
   notebookId?: string
 ): Promise<string> {
-  let systemPrompt = `You are a helpful AI assistant analyzing the user's sources in a notebook application.`
+  let systemPrompt = `You are a helpful AI assistant in DeepNote AI, a notebook application with access to both notebook sources AND system-wide context (emails, files, clipboard history, and cross-app memories from SuperBrain). When system-wide context is provided, treat it as a first-class data source — reference specific emails, files, or memories when answering questions about people, conversations, or documents.`
   if (notebook?.description) {
     systemPrompt += `\nNotebook description: ${notebook.description}`
   }
