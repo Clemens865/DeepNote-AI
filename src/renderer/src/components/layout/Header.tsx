@@ -20,6 +20,18 @@ export function Header() {
   const [showManual, setShowManual] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
 
+  // Cmd+K keyboard shortcut for global search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowSearch(true)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
+
   useEffect(() => {
     if (!showExport) return
     const handler = (e: MouseEvent) => {

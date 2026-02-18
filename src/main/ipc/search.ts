@@ -3,6 +3,7 @@ import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { getDatabase, schema } from '../db'
 import { embeddingsService } from '../services/embeddings'
 import { vectorStoreService } from '../services/vectorStore'
+import { superbrainService } from '../services/superbrain'
 
 export function registerSearchHandlers() {
   ipcMain.handle(
@@ -19,11 +20,15 @@ export function registerSearchHandlers() {
       }
 
       if (notebookIds.length === 0) {
-        return { results: [] }
+        return { results: [], systemResults: { memories: [], files: [] } }
       }
 
-      // Generate query embedding
-      const queryVector = await embeddingsService.embedQuery(args.query)
+      // Search notebook vectors AND SuperBrain in parallel
+      const [queryVector, sbMemories, sbFiles] = await Promise.all([
+        embeddingsService.embedQuery(args.query),
+        superbrainService.recall(args.query, 5).catch(() => []),
+        superbrainService.searchFiles(args.query, 5).catch(() => []),
+      ])
 
       // Search across all notebooks
       const vectorResults = await vectorStoreService.searchMultiple(notebookIds, queryVector, limit)
@@ -45,7 +50,23 @@ export function registerSearchHandlers() {
         pageNumber: r.pageNumber,
       }))
 
-      return { results }
+      return {
+        results,
+        systemResults: {
+          memories: sbMemories.map((m) => ({
+            content: m.content,
+            memoryType: m.memoryType,
+            similarity: m.similarity,
+          })),
+          files: sbFiles.map((f) => ({
+            path: f.path,
+            name: f.name,
+            chunk: f.chunk.slice(0, 300),
+            similarity: f.similarity,
+            fileType: f.fileType,
+          })),
+        },
+      }
     }
   )
 }

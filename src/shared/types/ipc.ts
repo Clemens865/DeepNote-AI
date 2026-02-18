@@ -357,6 +357,10 @@ export interface IpcHandlerMap {
         score: number
         pageNumber?: number
       }[]
+      systemResults?: {
+        memories: { content: string; memoryType: string; similarity: number }[]
+        files: { path: string; name: string; chunk: string; similarity: number; fileType: string }[]
+      }
     }
   }
 
