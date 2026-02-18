@@ -1,5 +1,7 @@
 import { Tray, Menu, globalShortcut, clipboard, BrowserWindow, nativeImage, app } from 'electron'
 import { join } from 'path'
+import { superbrainService } from './superbrain'
+import { getDatabase, schema } from '../db'
 
 const MAX_HISTORY = 10
 const CLIP_PREVIEW_LENGTH = 60
@@ -59,6 +61,13 @@ class TrayService {
     // Broadcast to renderer
     this.broadcastToWindows('clipboard:captured', { text })
 
+    // Fire-and-forget: store in SuperBrain as working memory
+    superbrainService.remember(
+      `[Clipboard Capture] ${text.slice(0, 500)}`,
+      'working',
+      0.3
+    ).catch(() => { /* SuperBrain offline */ })
+
     // Update tray menu
     this.updateMenu()
   }
@@ -71,6 +80,31 @@ class TrayService {
 
   private updateMenu(): void {
     if (!this.tray) return
+
+    // Get notebooks for "Add to Notebook" submenu
+    let notebookItems: Electron.MenuItemConstructorOptions[] = []
+    try {
+      const db = getDatabase()
+      const notebooks = db.select().from(schema.notebooks).all()
+      notebookItems = notebooks.map((nb) => ({
+        label: `${nb.emoji || ''} ${nb.title}`.trim(),
+        click: () => {
+          // Broadcast to renderer to add clipboard to this notebook
+          const text = clipboard.readText().trim()
+          if (text) {
+            this.broadcastToWindows('clipboard:add-to-notebook', {
+              notebookId: nb.id,
+              text,
+              title: `Clipboard - ${new Date().toLocaleString()}`,
+            })
+            this.mainWindow?.show()
+            this.mainWindow?.focus()
+          }
+        },
+      }))
+    } catch {
+      // DB not ready yet
+    }
 
     const historyItems: Electron.MenuItemConstructorOptions[] = this.clipboardHistory.map(
       (text, idx) => ({
@@ -91,6 +125,13 @@ class TrayService {
         label: 'Capture Clipboard (⌘⇧N)',
         click: () => this.captureClipboard(),
       },
+      // Add to Notebook submenu
+      ...(notebookItems.length > 0
+        ? [{
+            label: 'Add Clipboard to Notebook',
+            submenu: notebookItems,
+          } as Electron.MenuItemConstructorOptions]
+        : []),
       { type: 'separator' },
       ...(historyItems.length > 0
         ? [

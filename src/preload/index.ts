@@ -309,6 +309,13 @@ const api = {
       ipcRenderer.removeListener('clipboard:captured', handler)
     }
   },
+  onClipboardAddToNotebook: (callback: (data: { notebookId: string; text: string; title: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { notebookId: string; text: string; title: string }) => callback(data)
+    ipcRenderer.on('clipboard:add-to-notebook', handler)
+    return () => {
+      ipcRenderer.removeListener('clipboard:add-to-notebook', handler)
+    }
+  },
 
   // Voice Q&A (Live API)
   voiceStart: (args: { notebookId: string }) =>
