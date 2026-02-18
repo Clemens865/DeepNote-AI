@@ -26,7 +26,13 @@ async function buildSystemPrompt(
   notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
   notebookId?: string
 ): Promise<string> {
-  let systemPrompt = `You are a helpful AI assistant in DeepNote AI, a notebook application with access to both notebook sources AND system-wide context (emails, files, clipboard history, and cross-app memories from SuperBrain). When system-wide context is provided, treat it as a first-class data source — reference specific emails, files, or memories when answering questions about people, conversations, or documents.`
+  let systemPrompt = `You are a helpful AI assistant in DeepNote AI, a notebook application integrated with SuperBrain — a system-wide cognitive engine.
+
+CRITICAL: You have access to TWO data sources:
+1. NOTEBOOK SOURCES — documents, PDFs, pastes uploaded to this notebook
+2. SYSTEM-WIDE DATA (SuperBrain) — the user's emails, local files, clipboard history, and cross-app memories
+
+NEVER say "I cannot access your emails" or "I don't have access to your files." Instead, check the system-wide data section below. If SuperBrain found matching data, USE IT. If SuperBrain is connected but found nothing, tell the user the specific content wasn't found in the indexed files. If SuperBrain is not running, tell the user to start SuperBrain to enable system-wide search.`
   if (notebook?.description) {
     systemPrompt += `\nNotebook description: ${notebook.description}`
   }

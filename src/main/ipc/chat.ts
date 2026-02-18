@@ -92,41 +92,50 @@ export function registerChatHandlers() {
 
     // SuperBrain: recall memories + search files in parallel (gracefully skips if offline)
     let superbrainContext = ''
+    let superbrainConnected = false
     try {
-      const [sbMemories, sbFiles] = await Promise.all([
-        superbrainService.recall(args.message, 8).catch(() => []),
-        superbrainService.searchFiles(args.message, 5).catch(() => []),
-      ])
+      superbrainConnected = await superbrainService.isAvailable()
+      if (superbrainConnected) {
+        const [sbMemories, sbFiles] = await Promise.all([
+          superbrainService.recall(args.message, 8).catch(() => []),
+          superbrainService.searchFiles(args.message, 5).catch(() => []),
+        ])
 
-      const sbParts: string[] = []
+        const sbParts: string[] = []
 
-      if (sbMemories.length > 0) {
-        sbParts.push('System memories:')
-        for (const m of sbMemories) {
-          sbParts.push(`  [${m.memoryType}] ${m.content}`)
+        if (sbMemories.length > 0) {
+          sbParts.push('System memories:')
+          for (const m of sbMemories) {
+            sbParts.push(`  [${m.memoryType}] ${m.content}`)
+          }
+          console.log(`[Chat] SuperBrain provided ${sbMemories.length} memories`)
         }
-        console.log(`[Chat] SuperBrain provided ${sbMemories.length} memories`)
-      }
 
-      if (sbFiles.length > 0) {
-        sbParts.push('System files (emails, documents, indexed files):')
-        for (const f of sbFiles) {
-          sbParts.push(`  [File: ${f.name}] (${f.path})\n  ${f.chunk}`)
+        if (sbFiles.length > 0) {
+          sbParts.push('System files (emails, documents, indexed files):')
+          for (const f of sbFiles) {
+            sbParts.push(`  [File: ${f.name}] (${f.path})\n  ${f.chunk}`)
+          }
+          console.log(`[Chat] SuperBrain provided ${sbFiles.length} file matches`)
         }
-        console.log(`[Chat] SuperBrain provided ${sbFiles.length} file matches`)
-      }
 
-      if (sbParts.length > 0) {
-        superbrainContext = `\n\n--- System-wide context (from SuperBrain — includes emails, files, clipboard, app memories) ---\n${sbParts.join('\n')}`
+        if (sbParts.length > 0) {
+          superbrainContext = `\n\n--- SYSTEM-WIDE DATA (SuperBrain connected) ---\nYou DO have access to the user's system files, emails, clipboard history, and cross-app memories through SuperBrain. The following data was found for this query:\n${sbParts.join('\n')}`
+        } else {
+          superbrainContext = `\n\n--- SYSTEM-WIDE DATA (SuperBrain connected) ---\nSuperBrain is connected but found no matching files or memories for this query. The user's emails and files ARE searchable — this query just didn't match any indexed content. Suggest the user check if their emails/files are indexed in SuperBrain.`
+        }
       }
     } catch {
-      // SuperBrain offline — continue without system-wide context
+      // SuperBrain offline
+    }
+
+    // Tell the AI about SuperBrain status so it doesn't say "I can't access your files"
+    if (!superbrainConnected) {
+      superbrainContext = `\n\n--- SYSTEM-WIDE DATA ---\nSuperBrain is not running. You cannot access system files or emails right now. Tell the user to start SuperBrain to enable system-wide search across emails, files, and apps.`
     }
 
     // Combine RAG context with SuperBrain context
-    if (superbrainContext) {
-      context = context + superbrainContext
-    }
+    context = context + superbrainContext
 
     // Get chat history for context
     const history = await db
