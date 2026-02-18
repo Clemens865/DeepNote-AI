@@ -9,6 +9,7 @@ import { aiService } from '../services/ai'
 import { ttsService } from '../services/tts'
 import { imagenService, STYLE_PRESETS, buildSlidePrompt, buildHybridSlidePrompt } from '../services/imagen'
 import { shouldUsePipeline } from '../services/generationPipeline'
+import { superbrainService } from '../services/superbrain'
 
 const TYPE_TITLES: Record<string, string> = {
   report: 'Report',
@@ -106,6 +107,13 @@ export function registerStudioHandlers() {
           status: 'completed',
         })
         .where(eq(schema.generatedContent.id, id))
+
+      // Fire-and-forget: store generation event in SuperBrain
+      superbrainService.remember(
+        `[DeepNote Studio] Generated ${args.type}: "${record.title}" in notebook ${args.notebookId} from ${sourceIds.length} sources`,
+        'semantic',
+        0.5
+      ).catch(() => { /* SuperBrain offline */ })
 
       return {
         id,

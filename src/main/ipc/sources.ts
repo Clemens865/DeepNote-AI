@@ -5,6 +5,7 @@ import { getDatabase, schema } from '../db'
 import { vectorStoreService } from '../services/vectorStore'
 import { ingestSource } from '../services/sourceIngestion'
 import { recommendationsService } from '../services/recommendations'
+import { superbrainService } from '../services/superbrain'
 import type { SourceType } from '../../shared/types'
 
 export function registerSourceHandlers() {
@@ -24,7 +25,7 @@ export function registerSourceHandlers() {
     title?: string
     url?: string
   }) => {
-    return ingestSource({
+    const source = await ingestSource({
       notebookId: args.notebookId,
       type: args.type as SourceType,
       filePath: args.filePath,
@@ -32,6 +33,16 @@ export function registerSourceHandlers() {
       title: args.title,
       url: args.url,
     })
+
+    // Fire-and-forget: store source addition in SuperBrain
+    const preview = (source.content || '').slice(0, 200)
+    superbrainService.remember(
+      `[DeepNote Source] Added "${source.title}" (${source.type}) to notebook ${args.notebookId}. Preview: ${preview}`,
+      'semantic',
+      0.4
+    ).catch(() => { /* SuperBrain offline */ })
+
+    return source
   })
 
   ipcMain.handle(IPC_CHANNELS.SOURCES_DELETE, async (_event, id: string) => {
