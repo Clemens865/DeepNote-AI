@@ -67,7 +67,7 @@ Output a research brief with:
 Be thorough but concise. Focus on information that's most relevant for creating a high-quality ${ctx.type}.`
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   })
 
@@ -126,7 +126,7 @@ Output a JSON object:
 Output ONLY valid JSON, no markdown fences.`
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   })
 

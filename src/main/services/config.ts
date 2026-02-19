@@ -25,7 +25,7 @@ const defaultConfig: AppConfig = {
   openaiApiKey: '',
   groqApiKey: '',
   chatProvider: 'gemini',
-  chatModel: 'gemini-2.5-flash',
+  chatModel: 'gemini-3-flash-preview',
   embeddingsModel: 'auto',
   superbrainPort: 19519,
   superbrainToken: '',

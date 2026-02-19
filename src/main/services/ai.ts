@@ -150,7 +150,7 @@ export class AiService {
     }))
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       config: { systemInstruction: systemPrompt },
       contents,
     })
@@ -175,7 +175,7 @@ export class AiService {
     }))
 
     const response = await ai.models.generateContentStream({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       config: { systemInstruction: systemPrompt },
       contents,
     })
@@ -197,7 +197,7 @@ export class AiService {
     const truncated = text.slice(0, 30000)
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [
         {
           role: 'user',
@@ -583,7 +583,7 @@ Rules:
 Output ONLY valid JSON, no markdown fences.`
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
 
@@ -681,7 +681,7 @@ Slide 2+ example (content slide — bold-label format with explanatory sentences
 Output the full array with EXACTLY ${slideCount} slides:`
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
 
@@ -719,7 +719,7 @@ Output the full array with EXACTLY ${slideCount} slides:`
         : 'image/jpeg'
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [
         {
           role: 'user',
@@ -783,7 +783,7 @@ Do NOT describe what is depicted. ONLY describe HOW it is rendered and what to a
     const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 30000)
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [
         {
           role: 'user',
@@ -828,7 +828,7 @@ Output ONLY valid JSON, no markdown fences.`,
     const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 60000)
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [
         {
           role: 'user',
@@ -948,7 +948,7 @@ Rules:
 Output ONLY valid JSON, no markdown fences.`
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
 
@@ -988,7 +988,7 @@ Structure your response with clear headings and sections. Be thorough and detail
     onProgress?.('researching', 'Analyzing sources and generating research report...')
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: researchPrompt }] }],
     })
 

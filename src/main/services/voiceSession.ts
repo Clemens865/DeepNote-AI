@@ -107,7 +107,7 @@ export async function processAudioInput(
   try {
     // Step 1: Transcribe audio using Gemini
     const transcribeResponse = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: [
         {
           role: 'user',
@@ -148,7 +148,7 @@ export async function processAudioInput(
       : 'You are a helpful voice assistant. Answer concisely and conversationally — keep responses under 3 sentences when possible.'
 
     const chatResponse = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       config: { systemInstruction: systemPrompt },
       contents: [{ role: 'user', parts: [{ text: transcribedText }] }],
     })

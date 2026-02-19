@@ -29,7 +29,7 @@ async function generateSubQueries(question: string): Promise<string[]> {
   const ai = getClient()
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     contents: [
       {
         role: 'user',
@@ -100,7 +100,7 @@ async function shouldRetrieveMore(question: string, currentContext: string): Pro
 
   const ai = getClient()
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     contents: [
       {
         role: 'user',
