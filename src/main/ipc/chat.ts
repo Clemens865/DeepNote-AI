@@ -4,9 +4,12 @@ import { eq } from 'drizzle-orm'
 import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { getDatabase, schema } from '../db'
 import { ragService } from '../services/rag'
-import { aiService } from '../services/ai'
+import { aiService, buildSystemPrompt } from '../services/ai'
 import { memoryService } from '../services/memory'
 import { superbrainService } from '../services/superbrain'
+import { configService } from '../services/config'
+import { getChatProvider } from '../services/providers'
+import type { ChatProviderType } from '../../shared/providers'
 
 export function registerChatHandlers() {
   ipcMain.handle(IPC_CHANNELS.CHAT_MESSAGES, async (_event, notebookId: string) => {
@@ -90,11 +93,14 @@ export function registerChatHandlers() {
       }
     }
 
-    // SuperBrain: recall memories + search files in parallel (gracefully skips if offline)
+    // SuperBrain: recall memories + search files in parallel (gracefully skips if offline or disabled)
+    const sbEnabled = configService.getAll().superbrainEnabled !== false
     let superbrainContext = ''
     let superbrainConnected = false
     try {
-      superbrainConnected = await superbrainService.isAvailable()
+      if (sbEnabled) {
+        superbrainConnected = await superbrainService.isAvailable()
+      }
       if (superbrainConnected) {
         const [sbMemories, sbFiles] = await Promise.all([
           superbrainService.recall(args.message, 8).catch(() => []),
@@ -154,16 +160,24 @@ export function registerChatHandlers() {
     // Generate a message ID upfront for streaming
     const assistantId = randomUUID()
 
-    // Call AI service with streaming
+    // Call AI service with streaming via provider factory
     let responseText: string
     try {
-      responseText = await aiService.chatStream(recentHistory, context, {
+      const { chatProvider: providerType, chatModel } = configService.getAll()
+      const provider = getChatProvider(
+        (providerType || 'gemini') as ChatProviderType,
+        chatModel || 'gemini-2.5-flash',
+        configService
+      )
+      const systemPrompt = await buildSystemPrompt(context, {
         description: notebook?.description,
         responseLength: notebook?.responseLength,
         hasSpreadsheetSources,
-      }, (chunk) => {
+      }, args.notebookId, sbEnabled)
+
+      responseText = await provider.chatStream(recentHistory, systemPrompt, (chunk) => {
         _event.sender.send('chat:stream-chunk', { messageId: assistantId, chunk })
-      }, args.notebookId)
+      })
     } catch (err) {
       responseText = `Error: ${err instanceof Error ? err.message : 'Failed to generate response. Please check your API key in Settings.'}`
       citations = []
@@ -190,11 +204,13 @@ export function registerChatHandlers() {
     ).catch((err) => console.warn('[Chat] Memory extraction failed:', err))
 
     // Fire-and-forget: store Q&A in SuperBrain as episodic memory
-    superbrainService.remember(
-      `[DeepNote Chat | ${notebook?.title || args.notebookId}] Q: ${args.message}\nA: ${responseText.slice(0, 500)}`,
-      'episodic',
-      0.6
-    ).catch(() => { /* SuperBrain offline — silently skip */ })
+    if (sbEnabled) {
+      superbrainService.remember(
+        `[DeepNote Chat | ${notebook?.title || args.notebookId}] Q: ${args.message}\nA: ${responseText.slice(0, 500)}`,
+        'episodic',
+        0.6
+      ).catch(() => { /* SuperBrain offline — silently skip */ })
+    }
 
     return assistantMessage
   })

@@ -58,6 +58,8 @@ export const IPC_CHANNELS = {
   CONFIG_GET_API_KEY: 'config:getApiKey',
   CONFIG_SET_API_KEY: 'config:setApiKey',
   CONFIG_TEST_API_KEY: 'config:testApiKey',
+  CONFIG_GET_CHAT_CONFIG: 'config:getChatConfig',
+  CONFIG_SET_CHAT_CONFIG: 'config:setChatConfig',
 
   // Save file (copy local file to user-chosen destination)
   STUDIO_SAVE_FILE: 'studio:saveFile',
@@ -263,6 +265,21 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.CONFIG_GET_API_KEY]: { args: []; return: string }
   [IPC_CHANNELS.CONFIG_SET_API_KEY]: { args: [string]; return: void }
   [IPC_CHANNELS.CONFIG_TEST_API_KEY]: { args: [string]; return: { success: boolean; error?: string } }
+  [IPC_CHANNELS.CONFIG_GET_CHAT_CONFIG]: {
+    args: []
+    return: {
+      provider: string
+      model: string
+      hasGeminiKey: boolean
+      hasClaudeKey: boolean
+      hasOpenaiKey: boolean
+      hasGroqKey: boolean
+    }
+  }
+  [IPC_CHANNELS.CONFIG_SET_CHAT_CONFIG]: {
+    args: [{ provider?: string; model?: string; geminiKey?: string; claudeKey?: string; openaiKey?: string; groqKey?: string }]
+    return: void
+  }
 
   // Save file
   [IPC_CHANNELS.STUDIO_SAVE_FILE]: {
@@ -398,6 +415,7 @@ export interface IpcHandlerMap {
     args: []
     return: {
       available: boolean
+      enabled: boolean
       memoryCount: number
       thoughtCount: number
       aiProvider: string
@@ -430,7 +448,7 @@ export interface IpcHandlerMap {
     return: { response: string; confidence: number; thoughtId: string; memoryCount: number; aiEnhanced: boolean } | null
   }
   [IPC_CHANNELS.SUPERBRAIN_CONFIGURE]: {
-    args: [{ port?: number; token?: string | null }]
+    args: [{ port?: number; token?: string | null; enabled?: boolean }]
     return: void
   }
 

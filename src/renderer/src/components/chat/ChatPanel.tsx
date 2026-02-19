@@ -17,8 +17,11 @@ import {
   Gauge,
   Clock,
   Mic,
+  Brain,
+  ChevronDown,
 } from 'lucide-react'
 import type { ChatMessage as ChatMessageType, SourceType } from '@shared/types'
+import { CHAT_PROVIDERS, type ChatProviderType } from '@shared/providers'
 
 const EXT_TO_TYPE: Record<string, SourceType> = {
   pdf: 'pdf',
@@ -62,6 +65,12 @@ export function ChatPanel() {
   const [uploadingFile, setUploadingFile] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [showVoice, setShowVoice] = useState(false)
+  const [sbEnabled, setSbEnabled] = useState(true)
+  const [chatProvider, setChatProvider] = useState<ChatProviderType>('gemini')
+  const [chatModel, setChatModel] = useState('gemini-2.5-flash')
+  const [providerKeys, setProviderKeys] = useState({ hasGeminiKey: false, hasClaudeKey: false, hasOpenaiKey: false, hasGroqKey: false })
+  const [showModelMenu, setShowModelMenu] = useState(false)
+  const modelMenuRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
   const researchCleanupRef = useRef<Array<() => void>>([])
@@ -74,7 +83,31 @@ export function ChatPanel() {
 
   useEffect(() => {
     loadMessages()
+    // Load SuperBrain enabled state
+    window.api.superbrainStatus().then((status) => {
+      if (status && typeof (status as { enabled?: boolean }).enabled === 'boolean') {
+        setSbEnabled((status as { enabled: boolean }).enabled)
+      }
+    }).catch(() => {})
+    // Load chat provider config
+    window.api.getChatConfig().then((cfg: { provider: string; model: string; hasGeminiKey: boolean; hasClaudeKey: boolean; hasOpenaiKey: boolean; hasGroqKey: boolean }) => {
+      setChatProvider(cfg.provider as ChatProviderType)
+      setChatModel(cfg.model)
+      setProviderKeys({ hasGeminiKey: cfg.hasGeminiKey, hasClaudeKey: cfg.hasClaudeKey, hasOpenaiKey: cfg.hasOpenaiKey, hasGroqKey: cfg.hasGroqKey })
+    }).catch(() => {})
   }, [loadMessages])
+
+  // Close model menu on outside click
+  useEffect(() => {
+    if (!showModelMenu) return
+    const handleClick = (e: MouseEvent) => {
+      if (modelMenuRef.current && !modelMenuRef.current.contains(e.target as Node)) {
+        setShowModelMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showModelMenu])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -317,6 +350,32 @@ export function ChatPanel() {
 
   const hasSelectedSources = sources.filter((s) => s.isSelected).length > 0
 
+  const PROVIDER_COLORS: Record<ChatProviderType, string> = {
+    gemini: 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400',
+    claude: 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30 text-orange-600 dark:text-orange-400',
+    openai: 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30 text-green-600 dark:text-green-400',
+    groq: 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-600 dark:text-purple-400',
+  }
+
+  const hasKeyForProvider = (id: ChatProviderType) => {
+    if (id === 'gemini') return providerKeys.hasGeminiKey
+    if (id === 'claude') return providerKeys.hasClaudeKey
+    if (id === 'openai') return providerKeys.hasOpenaiKey
+    if (id === 'groq') return providerKeys.hasGroqKey
+    return false
+  }
+
+  const currentProviderDef = CHAT_PROVIDERS.find((p) => p.id === chatProvider)
+  const currentModelDef = currentProviderDef?.models.find((m) => m.id === chatModel)
+  const modelDisplayName = currentModelDef?.name || chatModel
+
+  const handleModelSelect = async (providerId: ChatProviderType, modelId: string) => {
+    setChatProvider(providerId)
+    setChatModel(modelId)
+    setShowModelMenu(false)
+    await window.api.setChatConfig({ provider: providerId, model: modelId })
+  }
+
   return (
     <div className="h-full flex flex-col">
       {/* Research progress indicator */}
@@ -378,6 +437,11 @@ export function ChatPanel() {
                   onSaveAsSource={handleSaveAsSource}
                   onSaveToWorkspace={currentNotebook?.workspaceRootPath ? handleSaveToWorkspace : undefined}
                   onGenerateFrom={handleGenerateFrom}
+                  onRegenerateMermaid={(failedCode) => {
+                    handleSend(
+                      `The mermaid diagram you generated had a syntax error and could not be rendered. Here is the broken code:\n\n\`\`\`\n${failedCode}\n\`\`\`\n\nPlease regenerate the diagram with valid Mermaid syntax. Rules:\n- Always include graph direction (e.g. "graph TD")\n- Always quote labels: A["Label"]\n- Use --> for arrows\n- Keep node IDs alphanumeric\n- No special characters in unquoted labels`
+                    )
+                  }}
                 />
               ))}
               {sending && messages[messages.length - 1]?.content === '' && (
@@ -418,22 +482,91 @@ export function ChatPanel() {
         </div>
       )}
 
-      {/* Artifact shortcut chips */}
-      {hasSelectedSources && (
-        <div className="flex items-center gap-1.5 px-6 py-1.5 max-w-3xl mx-auto w-full overflow-x-auto">
-          {ARTIFACT_SHORTCUTS.map((shortcut) => (
-            <button
-              key={shortcut.label}
-              onClick={() => handleSend(shortcut.prompt)}
-              disabled={sending}
-              className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <shortcut.icon size={12} />
-              {shortcut.label}
-            </button>
-          ))}
+      {/* Model selector + Artifact shortcut chips + SuperBrain toggle */}
+      <div className="flex items-center gap-1.5 px-6 py-1.5 max-w-3xl mx-auto w-full overflow-x-auto">
+        {/* Model selector */}
+        <div className="relative flex-shrink-0" ref={modelMenuRef}>
+          <button
+            onClick={() => setShowModelMenu(!showModelMenu)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${PROVIDER_COLORS[chatProvider]}`}
+          >
+            <span className="max-w-[120px] truncate">{modelDisplayName}</span>
+            <ChevronDown size={10} className={`transition-transform ${showModelMenu ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showModelMenu && (
+            <div className="absolute bottom-full left-0 mb-1 w-64 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl z-50 py-1 max-h-80 overflow-y-auto">
+              {CHAT_PROVIDERS.map((provider) => {
+                const hasKey = hasKeyForProvider(provider.id)
+                return (
+                  <div key={provider.id}>
+                    <div className="px-3 py-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      {provider.name}
+                    </div>
+                    {hasKey ? (
+                      provider.models.map((model) => (
+                        <button
+                          key={model.id}
+                          onClick={() => handleModelSelect(provider.id, model.id)}
+                          className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                            chatProvider === provider.id && chatModel === model.id
+                              ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          {model.name}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3 py-1.5 text-[11px] text-slate-400 dark:text-slate-500 italic">
+                        Set key in Settings
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+
+        {/* SuperBrain toggle */}
+        <button
+          onClick={async () => {
+            const newEnabled = !sbEnabled
+            setSbEnabled(newEnabled)
+            await window.api.superbrainConfigure({ enabled: newEnabled })
+          }}
+          className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
+            sbEnabled
+              ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-600 dark:text-purple-400'
+              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
+          }`}
+          title={sbEnabled ? 'SuperBrain enabled — click to disable' : 'SuperBrain disabled — click to enable'}
+        >
+          <Brain size={12} />
+          <span className="hidden sm:inline">{sbEnabled ? 'SuperBrain' : 'SuperBrain off'}</span>
+          <div className={`w-1.5 h-1.5 rounded-full ${sbEnabled ? 'bg-purple-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
+        </button>
+
+        {hasSelectedSources && (
+          <>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+            {ARTIFACT_SHORTCUTS.map((shortcut) => (
+              <button
+                key={shortcut.label}
+                onClick={() => handleSend(shortcut.prompt)}
+                disabled={sending}
+                className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <shortcut.icon size={12} />
+                {shortcut.label}
+              </button>
+            ))}
+          </>
+        )}
+      </div>
 
       {/* Voice bar (inline above input when active) */}
       {showVoice && currentNotebook && (

@@ -21,6 +21,7 @@
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.77.0",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@fontsource-variable/inter": "^5.2.8",
@@ -43,6 +44,7 @@
     "lucide-react": "^0.563.0",
     "mammoth": "^1.11.0",
     "mermaid": "^11.12.2",
+    "openai": "^6.22.0",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^2.4.5",
     "react-draggable": "^4.5.0",

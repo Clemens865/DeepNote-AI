@@ -147,6 +147,9 @@ const api = {
   getApiKey: () => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_GET_API_KEY),
   setApiKey: (key: string) => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_SET_API_KEY, key),
   testApiKey: (key: string) => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_TEST_API_KEY, key),
+  getChatConfig: () => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_GET_CHAT_CONFIG),
+  setChatConfig: (args: { provider?: string; model?: string; geminiKey?: string; claudeKey?: string; openaiKey?: string; groqKey?: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CONFIG_SET_CHAT_CONFIG, args),
 
   // Streaming
   onChatStreamChunk: (callback: (data: { messageId: string; chunk: string }) => void) => {
@@ -369,7 +372,7 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_REMEMBER, args),
   superbrainThink: (args: { input: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_THINK, args),
-  superbrainConfigure: (args: { port?: number; token?: string | null }) =>
+  superbrainConfigure: (args: { port?: number; token?: string | null; enabled?: boolean }) =>
     ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_CONFIGURE, args),
 
   // DeepNote API

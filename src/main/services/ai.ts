@@ -21,18 +21,24 @@ export function resetAiClient(): void {
   resetMiddlewareClient()
 }
 
-async function buildSystemPrompt(
+export async function buildSystemPrompt(
   context: string,
   notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
-  notebookId?: string
+  notebookId?: string,
+  superbrainEnabled?: boolean
 ): Promise<string> {
-  let systemPrompt = `You are a helpful AI assistant in DeepNote AI, a notebook application integrated with SuperBrain — a system-wide cognitive engine.
+  const sbEnabled = superbrainEnabled !== false
+  let systemPrompt = sbEnabled
+    ? `You are a helpful AI assistant in DeepNote AI, a notebook application integrated with SuperBrain — a system-wide cognitive engine.
 
 CRITICAL: You have access to TWO data sources:
 1. NOTEBOOK SOURCES — documents, PDFs, pastes uploaded to this notebook
 2. SYSTEM-WIDE DATA (SuperBrain) — the user's emails, local files, clipboard history, and cross-app memories
 
 NEVER say "I cannot access your emails" or "I don't have access to your files." Instead, check the system-wide data section below. If SuperBrain found matching data, USE IT. If SuperBrain is connected but found nothing, tell the user the specific content wasn't found in the indexed files. If SuperBrain is not running, tell the user to start SuperBrain to enable system-wide search.`
+    : `You are a helpful AI assistant in DeepNote AI, a notebook application for document analysis and research.
+
+You answer questions based on the NOTEBOOK SOURCES — documents, PDFs, pastes, and other materials uploaded to this notebook.`
   if (notebook?.description) {
     systemPrompt += `\nNotebook description: ${notebook.description}`
   }
@@ -68,11 +74,18 @@ Supported chartType values: "bar", "line", "pie".
 
 MERMAID DIAGRAM FORMAT — renders as an interactive diagram (flowcharts, sequence diagrams, ER diagrams, etc.):
 \`\`\`artifact-mermaid
-{"title": "User Flow", "code": "graph TD\\n  A[Start] --> B{Decision}\\n  B -->|Yes| C[Action]\\n  B -->|No| D[End]"}
+{"title": "User Flow", "code": "graph TD\\n  A[\\"Start\\"] --> B{\\"Decision\\"}\\n  B -->|Yes| C[\\"Action\\"]\\n  B -->|No| D[\\"End\\"]"}
 \`\`\`
 - Use when the user asks for flowcharts, diagrams, process flows, architecture diagrams, sequence diagrams, or entity relationships.
 - The "code" field must contain valid Mermaid syntax. Use \\n for newlines.
 - Supported diagram types: graph/flowchart, sequenceDiagram, classDiagram, erDiagram, gantt, pie, stateDiagram, journey.
+- CRITICAL MERMAID SYNTAX RULES:
+  1. ALWAYS include graph direction: "graph TD" or "graph LR", never just "graph"
+  2. ALWAYS quote node labels: A[\\"Label\\"] not A[Label]
+  3. NEVER use special characters (parentheses, colons, ampersands, angle brackets) in unquoted labels
+  4. Use --> for arrows, NOT --->
+  5. Keep node IDs simple alphanumeric: A, B1, step1 — no spaces or special chars in IDs
+  6. Do NOT redefine the same node ID with a different label
 
 KANBAN / ACTION ITEMS FORMAT — renders as task cards with status, assignee, and priority chips:
 \`\`\`artifact-kanban
@@ -125,10 +138,11 @@ export class AiService {
     messages: { role: string; content: string }[],
     context: string,
     notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
-    notebookId?: string
+    notebookId?: string,
+    superbrainEnabled?: boolean
   ): Promise<string> {
     const ai = getClient()
-    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId)
+    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId, superbrainEnabled)
 
     const contents = messages.map((m) => ({
       role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
@@ -149,10 +163,11 @@ export class AiService {
     context: string,
     notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
     onChunk?: (text: string) => void,
-    notebookId?: string
+    notebookId?: string,
+    superbrainEnabled?: boolean
   ): Promise<string> {
     const ai = getClient()
-    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId)
+    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId, superbrainEnabled)
 
     const contents = messages.map((m) => ({
       role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
@@ -606,21 +621,22 @@ Output ONLY valid JSON, no markdown fences.`
 
     // For hybrid mode: ask the AI to design element positions
     const hybridLayoutSection = renderMode === 'hybrid' ? `
-6.  **Element Layout (REQUIRED)**: For slides 2+, you must include an "elementLayout" array that defines exactly where each text element should be positioned on the slide. Think like a graphic designer — consider visual hierarchy, reading flow, spacing, and balance with the right-side illustration.
-    - The slide canvas is 100% x 100%. The LEFT HALF (0-48%) is for text. The RIGHT HALF has the illustration.
+6.  **Element Layout (REQUIRED)**: For slides 2+, you must include an "elementLayout" array that defines where each text element is positioned. The text occupies the LEFT ~25-30% of the slide as a contextual panel.
+    - The slide canvas is 100% x 100%. Text goes in the LEFT ~30% (0-30%). The visual illustration covers the full slide but is less busy on the left.
     - Each element has: type ("title"|"bullet"|"text"), content (the text), x (% from left), y (% from top), width (% of slide), fontSize (px), align ("left"|"center"|"right").
-    - Title: place at top-left area, larger font (20-28px), bold positioning.
-    - Bullets: space them evenly below the title with breathing room (at least 10% vertical gap between items).
-    - Consider the number of bullets: fewer bullets = more spacing, larger fonts. Many bullets = tighter spacing, smaller fonts.
+    - Title: place at top-left, moderate font (18-22px).
+    - Bullets: short explanatory sentences (8-15 words), spaced evenly below title (at least 8% vertical gap). Font size 12-14px.
+    - The text should give enough context to understand the slide without a presenter.
     - Slide 1 (title slide) does NOT need elementLayout — it renders as a full image.
 ` : ''
 
-    const hybridExample = renderMode === 'hybrid' ? `,
+    const hybridLayoutExample = renderMode === 'hybrid' ? `,
     "elementLayout": [
-      {"type": "title", "content": "Machine Learning", "x": 4, "y": 12, "width": 42, "fontSize": 24, "align": "left"},
-      {"type": "text", "content": "---", "x": 4, "y": 23, "width": 10, "fontSize": 10, "align": "left"},
-      {"type": "bullet", "content": "Systems that learn from data", "x": 4, "y": 30, "width": 42, "fontSize": 15, "align": "left"},
-      {"type": "bullet", "content": "Three core paradigms", "x": 4, "y": 42, "width": 42, "fontSize": 15, "align": "left"}
+      {"type": "title", "content": "Machine Learning", "x": 4, "y": 15, "width": 28, "fontSize": 20, "align": "left"},
+      {"type": "text", "content": "---", "x": 4, "y": 25, "width": 8, "fontSize": 10, "align": "left"},
+      {"type": "bullet", "content": "Systems learn patterns from data automatically", "x": 4, "y": 32, "width": 28, "fontSize": 13, "align": "left"},
+      {"type": "bullet", "content": "Three paradigms: supervised, unsupervised, reinforcement", "x": 4, "y": 42, "width": 28, "fontSize": 13, "align": "left"},
+      {"type": "bullet", "content": "Requires large datasets for effective training", "x": 4, "y": 52, "width": 28, "fontSize": 13, "align": "left"}
     ]` : ''
 
     const prompt = `You are a professional presentation designer planning a ${slideCount}-slide deck based on the source material.
@@ -633,12 +649,12 @@ ${formatDirective}${userDirective}
 
 CRITICAL RULES:
 1.  **Slide Count**: You MUST output EXACTLY ${slideCount} slides. Not ${slideCount - 1}, not ${slideCount + 1}. Exactly ${slideCount}.
-2.  **Self-Explanatory**: Each slide must make sense on its own. Bullets should be complete, informative phrases — not cryptic fragments. A reader should understand the point without a presenter explaining it.
-3.  **Concise But Clear**: Titles: 2-6 words. Bullets: one clear sentence or phrase each (max ~12 words). Max 4 bullets per slide. Avoid walls of text, but don't strip away meaning.
-4.  **Visuals**: For each slide, describe a specific illustration/visual concept in visualCue. Be concrete (e.g., "3D bar chart with glowing cyan bars comparing three metrics" not "a chart"). The visual should complement and reinforce the slide's message.
-5.  **Content Field**: The content field is what gets rendered as text ON the slide image. Include title + bullets using \\n for line breaks. This must contain enough information to be self-explanatory.
+2.  **VISUAL-FIRST with CONTEXT**: The IMAGE is the primary storytelling medium (~3/4 of the slide), but the text (~1/4 of the slide) must provide enough context that a reader understands the point without a presenter. Think cinematic visuals paired with concise explanatory text.
+3.  **Text provides CONTEXT, not just keywords**: For slides 2+, each slide needs a clear title (3-6 words) AND 2-4 bullets that are SHORT SENTENCES (8-15 words each) explaining the key point — not single-word keywords. The reader should understand the slide's message from the text alone. Example bullets: "Neural networks learn patterns by adjusting connection weights" NOT just "Neural networks". Max 4 bullets per slide.
+4.  **Visuals (MOST IMPORTANT)**: For each slide, write a RICH, DETAILED, CINEMATIC visual description in visualCue. This is the most important field. Be extremely specific and vivid (e.g., "A dramatic split-screen: left shows a tangled maze of red threads representing complexity, right shows a single clean golden thread pulling through — symbolizing simplification" NOT "a diagram showing simplification"). Describe scenes, metaphors, colors, mood, lighting. The visual should reinforce and amplify the text message.
+5.  **Content Field**: The content field is rendered as text ON the slide image. Include title + explanatory bullet sentences using \\n for line breaks. The text should occupy roughly 1/4 of the slide — enough to be self-explanatory but not a wall of text.
 ${hybridLayoutSection}
-SLIDE 1 REQUIREMENT: The first slide MUST be a "Title" layout slide. It should have a strong presentation title as the title, and one or two subtitle bullets (e.g. a tagline/subtitle and "Presented by [relevant entity or topic area]"). The content field should show the title prominently with the subtitle below.
+SLIDE 1 REQUIREMENT: The first slide MUST be a "Title" layout slide with a short, punchy title (2-4 words) and one subtitle line. The visualCue should describe a dramatic, atmospheric, cinematic scene that sets the tone for the entire deck.
 
 Output a JSON array with EXACTLY ${slideCount} objects (ONLY valid JSON, no markdown fences):
 [
@@ -646,10 +662,10 @@ Output a JSON array with EXACTLY ${slideCount} objects (ONLY valid JSON, no mark
     "slideNumber": 1,
     "layout": "Title",
     "title": "Machine Learning",
-    "bullets": ["Systems that learn and improve from data", "A Comprehensive Overview"],
-    "visualCue": "A futuristic digital brain with neural network connections glowing, abstract data particles flowing around it.",
-    "content": "Machine Learning\\n\\nSystems that learn and improve from data\\nA Comprehensive Overview",
-    "speakerNotes": "Welcome. Today we explore Machine Learning — the subset of AI that enables systems to learn from data. We will cover supervised, unsupervised, and reinforcement learning."${hybridExample}
+    "bullets": ["A Visual Journey"],
+    "visualCue": "A vast cosmic neural network stretching across deep space — luminous nodes pulsing with warm golden light connected by flowing streams of data particles, set against a deep indigo nebula. Cinematic, awe-inspiring, conveying the immensity and beauty of artificial intelligence.",
+    "content": "Machine Learning\\nA Visual Journey",
+    "speakerNotes": "Welcome. Today we explore Machine Learning — the subset of AI that enables systems to learn from data. We will cover supervised, unsupervised, and reinforcement learning."${hybridLayoutExample}
   }
 ]
 

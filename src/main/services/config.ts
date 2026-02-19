@@ -2,20 +2,34 @@ import { app } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 
+import type { ChatProviderType } from '../../shared/providers'
+
 interface AppConfig {
   apiKey: string
+  claudeApiKey: string
+  openaiApiKey: string
+  groqApiKey: string
+  chatProvider: ChatProviderType
+  chatModel: string
   embeddingsModel: 'auto' | 'gemini' | 'local'
   superbrainPort: number
   superbrainToken: string
+  superbrainEnabled: boolean
   deepnoteApiPort: number
   deepnoteApiToken: string
 }
 
 const defaultConfig: AppConfig = {
   apiKey: '',
+  claudeApiKey: '',
+  openaiApiKey: '',
+  groqApiKey: '',
+  chatProvider: 'gemini',
+  chatModel: 'gemini-2.5-flash',
   embeddingsModel: 'auto',
   superbrainPort: 19519,
   superbrainToken: '',
+  superbrainEnabled: true,
   deepnoteApiPort: 19520,
   deepnoteApiToken: '',
 }

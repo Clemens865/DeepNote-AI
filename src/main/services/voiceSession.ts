@@ -1,11 +1,12 @@
 import { randomUUID } from 'crypto'
+import { readFileSync } from 'fs'
 import { BrowserWindow } from 'electron'
 import { eq } from 'drizzle-orm'
-import { GoogleGenAI, Modality, type Session, type LiveServerMessage } from '@google/genai'
+import { GoogleGenAI } from '@google/genai'
 import { configService } from './config'
 import { ragService } from './rag'
+import { ttsService } from './tts'
 import { getDatabase, schema } from '../db'
-import { superbrainService } from './superbrain'
 
 let client: GoogleGenAI | null = null
 
@@ -26,34 +27,24 @@ function broadcastToWindows(channel: string, data: unknown): void {
   })
 }
 
-function debugLog(sessionId: string, message: string): void {
-  console.log(`[Voice Live] ${message}`)
-  broadcastToWindows('voice:response-text', {
-    sessionId,
-    text: `[debug] ${message}`,
-    type: 'debug',
-  })
-}
-
 // --- Active Sessions ---
 
-interface LiveVoiceSession {
+interface VoiceSessionState {
   id: string
   notebookId: string
-  session: Session | null
+  ragContext: string
   active: boolean
 }
 
-const sessions = new Map<string, LiveVoiceSession>()
+const sessions = new Map<string, VoiceSessionState>()
 
 /**
- * Start a live voice session using Gemini Live API.
- * Opens a persistent WebSocket connection for real-time bidirectional audio.
+ * Start a voice session.
+ * Loads RAG context for the notebook to use as system instruction.
  */
 export async function startVoiceSession(notebookId: string): Promise<{ sessionId: string }> {
   const db = getDatabase()
   const sessionId = randomUUID()
-  const ai = getClient()
 
   // Get selected sources for RAG context
   const sources = await db
@@ -66,10 +57,9 @@ export async function startVoiceSession(notebookId: string): Promise<{ sessionId
   const sourceTitleMap: Record<string, string> = {}
   for (const s of sources) sourceTitleMap[s.id] = s.title
 
-  // Build source context — use raw content for richer context in voice conversations
-  let sourceContext = ''
-  if (selectedSources.length > 0) {
-    // First try RAG for semantic context
+  // Get RAG context from selected sources
+  let ragContext = ''
+  if (selectedSourceIds.length > 0) {
     try {
       const ragResult = await ragService.query(
         notebookId,
@@ -77,296 +67,137 @@ export async function startVoiceSession(notebookId: string): Promise<{ sessionId
         selectedSourceIds,
         sourceTitleMap
       )
-      sourceContext = ragResult.context
+      ragContext = ragResult.context
     } catch (err) {
-      console.warn('[Voice Live] RAG context failed:', err)
+      console.warn('[Voice] RAG context failed:', err)
+      // Fallback: use raw source content
+      ragContext = selectedSources
+        .map((s) => `[${s.title}]\n${(s.content || '').slice(0, 5000)}`)
+        .join('\n\n---\n\n')
+        .slice(0, 30000)
     }
-
-    // Supplement with raw source content for broader coverage
-    const rawContext = selectedSources
-      .map((s) => `[Source: ${s.title}]\n${(s.content || '').slice(0, 8000)}`)
-      .join('\n\n---\n\n')
-
-    // Combine RAG + raw content, prioritizing RAG results
-    sourceContext = sourceContext
-      ? `${sourceContext}\n\n--- Additional source content ---\n\n${rawContext}`.slice(0, 40000)
-      : rawContext.slice(0, 40000)
   }
 
-  // Get all sources in notebook (even unselected) for awareness
-  const allSourceTitles = sources.map((s) => `- ${s.title} (${s.isSelected ? 'selected' : 'available'})`).join('\n')
-
-  // SuperBrain: recall system-wide memories + clipboard for voice context
-  let superbrainContext = ''
-  try {
-    const [sbMemories, sbClipboard] = await Promise.all([
-      superbrainService.recall('voice conversation context, recent activity', 5),
-      superbrainService.getClipboardHistory(),
-    ])
-    const parts: string[] = []
-    if (sbMemories && sbMemories.length > 0) {
-      parts.push('System-wide memories:\n' + sbMemories.map(
-        (m) => `- [${m.memoryType || 'memory'}] ${m.content}`
-      ).join('\n'))
-    }
-    if (sbClipboard && sbClipboard.length > 0) {
-      parts.push('Recent clipboard:\n' + sbClipboard.slice(0, 3).map(
-        (c) => `- ${c.content.slice(0, 200)}`
-      ).join('\n'))
-    }
-    if (parts.length > 0) {
-      superbrainContext = `\n\n--- System-wide context (SuperBrain) ---\n${parts.join('\n\n')}`
-    }
-  } catch {
-    // SuperBrain offline — continue without system-wide context
-  }
-
-  const toolsInfo = `You are part of DeepNote AI, an AI-powered notebook app.
-
-IMPORTANT — IN-CHAT ARTIFACT TOOLS:
-The user has these tools available DIRECTLY in the chat. When the user asks you to create one of these, you MUST include the exact action tag in your spoken response so the system can trigger it automatically. Always confirm what you're doing and include the tag naturally.
-
-Available in-chat tools and their action tags:
-- Table: [ACTION:table] — Summarize data in a structured table
-- Chart: [ACTION:chart] — Visualize data as a bar/line/pie chart
-- Diagram: [ACTION:diagram] — Create a mermaid diagram of concepts and relationships
-- Kanban: [ACTION:kanban] — Organize action items on a kanban board
-- KPIs: [ACTION:kpis] — Show key performance indicators as metric cards
-- Timeline: [ACTION:timeline] — Create a visual timeline of events and milestones
-
-Example: If the user says "Can you make me a chart?", respond with something like:
-"Sure, I'll create a chart from your sources now. [ACTION:chart]"
-
-The action tag will be hidden from the user and the tool will execute automatically.
-
-STUDIO TOOLS (available in the Studio panel on the right):
-These are more advanced generation tools that require the user to go to the Studio panel:
-- Report, Quiz, Flashcards, Mind Map, Slide Deck, Dashboard, Literature Review, Competitive Analysis, Infographic, White Paper, Podcast
-
-For Studio tools, tell the user to use the Studio panel. For in-chat tools (table, chart, diagram, kanban, kpis, timeline), use the action tags above to trigger them directly.`
-
-  const systemInstruction = sourceContext
-    ? `You are a helpful, knowledgeable voice assistant for DeepNote AI. Answer concisely and conversationally — keep responses under 3 sentences when possible. Be natural and friendly.
-
-${toolsInfo}
-
-The user's notebook contains these sources:
-${allSourceTitles}
-
-Content from the user's selected sources:
-${sourceContext.slice(0, 30000)}${superbrainContext}`
-    : `You are a helpful, knowledgeable voice assistant for DeepNote AI. Answer concisely and conversationally — keep responses under 3 sentences when possible. Be natural and friendly.
-
-${toolsInfo}
-
-The user has no sources selected in their current notebook. Suggest they add or select sources to get source-aware answers.${superbrainContext}`
-
-  // Register session before connecting (renderer needs sessionId immediately)
-  const voiceSession: LiveVoiceSession = {
+  const session: VoiceSessionState = {
     id: sessionId,
     notebookId,
-    session: null,
+    ragContext,
     active: true,
   }
-  sessions.set(sessionId, voiceSession)
-
-  // Connect to Gemini Live API asynchronously
-  connectLiveSession(ai, sessionId, systemInstruction).catch((err) => {
-    console.error('[Voice Live] Connection failed:', err)
-    broadcastToWindows('voice:response-text', {
-      sessionId,
-      text: `Connection failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
-      type: 'error',
-    })
-  })
+  sessions.set(sessionId, session)
 
   return { sessionId }
 }
 
-async function connectLiveSession(
-  ai: GoogleGenAI,
-  sessionId: string,
-  systemInstruction: string
-): Promise<void> {
-  const voiceSession = sessions.get(sessionId)
-  if (!voiceSession || !voiceSession.active) return
-
-  const modelName = 'gemini-2.5-flash-native-audio-preview-12-2025'
-  debugLog(sessionId, `Connecting to Gemini Live API with model: ${modelName}`)
-  const session = await ai.live.connect({
-    model: modelName,
-    config: {
-      responseModalities: [Modality.AUDIO],
-      systemInstruction,
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: 'Kore' },
-        },
-      },
-      inputAudioTranscription: {},
-      outputAudioTranscription: {},
-    },
-    callbacks: {
-      onopen: () => {
-        debugLog(sessionId, 'WebSocket connected')
-      },
-      onmessage: (msg: LiveServerMessage) => {
-        handleLiveMessage(sessionId, msg)
-      },
-      onerror: (err: unknown) => {
-        let errStr: string
-        try {
-          errStr = JSON.stringify(err, Object.getOwnPropertyNames(err instanceof Error ? err : {}))
-        } catch {
-          errStr = String(err)
-        }
-        debugLog(sessionId, `WebSocket ERROR: ${errStr}`)
-        broadcastToWindows('voice:response-text', {
-          sessionId,
-          text: `Connection error: ${err instanceof Error ? err.message : String(err)}`,
-          type: 'error',
-        })
-      },
-      onclose: (ev: unknown) => {
-        let closeStr: string
-        try {
-          closeStr = JSON.stringify(ev)
-        } catch {
-          closeStr = String(ev)
-        }
-        debugLog(sessionId, `WebSocket CLOSED: ${closeStr}`)
-        const s = sessions.get(sessionId)
-        if (s) s.active = false
-      },
-    },
-  })
-
-  // Session is now fully ready — assign it and THEN notify renderer
-  voiceSession.session = session
-  debugLog(sessionId, 'Session fully initialized, ready to receive audio')
-  broadcastToWindows('voice:response-text', {
-    sessionId,
-    text: '',
-    type: 'ready',
-  })
-}
-
-let msgCount = 0
-
-function handleLiveMessage(sessionId: string, msg: LiveServerMessage): void {
-  msgCount++
-
-  // Log first message shape for debugging
-  if (msgCount === 1) {
-    const keys = Object.keys(msg).filter((k) => (msg as unknown as Record<string, unknown>)[k] != null)
-    debugLog(sessionId, `First msg keys: [${keys.join(', ')}]`)
-  }
-
-  const content = msg.serverContent
-
-  if (content) {
-    // Handle audio response chunks from model
-    if (content.modelTurn?.parts) {
-      for (const part of content.modelTurn.parts) {
-        if (part.inlineData?.data && part.inlineData.mimeType) {
-          broadcastToWindows('voice:response-audio', {
-            sessionId,
-            audioData: part.inlineData.data,
-            mimeType: part.inlineData.mimeType,
-          })
-        }
-      }
-    }
-
-    // Handle input transcription (what the user said)
-    if (content.inputTranscription?.text) {
-      debugLog(sessionId, `Input transcript: "${content.inputTranscription.text}"`)
-      broadcastToWindows('voice:response-text', {
-        sessionId,
-        text: content.inputTranscription.text,
-        type: 'input',
-      })
-    }
-
-    // Handle output transcription (what the AI said)
-    if (content.outputTranscription?.text) {
-      debugLog(sessionId, `Output transcript: "${content.outputTranscription.text}"`)
-      broadcastToWindows('voice:response-text', {
-        sessionId,
-        text: content.outputTranscription.text,
-        type: 'output',
-      })
-    }
-
-    // Handle turn completion
-    if (content.turnComplete) {
-      debugLog(sessionId, 'Turn complete')
-      broadcastToWindows('voice:turn-complete', { sessionId })
-    }
-
-    // Handle interruption
-    if (content.interrupted) {
-      debugLog(sessionId, 'Interrupted')
-      broadcastToWindows('voice:interrupted', { sessionId })
-    }
-  }
-
-  // Handle setupComplete
-  if (msg.setupComplete) {
-    debugLog(sessionId, 'Setup complete')
-  }
-}
-
 /**
- * Send a real-time audio chunk to the live session.
- * Audio should be PCM 16-bit mono at 16kHz, base64-encoded.
+ * Process audio input — fallback approach:
+ * Transcribe audio → text chat → TTS response
  */
-let chunkCount = 0
-
-export function sendAudioChunk(sessionId: string, audioBase64: string): void {
-  const voiceSession = sessions.get(sessionId)
-  if (!voiceSession?.session || !voiceSession.active) {
-    chunkCount++
-    if (chunkCount <= 3) {
-      debugLog(sessionId, `Audio chunk #${chunkCount} DROPPED (session not ready yet)`)
-    }
-    return
+export async function processAudioInput(
+  sessionId: string,
+  audioBase64: string
+): Promise<void> {
+  const session = sessions.get(sessionId)
+  if (!session || !session.active) {
+    throw new Error('Voice session not found or inactive')
   }
 
-  chunkCount++
-  if (chunkCount === 1) {
-    debugLog(sessionId, 'Sending audio chunks...')
-  }
+  const ai = getClient()
 
   try {
-    voiceSession.session.sendRealtimeInput({
-      audio: {
-        data: audioBase64,
-        mimeType: 'audio/pcm;rate=16000',
-      },
+    // Step 1: Transcribe audio using Gemini
+    const transcribeResponse = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              inlineData: {
+                mimeType: 'audio/webm',
+                data: audioBase64,
+              },
+            },
+            {
+              text: 'Transcribe this audio. Output ONLY the transcribed text, nothing else.',
+            },
+          ],
+        },
+      ],
     })
+
+    const transcribedText = transcribeResponse.text?.trim()
+    if (!transcribedText) {
+      broadcastToWindows('voice:response-text', {
+        sessionId,
+        text: "I couldn't understand the audio. Please try again.",
+      })
+      return
+    }
+
+    // Broadcast the transcription
+    broadcastToWindows('voice:response-text', {
+      sessionId,
+      text: transcribedText,
+      type: 'transcription',
+    })
+
+    // Step 2: Generate AI response with RAG context
+    const systemPrompt = session.ragContext
+      ? `You are a helpful voice assistant. Answer concisely and conversationally — keep responses under 3 sentences when possible.\n\nContext from user's sources:\n${session.ragContext.slice(0, 20000)}`
+      : 'You are a helpful voice assistant. Answer concisely and conversationally — keep responses under 3 sentences when possible.'
+
+    const chatResponse = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      config: { systemInstruction: systemPrompt },
+      contents: [{ role: 'user', parts: [{ text: transcribedText }] }],
+    })
+
+    const responseText = chatResponse.text ?? 'I could not generate a response.'
+
+    // Broadcast the text response
+    broadcastToWindows('voice:response-text', {
+      sessionId,
+      text: responseText,
+      type: 'response',
+    })
+
+    // Step 3: Convert response to speech using existing TTS service
+    try {
+      const script = {
+        speakers: [{ name: 'Assistant', voice: 'Kore' }],
+        turns: [{ speaker: 'Assistant', text: responseText }],
+      }
+      const { audioPath } = await ttsService.generatePodcastAudio(script)
+
+      // Read audio file and send as base64 for the renderer to play
+      const audioBuffer = readFileSync(audioPath)
+      const audioData = audioBuffer.toString('base64')
+      broadcastToWindows('voice:response-audio', {
+        sessionId,
+        audioData,
+        mimeType: 'audio/wav',
+      })
+    } catch (ttsErr) {
+      console.warn('[Voice] TTS failed:', ttsErr)
+      // Text response already sent, audio is optional
+    }
   } catch (err) {
-    debugLog(sessionId, `Failed to send chunk: ${err instanceof Error ? err.message : String(err)}`)
+    console.error('[Voice] Processing failed:', err)
+    broadcastToWindows('voice:response-text', {
+      sessionId,
+      text: `Error: ${err instanceof Error ? err.message : 'Voice processing failed'}`,
+    })
   }
 }
 
 /**
- * Stop a voice session and close the WebSocket.
+ * Stop a voice session.
  */
 export function stopVoiceSession(sessionId: string): void {
-  const voiceSession = sessions.get(sessionId)
-  if (voiceSession) {
-    voiceSession.active = false
-    if (voiceSession.session) {
-      try {
-        voiceSession.session.conn.close()
-      } catch {
-        // Already closed
-      }
-    }
+  const session = sessions.get(sessionId)
+  if (session) {
+    session.active = false
     sessions.delete(sessionId)
-    // Reset chunk counter for next session
-    chunkCount = 0
-    msgCount = 0
   }
 }
