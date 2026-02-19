@@ -621,22 +621,21 @@ Output ONLY valid JSON, no markdown fences.`
 
     // For hybrid mode: ask the AI to design element positions
     const hybridLayoutSection = renderMode === 'hybrid' ? `
-6.  **Element Layout (REQUIRED)**: For slides 2+, you must include an "elementLayout" array that defines where each text element is positioned. The text occupies the LEFT ~25-30% of the slide as a contextual panel.
-    - The slide canvas is 100% x 100%. Text goes in the LEFT ~30% (0-30%). The visual illustration covers the full slide but is less busy on the left.
+6.  **Element Layout (REQUIRED)**: For slides 2+, you must include an "elementLayout" array that positions the text panel. Follow the bold-label format from rule 3.
+    - The slide canvas is 100% x 100%. Text goes in the LEFT ~30% (0-30%). The visual illustration covers the full slide but is less busy on the left side.
     - Each element has: type ("title"|"bullet"|"text"), content (the text), x (% from left), y (% from top), width (% of slide), fontSize (px), align ("left"|"center"|"right").
     - Title: place at top-left, moderate font (18-22px).
-    - Bullets: short explanatory sentences (8-15 words), spaced evenly below title (at least 8% vertical gap). Font size 12-14px.
-    - The text should give enough context to understand the slide without a presenter.
+    - Bullets: use "Bold Label: Explanation sentence" format. Font size 12-13px. Space evenly (at least 8% vertical gap).
     - Slide 1 (title slide) does NOT need elementLayout — it renders as a full image.
 ` : ''
 
     const hybridLayoutExample = renderMode === 'hybrid' ? `,
     "elementLayout": [
-      {"type": "title", "content": "Machine Learning", "x": 4, "y": 15, "width": 28, "fontSize": 20, "align": "left"},
-      {"type": "text", "content": "---", "x": 4, "y": 25, "width": 8, "fontSize": 10, "align": "left"},
-      {"type": "bullet", "content": "Systems learn patterns from data automatically", "x": 4, "y": 32, "width": 28, "fontSize": 13, "align": "left"},
-      {"type": "bullet", "content": "Three paradigms: supervised, unsupervised, reinforcement", "x": 4, "y": 42, "width": 28, "fontSize": 13, "align": "left"},
-      {"type": "bullet", "content": "Requires large datasets for effective training", "x": 4, "y": 52, "width": 28, "fontSize": 13, "align": "left"}
+      {"type": "title", "content": "How Models Learn", "x": 4, "y": 12, "width": 28, "fontSize": 20, "align": "left"},
+      {"type": "text", "content": "---", "x": 4, "y": 22, "width": 8, "fontSize": 10, "align": "left"},
+      {"type": "bullet", "content": "Supervised: Models train on labeled data to learn patterns", "x": 4, "y": 29, "width": 28, "fontSize": 12, "align": "left"},
+      {"type": "bullet", "content": "Loss Functions: Error is measured to guide improvements", "x": 4, "y": 40, "width": 28, "fontSize": 12, "align": "left"},
+      {"type": "bullet", "content": "Gradient Descent: Weights adjust iteratively to reduce error", "x": 4, "y": 51, "width": 28, "fontSize": 12, "align": "left"}
     ]` : ''
 
     const prompt = `You are a professional presentation designer planning a ${slideCount}-slide deck based on the source material.
@@ -649,27 +648,37 @@ ${formatDirective}${userDirective}
 
 CRITICAL RULES:
 1.  **Slide Count**: You MUST output EXACTLY ${slideCount} slides. Not ${slideCount - 1}, not ${slideCount + 1}. Exactly ${slideCount}.
-2.  **VISUAL-FIRST with CONTEXT**: The IMAGE is the primary storytelling medium (~3/4 of the slide), but the text (~1/4 of the slide) must provide enough context that a reader understands the point without a presenter. Think cinematic visuals paired with concise explanatory text.
-3.  **Text provides CONTEXT, not just keywords**: For slides 2+, each slide needs a clear title (3-6 words) AND 2-4 bullets that are SHORT SENTENCES (8-15 words each) explaining the key point — not single-word keywords. The reader should understand the slide's message from the text alone. Example bullets: "Neural networks learn patterns by adjusting connection weights" NOT just "Neural networks". Max 4 bullets per slide.
-4.  **Visuals (MOST IMPORTANT)**: For each slide, write a RICH, DETAILED, CINEMATIC visual description in visualCue. This is the most important field. Be extremely specific and vivid (e.g., "A dramatic split-screen: left shows a tangled maze of red threads representing complexity, right shows a single clean golden thread pulling through — symbolizing simplification" NOT "a diagram showing simplification"). Describe scenes, metaphors, colors, mood, lighting. The visual should reinforce and amplify the text message.
-5.  **Content Field**: The content field is rendered as text ON the slide image. Include title + explanatory bullet sentences using \\n for line breaks. The text should occupy roughly 1/4 of the slide — enough to be self-explanatory but not a wall of text.
+2.  **VISUAL + TEXT BALANCE**: Each slide combines a rich illustration with concise explanatory text. The visual is the hero (~2/3 of the slide), but the text must provide enough context that a reader can understand the slide's point without a presenter. A slide with only a title and keywords is NOT acceptable (except the title and closing slides).
+3.  **Text format — "Bold Label: Explanation" pattern**: For slides 2+, use this structure in the content field:
+    - A clear TITLE (3-6 words) on the first line
+    - Then 2-3 KEY POINTS, each following the pattern: **Bold Label:** One explanatory sentence (10-20 words).
+    - Example content: "Progressive Indexing\\n\\nInstant Availability: Queries begin immediately on partial data while full index loads in background.\\nTemperature Tiering: Hot data stays in fast fp16, cold data compresses to binary quantization automatically.\\nZero Downtime: Index upgrades happen live without taking the system offline."
+    - This gives enough context to understand the topic while keeping text compact. Do NOT write full paragraphs — each point should be ONE sentence.
+    - Do NOT use only bare keywords like "Fast" or "Secure" — always include the explanatory sentence.
+4.  **Visuals**: For each slide, write a RICH, DETAILED visual description in visualCue. Be specific and vivid — describe the scene, metaphors, colors, mood, and composition. The visual should complement and reinforce the text points, not just be decorative. For technical topics, prefer architectural diagrams, split-views, layered visualizations, or annotated schematics over abstract art.
+5.  **Content Field**: The content field is rendered as text ON the slide image. Use \\n for line breaks. Follow the bold-label format from rule 3. Aim for 3-6 lines of text total — enough to be self-explanatory, short enough to leave room for the visual.
 ${hybridLayoutSection}
 SLIDE 1 REQUIREMENT: The first slide MUST be a "Title" layout slide with a short, punchy title (2-4 words) and one subtitle line. The visualCue should describe a dramatic, atmospheric, cinematic scene that sets the tone for the entire deck.
 
-Output a JSON array with EXACTLY ${slideCount} objects (ONLY valid JSON, no markdown fences):
-[
-  {
-    "slideNumber": 1,
-    "layout": "Title",
-    "title": "Machine Learning",
-    "bullets": ["A Visual Journey"],
-    "visualCue": "A vast cosmic neural network stretching across deep space — luminous nodes pulsing with warm golden light connected by flowing streams of data particles, set against a deep indigo nebula. Cinematic, awe-inspiring, conveying the immensity and beauty of artificial intelligence.",
-    "content": "Machine Learning\\nA Visual Journey",
-    "speakerNotes": "Welcome. Today we explore Machine Learning — the subset of AI that enables systems to learn from data. We will cover supervised, unsupervised, and reinforcement learning."${hybridLayoutExample}
-  }
-]
+Output a JSON array with EXACTLY ${slideCount} objects (ONLY valid JSON, no markdown fences).
 
-Remember: output EXACTLY ${slideCount} slide objects in the array.`
+Slide 1 example (title slide — short title + subtitle, visual sets the mood):
+{
+  "slideNumber": 1, "layout": "Title", "title": "Machine Learning", "bullets": ["A Visual Journey"],
+  "visualCue": "A vast cosmic neural network stretching across deep space — luminous nodes pulsing with warm golden light connected by flowing streams of data particles, set against a deep indigo nebula.",
+  "content": "Machine Learning\\nA Visual Journey",
+  "speakerNotes": "Today we explore Machine Learning — how systems learn from data."${hybridLayoutExample}
+}
+
+Slide 2+ example (content slide — bold-label format with explanatory sentences):
+{
+  "slideNumber": 2, "layout": "Content", "title": "How Models Learn", "bullets": ["Supervised learning uses labeled examples", "Loss functions measure prediction errors", "Gradient descent adjusts weights iteratively"],
+  "visualCue": "A layered cross-section of a neural network, showing data flowing left to right through input, hidden, and output layers. Weights visualized as glowing connections of varying thickness. A gradient arrow curves back through the layers, colored in warm-to-cool spectrum.",
+  "content": "How Models Learn\\n\\nSupervised Learning: Models train on labeled data, comparing predictions against known answers to improve.\\nLoss Functions: Each prediction error is measured mathematically, guiding the model toward accuracy.\\nGradient Descent: Weights are adjusted iteratively in the direction that reduces total error.",
+  "speakerNotes": "The three pillars of model training: labeled data, error measurement, and iterative weight adjustment."
+}
+
+Output the full array with EXACTLY ${slideCount} slides:`
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
