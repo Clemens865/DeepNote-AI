@@ -834,7 +834,7 @@ Output ONLY valid JSON, no markdown fences.`,
           role: 'user',
           parts: [
             {
-              text: `Analyze the following source material and plan a visually appealing infographic.
+              text: `Analyze the following source material and plan an infographic that communicates the key insights clearly.
 
 Source material:
 ${combinedText}
@@ -842,18 +842,23 @@ ${combinedText}
 Output a JSON object with this structure:
 {
   "title": "Infographic Title",
-  "subtitle": "Brief subtitle or tagline",
+  "subtitle": "Brief subtitle or tagline (one sentence)",
   "keyPoints": [
     {
-      "heading": "Section heading",
-      "body": "Key fact or statistic (keep very concise)",
-      "visualDescription": "Description of icon or visual element for this section"
+      "heading": "Section heading (2-4 words)",
+      "body": "A concise explanation of this point in 1-2 sentences (20-40 words). Include specific data, facts, or takeaways from the source material — not just a label.",
+      "visualDescription": "Description of a visual metaphor, icon, or diagram element that represents this section"
     }
   ],
   "colorScheme": "Description of recommended color scheme (e.g., 'warm earth tones with teal accents')"
 }
 
-Include 4-6 key points. Each should be concise and visually representable. Output ONLY valid JSON, no markdown fences.`,
+Rules:
+- Include 4-6 key points covering the most important insights from the sources.
+- Each "body" must be a real explanation, not just a keyword. The reader should learn something from it.
+- Example good body: "RVF files boot in under 125ms by embedding a compressed Linux unikernel directly in the artifact."
+- Example bad body: "Fast boot times" (too vague, no substance).
+Output ONLY valid JSON, no markdown fences.`,
             },
           ],
         },

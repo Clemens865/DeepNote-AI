@@ -10,6 +10,7 @@ import { ttsService } from '../services/tts'
 import { imagenService, STYLE_PRESETS, buildSlidePrompt, buildHybridSlidePrompt } from '../services/imagen'
 import { shouldUsePipeline } from '../services/generationPipeline'
 import { superbrainService } from '../services/superbrain'
+import { configService } from '../services/config'
 
 const TYPE_TITLES: Record<string, string> = {
   report: 'Report',
@@ -108,12 +109,14 @@ export function registerStudioHandlers() {
         })
         .where(eq(schema.generatedContent.id, id))
 
-      // Fire-and-forget: store generation event in SuperBrain
-      superbrainService.remember(
-        `[DeepNote Studio] Generated ${args.type}: "${record.title}" in notebook ${args.notebookId} from ${sourceIds.length} sources`,
-        'semantic',
-        0.5
-      ).catch(() => { /* SuperBrain offline */ })
+      // Fire-and-forget: store generation event in SuperBrain (if enabled)
+      if (configService.getAll().superbrainEnabled !== false) {
+        superbrainService.remember(
+          `[DeepNote Studio] Generated ${args.type}: "${record.title}" in notebook ${args.notebookId} from ${sourceIds.length} sources`,
+          'semantic',
+          0.5
+        ).catch(() => { /* SuperBrain offline */ })
+      }
 
       return {
         id,
@@ -283,21 +286,28 @@ export function registerStudioHandlers() {
             message: 'Generating infographic image...',
           })
 
-          // Build image prompt from the plan + style
-          const keyPointsText = plan.keyPoints
-            .map((kp) => `- ${kp.heading}: ${kp.body} (visual: ${kp.visualDescription})`)
-            .join('\n')
+          // Build image prompt — generate a thematic background/atmosphere image.
+          // The structured text (title, key points) will be overlaid as HTML by the viewer.
+          const visualElements = plan.keyPoints
+            .map((kp) => kp.visualDescription)
+            .join(', ')
 
           const userInstr = args.userInstructions ? `\nUser instructions: ${args.userInstructions}` : ''
 
-          const imagePrompt = `Create a beautiful, professional infographic titled "${plan.title}" with subtitle "${plan.subtitle}". The infographic should include these key sections with their visuals:\n${keyPointsText}\n\nVisual style: ${styleDescription}\n\nDesign requirements: Clean infographic design with clear visual hierarchy, icons for each section, professional typography, data visualization elements where appropriate.${userInstr}`
+          const imagePrompt = `Generate a rich, atmospheric, cinematic background image for an infographic about "${plan.title}". The image should evoke the theme through visual metaphors and mood — NOT through text or layout.
+
+Visual elements to incorporate subtly: ${visualElements}
+
+Visual style: ${styleDescription}
+
+CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the image. This is a pure visual background — structured text will be overlaid separately. Make it rich, immersive, and visually striking with depth, lighting, and atmosphere.${userInstr}`
 
           const imagePath = await imagenService.generateSlideImage(imagePrompt, {
             aspectRatio: args.aspectRatio === '1:1' ? '4:3' : args.aspectRatio,
             contentId: generatedContentId,
             slideNumber: 1,
             referenceImagePath: args.customStyleImagePath,
-            shortSubject: `infographic about ${plan.title}`,
+            shortSubject: `atmospheric background about ${plan.title}: ${visualElements.slice(0, 200)}`,
             styleHint: args.customStyleImagePath ? styleDescription : undefined,
           })
 
