@@ -2,7 +2,6 @@
 
 A feature-rich, open-source desktop application inspired by Google's NotebookLM. Built with Electron, React, and powered by Google Gemini AI. Upload documents, chat with your sources, and generate studio-quality content including AI podcasts, image slide decks with a drag-and-drop editor, flashcards, quizzes, mind maps, reports, and more — with agentic RAG, multi-agent generation pipelines, voice Q&A, cross-session memory, and local embeddings.
 
-![DeepNote AI](Screenshots/Bildschirmfoto%202026-02-09%20um%2022.37.37.png)
 
 ---
 
