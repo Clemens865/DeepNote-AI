@@ -385,6 +385,8 @@ export interface IpcHandlerMap {
       systemResults?: {
         memories: { content: string; memoryType: string; similarity: number }[]
         files: { path: string; name: string; chunk: string; similarity: number; fileType: string }[]
+        emails: { subject: string; sender: string; date: string; chunk: string; similarity: number }[]
+        spotlight: { path: string; name: string; kind: string }[]
       }
     }
   }

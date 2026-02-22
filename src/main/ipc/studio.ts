@@ -115,7 +115,7 @@ export function registerStudioHandlers() {
           `[DeepNote Studio] Generated ${args.type}: "${record.title}" in notebook ${args.notebookId} from ${sourceIds.length} sources`,
           'semantic',
           0.5
-        ).catch(() => { /* DeepBrain offline */ })
+        ).catch((err) => console.warn('[Studio] DeepBrain remember failed:', err))
       }
 
       return {

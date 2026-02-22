@@ -18,14 +18,14 @@ interface ChatArtifactMermaidProps {
   onRegenerateMermaid?: (code: string) => void
 }
 
-let mermaidCounter = 0
+const mermaidCounter = { current: 0 }
 
 export function ChatArtifactMermaid({ data, onRegenerateMermaid }: ChatArtifactMermaidProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [showCode, setShowCode] = useState(false)
   const [wasCorrected, setWasCorrected] = useState(false)
-  const idRef = useRef(`mermaid-${Date.now()}-${mermaidCounter++}`)
+  const idRef = useRef(`mermaid-${Date.now()}-${mermaidCounter.current++}`)
 
   useEffect(() => {
     let cancelled = false
@@ -49,7 +49,7 @@ export function ChatArtifactMermaid({ data, onRegenerateMermaid }: ChatArtifactM
       // Attempt 2: sanitize and retry with a fresh render ID
       try {
         const sanitized = sanitizeMermaidCode(data.code)
-        const retryId = `mermaid-retry-${Date.now()}-${mermaidCounter++}`
+        const retryId = `mermaid-retry-${Date.now()}-${mermaidCounter.current++}`
         await mermaid.parse(sanitized)
         const { svg } = await mermaid.render(retryId, sanitized)
         if (!cancelled && containerRef.current) {

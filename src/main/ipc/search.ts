@@ -5,6 +5,7 @@ import { embeddingsService } from '../services/embeddings'
 import { vectorStoreService } from '../services/vectorStore'
 import { deepbrainService } from '../services/deepbrain'
 import { configService } from '../services/config'
+import { spotlightSearch } from '../services/spotlight'
 
 export function registerSearchHandlers() {
   ipcMain.handle(
@@ -21,15 +22,17 @@ export function registerSearchHandlers() {
       }
 
       if (notebookIds.length === 0) {
-        return { results: [], systemResults: { memories: [], files: [] } }
+        return { results: [], systemResults: { memories: [], files: [], emails: [], spotlight: [] } }
       }
 
-      // Search notebook vectors AND DeepBrain in parallel (if enabled)
+      // Search notebook vectors, DeepBrain, and Spotlight in parallel
       const sbEnabled = configService.getAll().deepbrainEnabled !== false
-      const [queryVector, sbMemories, sbFiles] = await Promise.all([
+      const [queryVector, sbMemories, sbFiles, sbEmails, spotlightResults] = await Promise.all([
         embeddingsService.embedQuery(args.query),
         sbEnabled ? deepbrainService.recall(args.query, 5).catch(() => []) : Promise.resolve([]),
         sbEnabled ? deepbrainService.searchFiles(args.query, 5).catch(() => []) : Promise.resolve([]),
+        sbEnabled ? deepbrainService.searchEmails(args.query, 5).catch(() => []) : Promise.resolve([]),
+        spotlightSearch(args.query, 8),
       ])
 
       // Search across all notebooks
@@ -67,6 +70,14 @@ export function registerSearchHandlers() {
             similarity: f.similarity,
             fileType: f.fileType,
           })),
+          emails: sbEmails.map((e) => ({
+            subject: e.subject,
+            sender: e.sender,
+            date: e.date,
+            chunk: e.chunk.slice(0, 300),
+            similarity: e.similarity,
+          })),
+          spotlight: spotlightResults,
         },
       }
     }

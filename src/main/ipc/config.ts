@@ -4,6 +4,10 @@ import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { configService } from '../services/config'
 import { resetEmbeddingsClient } from '../services/embeddings'
 import { resetAiClient } from '../services/ai'
+import { resetAgenticRagClient } from '../services/agenticRag'
+import { resetPipelineClient } from '../services/generationPipeline'
+import { resetMemoryClient } from '../services/memory'
+import { resetMiddlewareClient } from '../services/aiMiddleware'
 
 export function registerConfigHandlers() {
   ipcMain.handle(IPC_CHANNELS.CONFIG_GET_API_KEY, async () => {
@@ -12,9 +16,13 @@ export function registerConfigHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.CONFIG_SET_API_KEY, async (_event, key: string) => {
     configService.setApiKey(key)
-    // Reset cached clients so they pick up the new key
+    // Reset all cached Gemini clients so they pick up the new key
     resetEmbeddingsClient()
     resetAiClient()
+    resetAgenticRagClient()
+    resetPipelineClient()
+    resetMemoryClient()
+    resetMiddlewareClient()
   })
 
   ipcMain.handle(
@@ -53,9 +61,13 @@ export function registerConfigHandlers() {
       if (args.model !== undefined) updates.chatModel = args.model
       if (args.geminiKey !== undefined) {
         updates.apiKey = args.geminiKey.trim()
-        // Also reset cached Gemini clients
+        // Reset all cached Gemini clients
         resetEmbeddingsClient()
         resetAiClient()
+        resetAgenticRagClient()
+        resetPipelineClient()
+        resetMemoryClient()
+        resetMiddlewareClient()
       }
       if (args.claudeKey !== undefined) updates.claudeApiKey = args.claudeKey.trim()
       if (args.openaiKey !== undefined) updates.openaiApiKey = args.openaiKey.trim()

@@ -248,7 +248,7 @@ export function registerChatHandlers() {
         `[DeepNote Chat | ${notebook?.title || args.notebookId}] Q: ${args.message}\nA: ${responseText.slice(0, 500)}`,
         'episodic',
         0.6
-      ).catch(() => { /* DeepBrain offline — silently skip */ })
+      ).catch((err) => console.warn('[Chat] DeepBrain remember failed:', err))
     }
 
     return assistantMessage

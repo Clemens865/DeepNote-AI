@@ -68,7 +68,7 @@ class TrayService {
         `[Clipboard Capture] ${text.slice(0, 500)}`,
         'working',
         0.3
-      ).catch(() => { /* DeepBrain offline */ })
+      ).catch((err) => console.warn('[Tray] DeepBrain remember failed:', err))
     }
 
     // Update tray menu

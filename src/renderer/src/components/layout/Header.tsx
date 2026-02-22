@@ -17,14 +17,21 @@ export function Header() {
   const [showSettings, setShowSettings] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  const [searchInitialFilter, setSearchInitialFilter] = useState<'all' | 'notebooks' | 'files' | 'memories' | 'emails'>('all')
   const [showManual, setShowManual] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
 
-  // Cmd+K keyboard shortcut for global search
+  // Cmd+K keyboard shortcut for global search, Cmd+Shift+F for files filter
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
+        setSearchInitialFilter('all')
+        setShowSearch(true)
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'f') {
+        e.preventDefault()
+        setSearchInitialFilter('files')
         setShowSearch(true)
       }
     }
@@ -110,7 +117,7 @@ export function Header() {
       )}
 
       <button
-        onClick={() => setShowSearch(true)}
+        onClick={() => { setSearchInitialFilter('all'); setShowSearch(true) }}
         className="titlebar-no-drag w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mr-1"
         title="Search all notebooks (Cmd+K)"
       >
@@ -145,6 +152,7 @@ export function Header() {
       <GlobalSearchDialog
         isOpen={showSearch}
         onClose={() => setShowSearch(false)}
+        initialFilter={searchInitialFilter}
         onNavigate={(notebookId) => {
           setShowSearch(false)
           navigate(`/notebook/${notebookId}`)

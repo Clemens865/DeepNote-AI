@@ -21,8 +21,8 @@ export function registerClipboardHandlers() {
           }
           return merged.slice(0, 20)
         }
-      } catch {
-        // DeepBrain offline
+      } catch (err) {
+        console.warn('[Clipboard] DeepBrain clipboard fetch failed:', err)
       }
     }
     return localHistory

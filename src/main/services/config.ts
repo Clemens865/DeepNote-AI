@@ -74,10 +74,6 @@ export class ConfigService {
     writeConfig(config)
   }
 
-  getConfig(): AppConfig {
-    return readConfig()
-  }
-
   getAll(): AppConfig {
     return readConfig()
   }

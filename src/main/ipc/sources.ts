@@ -42,7 +42,7 @@ export function registerSourceHandlers() {
         `[DeepNote Source] Added "${source.title}" (${source.type}) to notebook ${args.notebookId}. Preview: ${preview}`,
         'semantic',
         0.4
-      ).catch(() => { /* DeepBrain offline */ })
+      ).catch((err) => console.warn('[Sources] DeepBrain remember failed:', err))
     }
 
     return source
