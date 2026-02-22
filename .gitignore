@@ -4,3 +4,16 @@ out
 .DS_Store
 .eslintcache
 *.log*
+
+# Build artifacts
+*.tsbuildinfo
+
+# User-specific config
+.mcp.json
+
+# Screenshots (host externally)
+Screenshots/
+Screenshots_Notebook_Presentations/
+
+# Mockups (design phase artifacts)
+mockups/

@@ -2,6 +2,7 @@
 
 A feature-rich, open-source desktop application inspired by Google's NotebookLM. Built with Electron, React, and powered by Google Gemini AI. Upload documents, chat with your sources, and generate studio-quality content including AI podcasts, image slide decks with a drag-and-drop editor, flashcards, quizzes, mind maps, reports, and more — with agentic RAG, multi-agent generation pipelines, voice Q&A, cross-session memory, and local embeddings.
 
+<!-- TODO: Add hero screenshot -->
 
 ---
 
@@ -390,7 +391,7 @@ Click the pencil icon on any hybrid slide to enter edit mode:
 - **Speaker Notes** - Show/hide AI-generated speaker notes per slide
 - **Download** - Save individual slides as PNG files
 
-![Slide Deck](Screenshots_Notebook_Presentations/Bildschirmfoto%202026-02-10%20um%2014.15.58.png)
+<!-- TODO: Add slide deck screenshot -->
 
 ---
 
