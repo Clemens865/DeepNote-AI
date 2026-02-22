@@ -132,6 +132,17 @@ function initializeDatabase() {
   if (!chatCols.some((c) => c.name === 'metadata')) {
     sqlite.exec('ALTER TABLE chat_messages ADD COLUMN metadata TEXT')
   }
+
+  // Indexes for frequently queried foreign keys
+  sqlite.exec(`
+    CREATE INDEX IF NOT EXISTS idx_sources_notebook_id ON sources(notebook_id);
+    CREATE INDEX IF NOT EXISTS idx_chunks_source_id ON chunks(source_id);
+    CREATE INDEX IF NOT EXISTS idx_notes_notebook_id ON notes(notebook_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_notebook_id ON chat_messages(notebook_id);
+    CREATE INDEX IF NOT EXISTS idx_generated_content_notebook_id ON generated_content(notebook_id);
+    CREATE INDEX IF NOT EXISTS idx_user_memory_notebook_id ON user_memory(notebook_id);
+    CREATE INDEX IF NOT EXISTS idx_workspace_files_notebook_id ON workspace_files(notebook_id);
+  `)
 }
 
 export function closeDatabase() {
