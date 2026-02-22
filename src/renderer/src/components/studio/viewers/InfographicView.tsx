@@ -90,6 +90,7 @@ function InfographicOverlay({ plan, imagePath }: { plan: InfographicPlan | null;
 function InfographicContent({ data }: { data: Record<string, unknown> }) {
   const imagePath = data.imagePath as string | undefined
   const plan = (data.plan as InfographicPlan | undefined) || null
+  const renderMode = (data.renderMode as string | undefined) || 'hybrid'
 
   if (!imagePath) {
     return <p className="text-sm text-slate-500 dark:text-slate-400">No infographic generated yet.</p>
@@ -98,7 +99,15 @@ function InfographicContent({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
-        <InfographicOverlay plan={plan} imagePath={imagePath} />
+        {renderMode === 'full-image' ? (
+          <img
+            src={`local-file://${imagePath}`}
+            alt="Infographic"
+            className="w-full h-auto"
+          />
+        ) : (
+          <InfographicOverlay plan={plan} imagePath={imagePath} />
+        )}
       </div>
       <div className="flex justify-end">
         <button
@@ -106,7 +115,7 @@ function InfographicContent({ data }: { data: Record<string, unknown> }) {
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
         >
           <Download size={12} />
-          Download background image
+          Download image
         </button>
       </div>
     </div>
@@ -116,12 +125,13 @@ function InfographicContent({ data }: { data: Record<string, unknown> }) {
 export function InfographicView({ data, isFullscreen, onCloseFullscreen, title }: InfographicViewProps) {
   const imagePath = data.imagePath as string | undefined
   const plan = (data.plan as InfographicPlan | undefined) || null
+  const renderMode = (data.renderMode as string | undefined) || 'hybrid'
 
   const downloadAction = imagePath ? (
     <button
       onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: 'infographic.png' })}
       className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-      title="Download background image"
+      title="Download image"
     >
       <Download size={16} />
     </button>
@@ -140,7 +150,15 @@ export function InfographicView({ data, isFullscreen, onCloseFullscreen, title }
         {imagePath && (
           <div className="flex items-center justify-center h-full">
             <div className="max-w-full max-h-[calc(100vh-120px)] overflow-hidden">
-              <InfographicOverlay plan={plan} imagePath={imagePath} />
+              {renderMode === 'full-image' ? (
+                <img
+                  src={`local-file://${imagePath}`}
+                  alt="Infographic"
+                  className="max-w-full max-h-[calc(100vh-120px)] object-contain"
+                />
+              ) : (
+                <InfographicOverlay plan={plan} imagePath={imagePath} />
+              )}
             </div>
           </div>
         )}

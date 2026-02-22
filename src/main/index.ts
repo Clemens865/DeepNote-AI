@@ -17,7 +17,7 @@ import { registerSearchHandlers } from './ipc/search'
 import { registerMemoryHandlers } from './ipc/memory'
 import { registerClipboardHandlers } from './ipc/clipboard'
 import { registerVoiceHandlers } from './ipc/voice'
-import { registerSuperBrainHandlers } from './ipc/superbrain'
+import { registerDeepBrainHandlers } from './ipc/deepbrain'
 import { trayService } from './services/tray'
 import { fileWatcherService } from './services/fileWatcher'
 import { deepnoteApiServer } from './services/deepnoteApi'
@@ -97,7 +97,7 @@ app.whenReady().then(() => {
   registerMemoryHandlers()
   registerClipboardHandlers()
   registerVoiceHandlers()
-  registerSuperBrainHandlers()
+  registerDeepBrainHandlers()
 
   // Start DeepNote REST API server for bidirectional integration
   deepnoteApiServer.start()

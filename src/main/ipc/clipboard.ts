@@ -2,25 +2,28 @@ import { ipcMain } from 'electron'
 import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { trayService } from '../services/tray'
 import { ingestSource } from '../services/sourceIngestion'
-import { superbrainService } from '../services/superbrain'
+import { deepbrainService } from '../services/deepbrain'
+import { configService } from '../services/config'
 
 export function registerClipboardHandlers() {
   ipcMain.handle(IPC_CHANNELS.CLIPBOARD_HISTORY, async () => {
-    // Merge local tray history with SuperBrain clipboard history
+    // Merge local tray history with DeepBrain clipboard history (if enabled)
     const localHistory = trayService.getHistory()
-    try {
-      const sbClipboard = await superbrainService.getClipboardHistory(10)
-      if (sbClipboard.length > 0) {
-        const sbTexts = sbClipboard.map((c) => c.content)
-        // Merge: local first, then SuperBrain entries not already in local
-        const merged = [...localHistory]
-        for (const text of sbTexts) {
-          if (!merged.includes(text)) merged.push(text)
+    if (configService.getAll().deepbrainEnabled !== false) {
+      try {
+        const sbClipboard = await deepbrainService.getClipboardHistory(10)
+        if (sbClipboard.length > 0) {
+          const sbTexts = sbClipboard.map((c) => c.content)
+          // Merge: local first, then DeepBrain entries not already in local
+          const merged = [...localHistory]
+          for (const text of sbTexts) {
+            if (!merged.includes(text)) merged.push(text)
+          }
+          return merged.slice(0, 20)
         }
-        return merged.slice(0, 20)
+      } catch {
+        // DeepBrain offline
       }
-    } catch {
-      // SuperBrain offline
     }
     return localHistory
   })

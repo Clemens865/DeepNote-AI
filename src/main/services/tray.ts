@@ -1,6 +1,7 @@
 import { Tray, Menu, globalShortcut, clipboard, BrowserWindow, nativeImage, app } from 'electron'
 import { join } from 'path'
-import { superbrainService } from './superbrain'
+import { deepbrainService } from './deepbrain'
+import { configService } from './config'
 import { getDatabase, schema } from '../db'
 
 const MAX_HISTORY = 10
@@ -61,12 +62,14 @@ class TrayService {
     // Broadcast to renderer
     this.broadcastToWindows('clipboard:captured', { text })
 
-    // Fire-and-forget: store in SuperBrain as working memory
-    superbrainService.remember(
-      `[Clipboard Capture] ${text.slice(0, 500)}`,
-      'working',
-      0.3
-    ).catch(() => { /* SuperBrain offline */ })
+    // Fire-and-forget: store in DeepBrain as working memory (if enabled)
+    if (configService.getAll().deepbrainEnabled !== false) {
+      deepbrainService.remember(
+        `[Clipboard Capture] ${text.slice(0, 500)}`,
+        'working',
+        0.3
+      ).catch(() => { /* DeepBrain offline */ })
+    }
 
     // Update tray menu
     this.updateMenu()

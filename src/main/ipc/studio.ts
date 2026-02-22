@@ -9,7 +9,7 @@ import { aiService } from '../services/ai'
 import { ttsService } from '../services/tts'
 import { imagenService, STYLE_PRESETS, buildSlidePrompt, buildHybridSlidePrompt } from '../services/imagen'
 import { shouldUsePipeline } from '../services/generationPipeline'
-import { superbrainService } from '../services/superbrain'
+import { deepbrainService } from '../services/deepbrain'
 import { configService } from '../services/config'
 
 const TYPE_TITLES: Record<string, string> = {
@@ -109,13 +109,13 @@ export function registerStudioHandlers() {
         })
         .where(eq(schema.generatedContent.id, id))
 
-      // Fire-and-forget: store generation event in SuperBrain (if enabled)
-      if (configService.getAll().superbrainEnabled !== false) {
-        superbrainService.remember(
+      // Fire-and-forget: store generation event in DeepBrain (if enabled)
+      if (configService.getAll().deepbrainEnabled !== false) {
+        deepbrainService.remember(
           `[DeepNote Studio] Generated ${args.type}: "${record.title}" in notebook ${args.notebookId} from ${sourceIds.length} sources`,
           'semantic',
           0.5
-        ).catch(() => { /* SuperBrain offline */ })
+        ).catch(() => { /* DeepBrain offline */ })
       }
 
       return {
@@ -217,6 +217,7 @@ export function registerStudioHandlers() {
       notebookId: string
       stylePresetId: string
       aspectRatio: '16:9' | '4:3' | '1:1'
+      renderMode?: 'full-image' | 'hybrid'
       userInstructions?: string
       customStyleImagePath?: string
       customStyleColors?: string[]
@@ -286,36 +287,75 @@ export function registerStudioHandlers() {
             message: 'Generating infographic image...',
           })
 
-          // Build image prompt — generate a thematic background/atmosphere image.
-          // The structured text (title, key points) will be overlaid as HTML by the viewer.
           const visualElements = plan.keyPoints
             .map((kp) => kp.visualDescription)
             .join(', ')
 
           const userInstr = args.userInstructions ? `\nUser instructions: ${args.userInstructions}` : ''
+          const renderMode = args.renderMode || 'full-image'
 
-          const imagePrompt = `Generate a rich, atmospheric, cinematic background image for an infographic about "${plan.title}". The image should evoke the theme through visual metaphors and mood — NOT through text or layout.
+          let imagePrompt: string
+          let slideTextContent: string | undefined
+
+          if (renderMode === 'full-image') {
+            // Full-image mode: AI renders text + visuals together in one image
+            const textContent = [
+              `TITLE: ${plan.title}`,
+              plan.subtitle ? `SUBTITLE: ${plan.subtitle}` : '',
+              '',
+              ...plan.keyPoints.map((kp, i) => `${i + 1}. ${kp.heading}: ${kp.body}`),
+            ].filter(Boolean).join('\n')
+
+            slideTextContent = textContent
+
+            imagePrompt = `Generate a COMPLETE, PROFESSIONAL infographic image about "${plan.title}".
+
+This is a SINGLE self-contained infographic — all text, data, icons, and visual elements must be rendered INSIDE the image.
+
+VISUAL STYLE: ${styleDescription}
+
+CONTENT TO INCLUDE (render ALL of this as part of the infographic design):
+${textContent}
+
+Visual elements to incorporate as icons, illustrations, or diagrams: ${visualElements}
+
+INFOGRAPHIC DESIGN RULES:
+- Render the TITLE prominently at the top in a bold, decorative font
+- ${plan.subtitle ? `Render the SUBTITLE below the title in a lighter font` : ''}
+- Arrange the numbered key points as visually distinct sections with icons/illustrations
+- Use visual hierarchy: larger headings, smaller body text
+- Include decorative elements, dividers, icons, and visual metaphors
+- The infographic should look professionally designed — like something from Canva or Venngage
+- ALL text must be clearly readable and part of the image design
+- Use the specified color palette consistently${userInstr}`
+          } else {
+            // Hybrid mode: background-only image, text overlaid as HTML
+            imagePrompt = `Generate a rich, atmospheric, cinematic background image for an infographic about "${plan.title}". The image should evoke the theme through visual metaphors and mood — NOT through text or layout.
 
 Visual elements to incorporate subtly: ${visualElements}
 
 Visual style: ${styleDescription}
 
 CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the image. This is a pure visual background — structured text will be overlaid separately. Make it rich, immersive, and visually striking with depth, lighting, and atmosphere.${userInstr}`
+          }
 
           const imagePath = await imagenService.generateSlideImage(imagePrompt, {
             aspectRatio: args.aspectRatio === '1:1' ? '4:3' : args.aspectRatio,
             contentId: generatedContentId,
             slideNumber: 1,
             referenceImagePath: args.customStyleImagePath,
-            shortSubject: `atmospheric background about ${plan.title}: ${visualElements.slice(0, 200)}`,
+            shortSubject: renderMode === 'full-image'
+              ? `professional infographic about ${plan.title}`
+              : `atmospheric background about ${plan.title}: ${visualElements.slice(0, 200)}`,
             styleHint: args.customStyleImagePath ? styleDescription : undefined,
+            slideTextContent: renderMode === 'full-image' ? slideTextContent : undefined,
           })
 
           const currentDb = getDatabase()
           await currentDb
             .update(schema.generatedContent)
             .set({
-              data: { imagePath, plan, style: args.stylePresetId, aspectRatio: args.aspectRatio } as unknown as string,
+              data: { imagePath, plan, style: args.stylePresetId, aspectRatio: args.aspectRatio, renderMode } as unknown as string,
               status: 'completed',
             })
             .where(eq(schema.generatedContent.id, generatedContentId))

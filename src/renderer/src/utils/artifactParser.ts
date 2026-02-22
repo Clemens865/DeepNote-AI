@@ -117,11 +117,13 @@ export function parseArtifacts(content: string): MessageSegment[] {
           },
         })
       } else if (artifactType === 'mermaid' && parsed.code) {
+        // Normalize literal \n sequences to actual newlines
+        const normalizedCode = parsed.code.replace(/\\n/g, '\n')
         segments.push({
           type: 'artifact-mermaid',
           data: {
             title: parsed.title,
-            code: parsed.code,
+            code: normalizedCode,
           },
         })
       } else if (artifactType === 'kanban' && parsed.items) {

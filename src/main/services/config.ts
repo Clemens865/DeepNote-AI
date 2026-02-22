@@ -12,9 +12,9 @@ interface AppConfig {
   chatProvider: ChatProviderType
   chatModel: string
   embeddingsModel: 'auto' | 'gemini' | 'local'
-  superbrainPort: number
-  superbrainToken: string
-  superbrainEnabled: boolean
+  deepbrainPort: number
+  deepbrainToken: string
+  deepbrainEnabled: boolean
   deepnoteApiPort: number
   deepnoteApiToken: string
 }
@@ -27,9 +27,9 @@ const defaultConfig: AppConfig = {
   chatProvider: 'gemini',
   chatModel: 'gemini-3-flash-preview',
   embeddingsModel: 'auto',
-  superbrainPort: 19519,
-  superbrainToken: '',
-  superbrainEnabled: true,
+  deepbrainPort: 19519,
+  deepbrainToken: '',
+  deepbrainEnabled: true,
   deepnoteApiPort: 19520,
   deepnoteApiToken: '',
 }

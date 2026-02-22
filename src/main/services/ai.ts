@@ -25,17 +25,17 @@ export async function buildSystemPrompt(
   context: string,
   notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
   notebookId?: string,
-  superbrainEnabled?: boolean
+  deepbrainEnabled?: boolean
 ): Promise<string> {
-  const sbEnabled = superbrainEnabled !== false
+  const sbEnabled = deepbrainEnabled !== false
   let systemPrompt = sbEnabled
-    ? `You are a helpful AI assistant in DeepNote AI, a notebook application integrated with SuperBrain — a system-wide cognitive engine.
+    ? `You are a helpful AI assistant in DeepNote AI, a notebook application integrated with DeepBrain — a system-wide cognitive engine.
 
 CRITICAL: You have access to TWO data sources:
 1. NOTEBOOK SOURCES — documents, PDFs, pastes uploaded to this notebook
-2. SYSTEM-WIDE DATA (SuperBrain) — the user's emails, local files, clipboard history, and cross-app memories
+2. SYSTEM-WIDE DATA (DeepBrain) — the user's emails, local files, clipboard history, and cross-app memories
 
-NEVER say "I cannot access your emails" or "I don't have access to your files." Instead, check the system-wide data section below. If SuperBrain found matching data, USE IT. If SuperBrain is connected but found nothing, tell the user the specific content wasn't found in the indexed files. If SuperBrain is not running, tell the user to start SuperBrain to enable system-wide search.`
+NEVER say "I cannot access your emails" or "I don't have access to your files." Instead, check the system-wide data section below. If DeepBrain found matching data, USE IT. If DeepBrain is connected but found nothing, tell the user the specific content wasn't found in the indexed files. If DeepBrain is not running, tell the user to start DeepBrain to enable system-wide search.`
     : `You are a helpful AI assistant in DeepNote AI, a notebook application for document analysis and research.
 
 You answer questions based on the NOTEBOOK SOURCES — documents, PDFs, pastes, and other materials uploaded to this notebook.`
@@ -139,10 +139,10 @@ export class AiService {
     context: string,
     notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
     notebookId?: string,
-    superbrainEnabled?: boolean
+    deepbrainEnabled?: boolean
   ): Promise<string> {
     const ai = getClient()
-    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId, superbrainEnabled)
+    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId, deepbrainEnabled)
 
     const contents = messages.map((m) => ({
       role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
@@ -164,10 +164,10 @@ export class AiService {
     notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
     onChunk?: (text: string) => void,
     notebookId?: string,
-    superbrainEnabled?: boolean
+    deepbrainEnabled?: boolean
   ): Promise<string> {
     const ai = getClient()
-    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId, superbrainEnabled)
+    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId, deepbrainEnabled)
 
     const contents = messages.map((m) => ({
       role: m.role === 'assistant' ? ('model' as const) : ('user' as const),

@@ -93,27 +93,31 @@ export function buildSlidePrompt(
     return `MANDATORY VISUAL STYLE — follow this EXACTLY, do not deviate:
 ${styleDescription}
 
-Generate an image of a PRESENTATION SLIDE that looks like it belongs in the same art series as described above. It must match the described rendering medium, color palette, saturation level, lighting, and texture PRECISELY.
+Generate a VISUALLY RICH, CINEMATIC presentation slide image that belongs in the same art series as described above. Match the rendering medium, color palette, saturation level, lighting, and texture PRECISELY.
 
-${visualCue ? `SCENE/SUBJECT for the slide illustration: ${visualCue}` : ''}
+${visualCue ? `PRIMARY VISUAL (this is the MOST IMPORTANT part — the image tells the story):\n${visualCue}` : ''}
 
-CRITICAL TEXT REQUIREMENT — THIS IS THE MOST IMPORTANT PART:
-You MUST render the following text DIRECTLY on the image as large, clearly readable typography. This is a presentation slide — the text IS the slide content. Without this text, the slide is useless. Use high-contrast colors so the text is perfectly legible against the background. The title should be large and bold. Bullet points should be clearly spaced below.
+The illustration/visual should dominate the slide and communicate the concept visually. It should cover most of the image area.
 
-TEXT TO RENDER ON THE SLIDE:
+TEXT OVERLAY (secondary layer — keep subtle and minimal):
+Render the following text on the image in a clean, elegant, understated style. The text should NOT dominate — it is a light supporting layer over the visual. Use a thin/light-weight sans-serif font, slightly transparent or with a subtle backdrop. Position it so it does not obscure the main visual. Title at top, bullet keywords below.
+
+TEXT:
 ${slideContent}`
   }
 
-  return `Generate a professional PRESENTATION SLIDE image. This must look like an actual slide from a keynote or PowerPoint presentation, with text and visuals combined in one image.
+  return `Generate a VISUALLY RICH, CINEMATIC presentation slide image. The visual illustration should be the dominant element — covering most of the slide and telling the story through imagery.
 
 VISUAL STYLE (you MUST follow this precisely): ${styleDescription}.
 
-${visualCue ? `ILLUSTRATION/VISUAL ELEMENT: Include a visual related to: ${visualCue}` : ''}
+${visualCue ? `PRIMARY VISUAL (MOST IMPORTANT — the image tells the story):\n${visualCue}` : ''}
 
-CRITICAL TEXT REQUIREMENT — THIS IS THE MOST IMPORTANT PART:
-You MUST render the following text DIRECTLY on the slide image as large, clearly readable typography. This is a presentation slide — the text IS the main content. Without this text, the slide is INCOMPLETE and USELESS. Use a clean sans-serif font. The title should be LARGE and BOLD at the top. Bullet points should be clearly listed below with good spacing. Text must have HIGH CONTRAST against the background so it is perfectly legible.
+The illustration should be vivid, evocative, and communicate the concept visually. It should cover the majority of the slide area.
 
-TEXT TO RENDER ON THE SLIDE:
+TEXT OVERLAY (secondary, subtle layer):
+Render the following text on the slide in a clean, elegant, understated style. Text should NOT dominate the image — it is a lightweight supporting layer for text-oriented viewers. Use a thin/light-weight sans-serif font. Keep the title compact at top, with minimal bullet keywords below. Ensure text is legible but not overpowering — the visual is the star.
+
+TEXT:
 ${slideContent}`
 }
 
@@ -157,25 +161,24 @@ Make it visually striking with depth and mood. The entire image should be rich a
     return `MANDATORY VISUAL STYLE — follow this EXACTLY, do not deviate:
 ${styleDescription}
 
-Generate a background image that looks like it belongs in the same art series as described above. This image will have text overlaid on the left side.
+Generate a RICH, CINEMATIC illustration that belongs in the same art series as described above. This image is the primary storytelling element — it should visually communicate the entire concept.
 
-${visualCue ? `SCENE/SUBJECT: ${visualCue}` : ''}
+${visualCue ? `VISUAL NARRATIVE (tell the story through this scene):\n${visualCue}` : ''}
 
-CRITICAL LAYOUT: The LEFT HALF must be relatively plain/subtle (matching the style's color palette) because text will be overlaid there. Concentrate visual elements on the RIGHT HALF.
+LAYOUT: The visual should be expansive and immersive. Keep a subtle area on the LEFT (~30%) slightly less busy for a light text overlay, but the illustration should still feel full and cinematic — not a split-screen with an empty half.
 
 CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography. Match the described rendering medium, color palette, saturation level, lighting, and texture PRECISELY.`
   }
 
   return `VISUAL STYLE (you MUST follow this precisely): ${styleDescription}.
 
-Generate a professional presentation slide BACKGROUND image in EXACTLY the style described above.
+Generate a RICH, CINEMATIC presentation slide illustration in EXACTLY the style described above. This image is the primary storytelling element — it should visually communicate the entire concept to the viewer.
 
-${visualCue ? `ILLUSTRATION THEME: ${visualCue}` : ''}
+${visualCue ? `VISUAL NARRATIVE (tell the story through this scene):\n${visualCue}` : ''}
 
-CRITICAL LAYOUT: This is a SPLIT-SCREEN slide. The LEFT HALF must be relatively plain/subtle (solid or softly gradient background matching the style) because text will be overlaid there. Concentrate ALL illustrations, diagrams, charts, and visual elements on the RIGHT HALF of the image.
+LAYOUT: The visual should be expansive and immersive, covering the full slide. Keep a subtle area on the LEFT (~30%) slightly less busy for a light text overlay, but the illustration should still feel full and cinematic — not a split-screen with a blank half.
 
-CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography in the image. This is a background/illustration only.
-Generate a visually rich but text-free background with the visual interest concentrated on the right side.`
+CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography in the image. This is the visual storytelling layer — text will be overlaid separately as a subtle secondary element.`
 }
 
 export class ImagenService {
@@ -233,14 +236,16 @@ export class ImagenService {
             // Full-image mode: match reference style BUT include slide text on the image
             refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}.
 
-CRITICAL TEXT REQUIREMENT — THIS IS THE MOST IMPORTANT PART:
-You MUST render the following text DIRECTLY on the image as large, clearly readable typography. This is a presentation slide — the text IS the slide content. Without this text, the slide is useless. Use high-contrast colors so the text is perfectly legible against the background. The title should be large and bold. Bullet points should be clearly spaced below.
+The visual illustration should be the DOMINANT element — rich, cinematic, covering most of the image. It should visually tell the story.
 
-TEXT TO RENDER ON THE SLIDE:
+TEXT OVERLAY (secondary, subtle):
+Render the following text on the image in a clean, elegant, understated style. Use a thin/light-weight font. The text should NOT dominate — it is a light supporting layer. Position it so it does not obscure the main visual.
+
+TEXT:
 ${config.slideTextContent}`
           } else {
             // Background-only mode (hybrid content slides, infographics, whitepaper images): no text
-            refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. No text in the image.`
+            refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. Make the visual rich, cinematic, and immersive — it is the primary storytelling element. No text in the image.`
           }
 
           contents = [

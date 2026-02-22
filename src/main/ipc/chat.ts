@@ -6,18 +6,27 @@ import { getDatabase, schema } from '../db'
 import { ragService } from '../services/rag'
 import { aiService, buildSystemPrompt } from '../services/ai'
 import { memoryService } from '../services/memory'
-import { superbrainService } from '../services/superbrain'
+import { deepbrainService } from '../services/deepbrain'
 import { configService } from '../services/config'
 import { getChatProvider } from '../services/providers'
 import type { ChatProviderType } from '../../shared/providers'
+import type { DeepBrainResults } from '../../shared/types'
 
 export function registerChatHandlers() {
   ipcMain.handle(IPC_CHANNELS.CHAT_MESSAGES, async (_event, notebookId: string) => {
     const db = getDatabase()
-    return db
+    const rows = await db
       .select()
       .from(schema.chatMessages)
       .where(eq(schema.chatMessages.notebookId, notebookId))
+
+    return rows.map((row) => {
+      const metadata = row.metadata as Record<string, unknown> | null
+      return {
+        ...row,
+        deepbrainResults: metadata?.deepbrainResults as DeepBrainResults | undefined,
+      }
+    })
   })
 
   ipcMain.handle(IPC_CHANNELS.CHAT_SEND, async (_event, args: {
@@ -93,19 +102,29 @@ export function registerChatHandlers() {
       }
     }
 
-    // SuperBrain: recall memories + search files in parallel (gracefully skips if offline or disabled)
-    const sbEnabled = configService.getAll().superbrainEnabled !== false
-    let superbrainContext = ''
-    let superbrainConnected = false
+    // DeepBrain: recall memories + search files + emails in parallel (gracefully skips if offline or disabled)
+    const sbEnabled = configService.getAll().deepbrainEnabled !== false
+    let deepbrainContext = ''
+    let deepbrainConnected = false
+    let deepbrainResults: DeepBrainResults | undefined
     try {
       if (sbEnabled) {
-        superbrainConnected = await superbrainService.isAvailable()
+        deepbrainConnected = await deepbrainService.isAvailable()
       }
-      if (superbrainConnected) {
-        const [sbMemories, sbFiles] = await Promise.all([
-          superbrainService.recall(args.message, 8).catch(() => []),
-          superbrainService.searchFiles(args.message, 5).catch(() => []),
+      if (deepbrainConnected) {
+        const [sbMemories, sbFiles, sbEmails, sbActivity] = await Promise.all([
+          deepbrainService.recall(args.message, 8).catch(() => []),
+          deepbrainService.searchFiles(args.message, 5).catch(() => []),
+          deepbrainService.searchEmails(args.message, 5).catch(() => []),
+          deepbrainService.getActivityCurrent().catch(() => null),
         ])
+
+        // Store results for UI preview cards
+        deepbrainResults = {
+          memories: sbMemories,
+          files: sbFiles,
+          emails: sbEmails,
+        }
 
         const sbParts: string[] = []
 
@@ -114,7 +133,7 @@ export function registerChatHandlers() {
           for (const m of sbMemories) {
             sbParts.push(`  [${m.memoryType}] ${m.content}`)
           }
-          console.log(`[Chat] SuperBrain provided ${sbMemories.length} memories`)
+          console.log(`[Chat] DeepBrain provided ${sbMemories.length} memories`)
         }
 
         if (sbFiles.length > 0) {
@@ -122,26 +141,44 @@ export function registerChatHandlers() {
           for (const f of sbFiles) {
             sbParts.push(`  [File: ${f.name}] (${f.path})\n  ${f.chunk}`)
           }
-          console.log(`[Chat] SuperBrain provided ${sbFiles.length} file matches`)
+          console.log(`[Chat] DeepBrain provided ${sbFiles.length} file matches`)
+        }
+
+        if (sbEmails.length > 0) {
+          sbParts.push('Emails:')
+          for (const e of sbEmails) {
+            sbParts.push(`  [Email] "${e.subject}" from ${e.sender} (${e.date})\n  ${e.chunk}`)
+          }
+          console.log(`[Chat] DeepBrain provided ${sbEmails.length} email matches`)
+        }
+
+        // Activity context — tell AI what user is currently working on
+        if (sbActivity) {
+          sbParts.push(`User activity: Currently using ${sbActivity.app}${sbActivity.file ? ` — editing ${sbActivity.file}` : ` — window: ${sbActivity.window}`}`)
         }
 
         if (sbParts.length > 0) {
-          superbrainContext = `\n\n--- SYSTEM-WIDE DATA (SuperBrain connected) ---\nYou DO have access to the user's system files, emails, clipboard history, and cross-app memories through SuperBrain. The following data was found for this query:\n${sbParts.join('\n')}`
+          deepbrainContext = `\n\n--- SYSTEM-WIDE DATA (DeepBrain connected) ---\nYou DO have access to the user's system files, emails, clipboard history, and cross-app memories through DeepBrain. The following data was found for this query:\n${sbParts.join('\n')}`
         } else {
-          superbrainContext = `\n\n--- SYSTEM-WIDE DATA (SuperBrain connected) ---\nSuperBrain is connected but found no matching files or memories for this query. The user's emails and files ARE searchable — this query just didn't match any indexed content. Suggest the user check if their emails/files are indexed in SuperBrain.`
+          deepbrainContext = `\n\n--- SYSTEM-WIDE DATA (DeepBrain connected) ---\nDeepBrain is connected but found no matching files or memories for this query. The user's emails and files ARE searchable — this query just didn't match any indexed content. Suggest the user check if their emails/files are indexed in DeepBrain.`
         }
       }
     } catch {
-      // SuperBrain offline
+      // DeepBrain offline
     }
 
-    // Tell the AI about SuperBrain status so it doesn't say "I can't access your files"
-    if (!superbrainConnected) {
-      superbrainContext = `\n\n--- SYSTEM-WIDE DATA ---\nSuperBrain is not running. You cannot access system files or emails right now. Tell the user to start SuperBrain to enable system-wide search across emails, files, and apps.`
+    // Only include results if non-empty
+    if (deepbrainResults && !deepbrainResults.memories.length && !deepbrainResults.files.length && !deepbrainResults.emails.length) {
+      deepbrainResults = undefined
     }
 
-    // Combine RAG context with SuperBrain context
-    context = context + superbrainContext
+    // Tell the AI about DeepBrain status so it doesn't say "I can't access your files"
+    if (!deepbrainConnected) {
+      deepbrainContext = `\n\n--- SYSTEM-WIDE DATA ---\nDeepBrain is not running. You cannot access system files or emails right now. Tell the user to start DeepBrain to enable system-wide search across emails, files, and apps.`
+    }
+
+    // Combine RAG context with DeepBrain context
+    context = context + deepbrainContext
 
     // Get chat history for context
     const history = await db
@@ -183,18 +220,20 @@ export function registerChatHandlers() {
       citations = []
     }
 
-    // Save assistant message
+    // Save assistant message (with optional DeepBrain metadata)
     const assistantMessage = {
       id: assistantId,
       notebookId: args.notebookId,
       role: 'assistant' as const,
       content: responseText,
       citations,
+      deepbrainResults,
       createdAt: new Date().toISOString(),
     }
     await db.insert(schema.chatMessages).values({
       ...assistantMessage,
       citations: JSON.stringify(assistantMessage.citations),
+      metadata: deepbrainResults ? JSON.stringify({ deepbrainResults }) : null,
     })
 
     // Fire-and-forget: extract memories from conversation
@@ -203,13 +242,13 @@ export function registerChatHandlers() {
       recentHistory.concat([{ role: 'assistant', content: responseText }])
     ).catch((err) => console.warn('[Chat] Memory extraction failed:', err))
 
-    // Fire-and-forget: store Q&A in SuperBrain as episodic memory
+    // Fire-and-forget: store Q&A in DeepBrain as episodic memory
     if (sbEnabled) {
-      superbrainService.remember(
+      deepbrainService.remember(
         `[DeepNote Chat | ${notebook?.title || args.notebookId}] Q: ${args.message}\nA: ${responseText.slice(0, 500)}`,
         'episodic',
         0.6
-      ).catch(() => { /* SuperBrain offline — silently skip */ })
+      ).catch(() => { /* DeepBrain offline — silently skip */ })
     }
 
     return assistantMessage

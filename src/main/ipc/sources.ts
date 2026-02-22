@@ -5,7 +5,8 @@ import { getDatabase, schema } from '../db'
 import { vectorStoreService } from '../services/vectorStore'
 import { ingestSource } from '../services/sourceIngestion'
 import { recommendationsService } from '../services/recommendations'
-import { superbrainService } from '../services/superbrain'
+import { deepbrainService } from '../services/deepbrain'
+import { configService } from '../services/config'
 import type { SourceType } from '../../shared/types'
 
 export function registerSourceHandlers() {
@@ -34,13 +35,15 @@ export function registerSourceHandlers() {
       url: args.url,
     })
 
-    // Fire-and-forget: store source addition in SuperBrain
-    const preview = (source.content || '').slice(0, 200)
-    superbrainService.remember(
-      `[DeepNote Source] Added "${source.title}" (${source.type}) to notebook ${args.notebookId}. Preview: ${preview}`,
-      'semantic',
-      0.4
-    ).catch(() => { /* SuperBrain offline */ })
+    // Fire-and-forget: store source addition in DeepBrain (if enabled)
+    if (configService.getAll().deepbrainEnabled !== false) {
+      const preview = (source.content || '').slice(0, 200)
+      deepbrainService.remember(
+        `[DeepNote Source] Added "${source.title}" (${source.type}) to notebook ${args.notebookId}. Preview: ${preview}`,
+        'semantic',
+        0.4
+      ).catch(() => { /* DeepBrain offline */ })
+    }
 
     return source
   })

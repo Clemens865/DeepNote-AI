@@ -6,9 +6,9 @@
 
 ## Abstract
 
-DeepNote AI began as an intelligent notebook application — a local-first platform for document ingestion, RAG-powered chat, and multi-format content generation. This whitepaper presents the next evolution: transforming DeepNote AI from a per-notebook tool into a **cognitive operating layer** for macOS. By integrating with SuperBrain, a high-performance Rust-based cognitive engine, DeepNote AI gains system-wide semantic memory, filesystem indexing, clipboard awareness, email access, Spotlight integration, and local LLM inference — while preserving its rich notebook UI as the primary interaction surface.
+DeepNote AI began as an intelligent notebook application — a local-first platform for document ingestion, RAG-powered chat, and multi-format content generation. This whitepaper presents the next evolution: transforming DeepNote AI from a per-notebook tool into a **cognitive operating layer** for macOS. By integrating with DeepBrain, a high-performance Rust-based cognitive engine, DeepNote AI gains system-wide semantic memory, filesystem indexing, clipboard awareness, email access, Spotlight integration, and local LLM inference — while preserving its rich notebook UI as the primary interaction surface.
 
-Critically, this integration is **bidirectional**: DeepNote AI draws on SuperBrain's system-wide knowledge, and SuperBrain learns from DeepNote's notebooks, conversations, and generated content. DeepNote exposes its own local REST API, making its structured knowledge accessible to SuperBrain, shell scripts, Raycast, Alfred, and any other tool in the ecosystem.
+Critically, this integration is **bidirectional**: DeepNote AI draws on DeepBrain's system-wide knowledge, and DeepBrain learns from DeepNote's notebooks, conversations, and generated content. DeepNote exposes its own local REST API, making its structured knowledge accessible to DeepBrain, shell scripts, Raycast, Alfred, and any other tool in the ecosystem.
 
 The result is a system where your entire Mac becomes a searchable, queryable, AI-augmented knowledge base — and DeepNote AI is both a window into that ecosystem and a knowledge provider to it.
 
@@ -52,7 +52,7 @@ Rather than rebuilding OS-level capabilities in JavaScript, DeepNote AI adopts a
                     │  Sources    RAG   Notes  Artifacts   │
                     │                                      │
                     │  ┌──────────────────────────────┐    │
-                    │  │  SuperBrain Bridge Service    │    │
+                    │  │  DeepBrain Bridge Service    │    │
                     │  │  HTTP client → localhost:19519│    │
                     │  └──────────────┬───────────────┘    │
                     │                 │                     │
@@ -68,7 +68,7 @@ Rather than rebuilding OS-level capabilities in JavaScript, DeepNote AI adopts a
                           └───────────┬───────────┘
                                       │
                     ┌─────────────────▼────────────────────┐
-                    │       SuperBrain (Tauri + Rust)       │
+                    │       DeepBrain (Tauri + Rust)       │
                     │                                      │
                     │  Cognitive Engine    File Indexer     │
                     │  ONNX Embeddings    Clipboard Monitor│
@@ -92,7 +92,7 @@ Rather than rebuilding OS-level capabilities in JavaScript, DeepNote AI adopts a
 
 ### Why Two Systems?
 
-| Concern | DeepNote AI (Electron) | SuperBrain (Tauri + Rust) |
+| Concern | DeepNote AI (Electron) | DeepBrain (Tauri + Rust) |
 |---------|----------------------|--------------------------|
 | **Purpose** | Rich UI, notebook management, content generation | OS-level services, high-performance compute |
 | **Language** | TypeScript / React | Rust (Tokio async) |
@@ -102,15 +102,15 @@ Rather than rebuilding OS-level capabilities in JavaScript, DeepNote AI adopts a
 | **Overhead** | ~300MB (Chromium) | ~15MB (native) |
 | **API role** | Provides: notebooks, sources, chat, content | Provides: memory, files, clipboard, Spotlight |
 
-The key insight: **both systems are knowledge providers**. SuperBrain provides system-wide OS context; DeepNote provides structured notebook knowledge. Each exposes a local REST API. Each consumes the other's. The user gets a single unified experience where both brains learn from each other.
+The key insight: **both systems are knowledge providers**. DeepBrain provides system-wide OS context; DeepNote provides structured notebook knowledge. Each exposes a local REST API. Each consumes the other's. The user gets a single unified experience where both brains learn from each other.
 
 ---
 
 ## 3. The Cognitive Stack
 
-### Layer 1: Sensing (SuperBrain)
+### Layer 1: Sensing (DeepBrain)
 
-SuperBrain continuously monitors the environment:
+DeepBrain continuously monitors the environment:
 
 - **Clipboard** — Polls every 2 seconds, maintains last 50 entries
 - **File system** — Watches configured directories, auto-reindexes on change
@@ -119,7 +119,7 @@ SuperBrain continuously monitors the environment:
 
 All sensing data is embedded using the ONNX model (`all-MiniLM-L6-v2`, 384 dimensions) and stored in the vector memory.
 
-### Layer 2: Memory (SuperBrain)
+### Layer 2: Memory (DeepBrain)
 
 Eight memory types model different kinds of knowledge:
 
@@ -136,21 +136,21 @@ Eight memory types model different kinds of knowledge:
 
 Memories decay over time unless reinforced by access. Importance scores (0-1) determine retention priority. The system consolidates memories during cognitive cycles, merging related entries and pruning low-value ones.
 
-### Layer 3: Reasoning (DeepNote AI + SuperBrain)
+### Layer 3: Reasoning (DeepNote AI + DeepBrain)
 
 When the user asks a question or requests content generation:
 
 1. **DeepNote RAG** retrieves notebook-specific context from local embeddings
-2. **SuperBrain Recall** retrieves system-wide context from cross-notebook and filesystem memories
+2. **DeepBrain Recall** retrieves system-wide context from cross-notebook and filesystem memories
 3. **Combined context** is injected into the Gemini prompt
 4. **Response** is generated with awareness of both notebook sources and system-wide knowledge
-5. **Key insights** are stored back into SuperBrain as episodic memories
+5. **Key insights** are stored back into DeepBrain as episodic memories
 
 This creates a **learning loop**: every interaction enriches the system's knowledge, making future interactions more contextual and accurate.
 
-### Layer 4: Learning (SuperBrain)
+### Layer 4: Learning (DeepBrain)
 
-SuperBrain employs reinforcement learning to improve over time:
+DeepBrain employs reinforcement learning to improve over time:
 
 - **Q-Learning** — State-action value estimation for strategy selection
 - **Experience Replay** — 10,000-entry buffer for batch training
@@ -169,7 +169,7 @@ DeepNote AI's studio remains the content generation engine:
 - **Voice Q&A** — Real-time bidirectional audio via Gemini Live API
 - **In-chat artifacts** — Tables, charts, diagrams, kanban boards, KPIs, timelines
 
-With SuperBrain integration, generation can draw on system-wide context — not just the sources uploaded to a single notebook.
+With DeepBrain integration, generation can draw on system-wide context — not just the sources uploaded to a single notebook.
 
 ### The Bidirectional Learning Loop
 
@@ -179,7 +179,7 @@ The most powerful aspect of this architecture is that **both systems teach each 
 ┌─────────────────────────────────────────────────────────────────┐
 │                   BIDIRECTIONAL KNOWLEDGE FLOW                   │
 │                                                                  │
-│  DeepNote AI → SuperBrain          SuperBrain → DeepNote AI      │
+│  DeepNote AI → DeepBrain          DeepBrain → DeepNote AI      │
 │  ─────────────────────────         ─────────────────────────     │
 │                                                                  │
 │  Chat insights → Episodic          System memories → Chat        │
@@ -218,15 +218,15 @@ DeepNote exposes its own REST API on `localhost:19520`, making its structured kn
 | `GET /api/health` | DeepNote API status and notebook count |
 
 This means:
-- **SuperBrain** can query DeepNote during its cognitive cycles to incorporate notebook knowledge into its system-wide memory
+- **DeepBrain** can query DeepNote during its cognitive cycles to incorporate notebook knowledge into its system-wide memory
 - **Shell scripts** can query DeepNote: `curl localhost:19520/api/search -d '{"query":"machine learning"}'`
 - **Raycast / Alfred** can search across all notebooks instantly
 - **Other AI tools** (Claude Code, Cursor, etc.) can access your research context
 - **Automation** can trigger content generation or retrieve past results
 
-#### How SuperBrain Learns from DeepNote
+#### How DeepBrain Learns from DeepNote
 
-During its cognitive cycles (every 60-300 seconds), SuperBrain can:
+During its cognitive cycles (every 60-300 seconds), DeepBrain can:
 
 1. **Poll DeepNote's API** for recent chat messages and generated content
 2. **Extract key facts** and store them as semantic memories
@@ -234,7 +234,7 @@ During its cognitive cycles (every 60-300 seconds), SuperBrain can:
 4. **Cross-reference** notebook content with file index and email context
 5. **Build a knowledge graph** that spans notebooks, files, emails, and clipboard
 
-This creates a **flywheel effect**: the more you use DeepNote, the smarter SuperBrain becomes. The smarter SuperBrain becomes, the better context DeepNote provides. Every chat, every source upload, every generated report feeds back into the system-wide intelligence layer.
+This creates a **flywheel effect**: the more you use DeepNote, the smarter DeepBrain becomes. The smarter DeepBrain becomes, the better context DeepNote provides. Every chat, every source upload, every generated report feeds back into the system-wide intelligence layer.
 
 ---
 
@@ -250,7 +250,7 @@ User: "What did I learn about transformer architectures?"
 
 DeepNote searches:
   1. Current notebook sources (via RAG)
-  2. SuperBrain memories (cross-session, cross-notebook)
+  2. DeepBrain memories (cross-session, cross-notebook)
   3. Indexed files (~/Documents, ~/Desktop, project folders)
   4. Spotlight results (emails, PDFs, presentations)
 
@@ -263,7 +263,7 @@ Result: Unified answer with citations from a PDF in ~/Research,
 **Before**: Each chat session starts blank. The AI doesn't remember your preferences or past conversations.
 **After**: The AI remembers your learning style, terminology preferences, past research threads, and frequently asked topics.
 
-DeepNote's existing per-notebook memory system (Feature 4 in the current plan) is complemented by SuperBrain's global memory. Together they provide:
+DeepNote's existing per-notebook memory system (Feature 4 in the current plan) is complemented by DeepBrain's global memory. Together they provide:
 
 - **Notebook-level memory** — "This user prefers bullet-point summaries in this notebook"
 - **Global memory** — "This user is a software engineer interested in AI/ML"
@@ -284,7 +284,7 @@ Use cases:
 **Before**: Emails live in Mail.app, completely disconnected from your research.
 **After**: DeepNote can search emails via macOS Spotlight and incorporate them as context.
 
-SuperBrain's `spotlight_search` command supports:
+DeepBrain's `spotlight_search` command supports:
 - **Emails** (`.emlx` / `.eml`) — RFC 822 parsing, headers + body extraction
 - **Documents** (`.pdf`, `.docx`, `.txt`, `.md`)
 - **Presentations** (`.pptx`, `.key`)
@@ -295,17 +295,17 @@ SuperBrain's `spotlight_search` command supports:
 **Before**: All AI calls go to Google Gemini API (requires internet, costs money).
 **After**: Ollama provides local LLM inference for many operations.
 
-SuperBrain already integrates with Ollama and can check available models. With Ollama running locally:
+DeepBrain already integrates with Ollama and can check available models. With Ollama running locally:
 - **Embeddings**: `nomic-embed-text` for free, offline vector search
 - **Think**: Local LLMs (Llama 3.1, Mistral, etc.) for reasoning without API calls
 - **Fallback**: Gemini API when local models are insufficient
 
 ### 4.6 Always-On Voice Assistant
 
-DeepNote AI's existing Gemini Live voice (Feature 8, already implemented) combined with SuperBrain's system-wide context creates a voice assistant that:
+DeepNote AI's existing Gemini Live voice (Feature 8, already implemented) combined with DeepBrain's system-wide context creates a voice assistant that:
 
 - Knows your notebook contents (via RAG)
-- Knows your file system (via SuperBrain file index)
+- Knows your file system (via DeepBrain file index)
 - Knows your recent clipboard (via clipboard history)
 - Knows your past conversations (via cross-session memory)
 - Can trigger in-chat tools (table, chart, diagram, kanban, KPIs, timeline)
@@ -317,7 +317,7 @@ DeepNote AI's existing Gemini Live voice (Feature 8, already implemented) combin
 
 ### Local-First Architecture
 
-Both DeepNote AI and SuperBrain run entirely on the user's Mac:
+Both DeepNote AI and DeepBrain run entirely on the user's Mac:
 
 - **Documents** never leave the machine (processed locally)
 - **Embeddings** can be computed locally via ONNX (no API calls)
@@ -333,7 +333,7 @@ The only external network calls are:
 
 ### Privacy Mode
 
-SuperBrain includes a `privacy_mode` setting that, when enabled, disables clipboard monitoring and limits file indexing to explicitly selected folders.
+DeepBrain includes a `privacy_mode` setting that, when enabled, disables clipboard monitoring and limits file indexing to explicitly selected folders.
 
 ---
 
@@ -343,23 +343,23 @@ SuperBrain includes a `privacy_mode` setting that, when enabled, disables clipbo
 
 | Operation | Engine | Latency |
 |-----------|--------|---------|
-| Vector similarity search (1K memories) | SuperBrain (SIMD) | <1ms |
-| ONNX embedding generation | SuperBrain | ~5ms |
+| Vector similarity search (1K memories) | DeepBrain (SIMD) | <1ms |
+| ONNX embedding generation | DeepBrain | ~5ms |
 | Gemini embedding (API) | DeepNote | ~200ms |
-| File chunk indexing (per file) | SuperBrain | ~50ms |
-| Clipboard capture cycle | SuperBrain | 2s interval |
-| Cognitive consolidation cycle | SuperBrain | 60-300s interval |
-| Chat response (RAG + SuperBrain) | DeepNote | ~2-5s |
+| File chunk indexing (per file) | DeepBrain | ~50ms |
+| Clipboard capture cycle | DeepBrain | 2s interval |
+| Cognitive consolidation cycle | DeepBrain | 60-300s interval |
+| Chat response (RAG + DeepBrain) | DeepNote | ~2-5s |
 | Voice response (Gemini Live) | DeepNote | ~500ms |
 
 ### Storage Requirements
 
 | Component | Size |
 |-----------|------|
-| SuperBrain binary | ~15MB |
+| DeepBrain binary | ~15MB |
 | ONNX model (all-MiniLM-L6-v2) | ~23MB |
 | ONNX tokenizer | ~0.7MB |
-| SuperBrain SQLite DB (10K memories) | ~50MB |
+| DeepBrain SQLite DB (10K memories) | ~50MB |
 | DeepNote AI app | ~300MB |
 | DeepNote SQLite DB (per notebook) | ~5-50MB |
 
@@ -377,7 +377,7 @@ SuperBrain includes a `privacy_mode` setting that, when enabled, disables clipbo
 
 | Product | Local Data | System-Wide | Learning | Generation | Voice | Offline |
 |---------|-----------|-------------|----------|------------|-------|---------|
-| **DeepNote AI + SuperBrain** | Full | Full | Yes | 16 types | Yes | Partial |
+| **DeepNote AI + DeepBrain** | Full | Full | Yes | 16 types | Yes | Partial |
 | NotebookLM (Google) | No | No | No | 2 types | No | No |
 | Obsidian + AI plugins | Partial | No | No | Limited | No | Partial |
 | Apple Intelligence | Partial | Partial | No | Limited | Siri | Yes |
@@ -390,8 +390,8 @@ DeepNote AI's unique position: **the only system that combines local-first priva
 
 ## 8. Future Directions
 
-### Phase 1: SuperBrain Integration (Current)
-Connect DeepNote AI to SuperBrain's REST API for system-wide memory, file search, clipboard, and Spotlight access.
+### Phase 1: DeepBrain Integration (Current)
+Connect DeepNote AI to DeepBrain's REST API for system-wide memory, file search, clipboard, and Spotlight access.
 
 ### Phase 2: Unified Embedding Space
 Align ONNX (384-dim) and Gemini (768-dim) embeddings through a projection layer, enabling cross-system semantic search without re-embedding.
@@ -421,11 +421,11 @@ Extend the cognitive layer beyond a single Mac:
 
 The transition from notebook application to cognitive operating layer represents a fundamental shift in how users interact with AI. Instead of bringing data to the AI, the AI comes to the data — wherever it lives on the system.
 
-By combining DeepNote AI's rich notebook interface and content generation capabilities with SuperBrain's high-performance cognitive engine and OS-level integrations, we create something that neither system could achieve alone: **a personal AI that knows everything you know, learns from every interaction, and helps you create from the full breadth of your digital life.**
+By combining DeepNote AI's rich notebook interface and content generation capabilities with DeepBrain's high-performance cognitive engine and OS-level integrations, we create something that neither system could achieve alone: **a personal AI that knows everything you know, learns from every interaction, and helps you create from the full breadth of your digital life.**
 
 The notebook is no longer a container. It's a window into your entire knowledge ecosystem.
 
 ---
 
-*DeepNote AI is developed by Clemens Hoenig. SuperBrain cognitive engine by rUv.*
+*DeepNote AI is developed by Clemens Hoenig. DeepBrain cognitive engine by rUv.*
 *All data processing occurs locally. No document content is transmitted to external servers except when explicitly using cloud AI APIs.*

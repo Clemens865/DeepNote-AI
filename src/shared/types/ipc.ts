@@ -1,4 +1,4 @@
-import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation } from './index'
+import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, DeepBrainEmailResult } from './index'
 
 export const IPC_CHANNELS = {
   // Notebooks
@@ -110,14 +110,21 @@ export const IPC_CHANNELS = {
   // Global Search
   SEARCH_GLOBAL: 'search:global',
 
-  // SuperBrain Integration
-  SUPERBRAIN_STATUS: 'superbrain:status',
-  SUPERBRAIN_RECALL: 'superbrain:recall',
-  SUPERBRAIN_SEARCH: 'superbrain:search',
-  SUPERBRAIN_CLIPBOARD: 'superbrain:clipboard',
-  SUPERBRAIN_REMEMBER: 'superbrain:remember',
-  SUPERBRAIN_THINK: 'superbrain:think',
-  SUPERBRAIN_CONFIGURE: 'superbrain:configure',
+  // DeepBrain Integration
+  DEEPBRAIN_STATUS: 'deepbrain:status',
+  DEEPBRAIN_RECALL: 'deepbrain:recall',
+  DEEPBRAIN_SEARCH: 'deepbrain:search',
+  DEEPBRAIN_CLIPBOARD: 'deepbrain:clipboard',
+  DEEPBRAIN_REMEMBER: 'deepbrain:remember',
+  DEEPBRAIN_THINK: 'deepbrain:think',
+  DEEPBRAIN_CONFIGURE: 'deepbrain:configure',
+
+  // System
+  SYSTEM_OPEN_FILE: 'system:openFile',
+
+  // DeepBrain (extra)
+  DEEPBRAIN_SEARCH_EMAILS: 'deepbrain:searchEmails',
+  DEEPBRAIN_ACTIVITY_CURRENT: 'deepbrain:activityCurrent',
 
   // DeepNote API
   DEEPNOTE_API_STATUS: 'deepnote-api:status',
@@ -190,6 +197,7 @@ export interface IpcHandlerMap {
       notebookId: string
       stylePresetId: string
       aspectRatio: '16:9' | '4:3' | '1:1'
+      renderMode?: 'full-image' | 'hybrid'
       userInstructions?: string
       customStyleImagePath?: string
       customStyleColors?: string[]
@@ -410,8 +418,8 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.VOICE_SEND_AUDIO]: { args: [{ sessionId: string; audioData: string }]; return: void }
   [IPC_CHANNELS.VOICE_STOP]: { args: [{ sessionId: string }]; return: void }
 
-  // SuperBrain
-  [IPC_CHANNELS.SUPERBRAIN_STATUS]: {
+  // DeepBrain
+  [IPC_CHANNELS.DEEPBRAIN_STATUS]: {
     args: []
     return: {
       available: boolean
@@ -427,29 +435,45 @@ export interface IpcHandlerMap {
       uptimeMs: number
     } | null
   }
-  [IPC_CHANNELS.SUPERBRAIN_RECALL]: {
+  [IPC_CHANNELS.DEEPBRAIN_RECALL]: {
     args: [{ query: string; limit?: number }]
     return: { id: string; content: string; similarity: number; memoryType: string }[]
   }
-  [IPC_CHANNELS.SUPERBRAIN_SEARCH]: {
+  [IPC_CHANNELS.DEEPBRAIN_SEARCH]: {
     args: [{ query: string; limit?: number }]
     return: { path: string; name: string; chunk: string; similarity: number; fileType: string }[]
   }
-  [IPC_CHANNELS.SUPERBRAIN_CLIPBOARD]: {
+  [IPC_CHANNELS.DEEPBRAIN_CLIPBOARD]: {
     args: [{ limit?: number }?]
     return: { content: string; timestamp: number }[]
   }
-  [IPC_CHANNELS.SUPERBRAIN_REMEMBER]: {
+  [IPC_CHANNELS.DEEPBRAIN_REMEMBER]: {
     args: [{ content: string; memoryType?: string; importance?: number }]
     return: { id: string; memoryCount: number } | null
   }
-  [IPC_CHANNELS.SUPERBRAIN_THINK]: {
+  [IPC_CHANNELS.DEEPBRAIN_THINK]: {
     args: [{ input: string }]
     return: { response: string; confidence: number; thoughtId: string; memoryCount: number; aiEnhanced: boolean } | null
   }
-  [IPC_CHANNELS.SUPERBRAIN_CONFIGURE]: {
+  [IPC_CHANNELS.DEEPBRAIN_CONFIGURE]: {
     args: [{ port?: number; token?: string | null; enabled?: boolean }]
     return: void
+  }
+
+  // System
+  [IPC_CHANNELS.SYSTEM_OPEN_FILE]: {
+    args: [{ filePath: string }]
+    return: { success: boolean; error?: string }
+  }
+
+  // DeepBrain (extra)
+  [IPC_CHANNELS.DEEPBRAIN_SEARCH_EMAILS]: {
+    args: [{ query: string; limit?: number }]
+    return: DeepBrainEmailResult[]
+  }
+  [IPC_CHANNELS.DEEPBRAIN_ACTIVITY_CURRENT]: {
+    args: []
+    return: { app: string; window: string; file?: string } | null
   }
 
   // DeepNote API

@@ -174,7 +174,7 @@ export function GlobalSearchDialog({ isOpen, onClose, onNavigate }: GlobalSearch
             </>
           )}
 
-          {/* SuperBrain system results */}
+          {/* DeepBrain system results */}
           {hasSystemResults && (
             <>
               {/* Divider between notebook and system results */}
@@ -188,7 +188,7 @@ export function GlobalSearchDialog({ isOpen, onClose, onNavigate }: GlobalSearch
                   <div className="px-5 py-2 bg-purple-50 dark:bg-purple-500/10 border-b border-purple-100 dark:border-purple-500/20 sticky top-0">
                     <span className="flex items-center gap-1.5 text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-wide">
                       <Brain size={11} />
-                      SuperBrain Memories
+                      DeepBrain Memories
                     </span>
                   </div>
                   {systemMemories.map((mem, i) => (
@@ -265,7 +265,7 @@ export function GlobalSearchDialog({ isOpen, onClose, onNavigate }: GlobalSearch
           {hasSystemResults && (
             <span className="flex items-center gap-1 text-[10px] text-purple-500 dark:text-purple-400">
               <Brain size={10} />
-              SuperBrain connected
+              DeepBrain connected
             </span>
           )}
         </div>

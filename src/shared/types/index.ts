@@ -94,12 +94,42 @@ export interface Citation {
   pageNumber?: number
 }
 
+export interface DeepBrainRecallItem {
+  id: string
+  content: string
+  similarity: number
+  memoryType: string
+}
+
+export interface DeepBrainFileResult {
+  path: string
+  name: string
+  chunk: string
+  similarity: number
+  fileType: string
+}
+
+export interface DeepBrainEmailResult {
+  subject: string
+  sender: string
+  date: string
+  chunk: string
+  similarity: number
+}
+
+export interface DeepBrainResults {
+  memories: DeepBrainRecallItem[]
+  files: DeepBrainFileResult[]
+  emails: DeepBrainEmailResult[]
+}
+
 export interface ChatMessage {
   id: string
   notebookId: string
   role: ChatRole
   content: string
   citations: Citation[]
+  deepbrainResults?: DeepBrainResults
   createdAt: string
 }
 

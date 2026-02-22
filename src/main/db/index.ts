@@ -126,6 +126,12 @@ function initializeDatabase() {
   if (!columns.some((c) => c.name === 'workspace_root_path')) {
     sqlite.exec('ALTER TABLE notebooks ADD COLUMN workspace_root_path TEXT')
   }
+
+  // Migration: add metadata column to chat_messages
+  const chatCols = sqlite.pragma('table_info(chat_messages)') as { name: string }[]
+  if (!chatCols.some((c) => c.name === 'metadata')) {
+    sqlite.exec('ALTER TABLE chat_messages ADD COLUMN metadata TEXT')
+  }
 }
 
 export function closeDatabase() {

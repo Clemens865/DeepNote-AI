@@ -57,6 +57,7 @@ export function InfographicWizard({ notebookId, onComplete, onClose }: Infograph
   const [selectedStyle, setSelectedStyle] = useState('neon-circuit')
   const [customStylePath, setCustomStylePath] = useState<string | null>(null)
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '4:3' | '1:1'>('4:3')
+  const [renderMode, setRenderMode] = useState<'full-image' | 'hybrid'>('full-image')
   const [userInstructions, setUserInstructions] = useState('')
 
   // Custom style builder state
@@ -125,6 +126,7 @@ export function InfographicWizard({ notebookId, onComplete, onClose }: Infograph
         notebookId,
         stylePresetId: selectedStyle === 'custom' ? 'neon-circuit' : selectedStyle,
         aspectRatio,
+        renderMode,
         userInstructions: userInstructions.trim() || undefined,
         customStyleImagePath: customStylePath ?? undefined,
         ...(selectedStyle === 'custom-builder' ? {
@@ -283,6 +285,42 @@ export function InfographicWizard({ notebookId, onComplete, onClose }: Infograph
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Render Mode */}
+          <div>
+            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
+              Render Mode
+            </label>
+            <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <button
+                onClick={() => setRenderMode('full-image')}
+                className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
+                  renderMode === 'full-image'
+                    ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                {renderMode === 'full-image' && <Check size={12} />}
+                Full Image
+              </button>
+              <button
+                onClick={() => setRenderMode('hybrid')}
+                className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
+                  renderMode === 'hybrid'
+                    ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                {renderMode === 'hybrid' && <Check size={12} />}
+                Hybrid
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+              {renderMode === 'full-image'
+                ? 'AI generates the complete infographic with text baked into the image'
+                : 'AI generates a background image, text is overlaid as HTML'}
+            </p>
           </div>
 
           {/* Custom instructions */}

@@ -8,6 +8,7 @@ import { ChatArtifactMermaid } from './ChatArtifactMermaid'
 import { ChatArtifactKanban } from './ChatArtifactKanban'
 import { ChatArtifactKpi } from './ChatArtifactKpi'
 import { ChatArtifactTimeline } from './ChatArtifactTimeline'
+import { ChatDeepBrainResults } from './ChatDeepBrainResults'
 
 interface ChatMessageProps {
   message: ChatMessageType
@@ -15,6 +16,7 @@ interface ChatMessageProps {
   onSaveAsSource?: (content: string) => void
   onSaveToWorkspace?: (content: string) => void
   onGenerateFrom?: (content: string) => void
+  onRegenerateMermaid?: (code: string) => void
 }
 
 function escapeHtml(text: string): string {
@@ -128,7 +130,7 @@ function renderMarkdown(text: string): string {
   return html
 }
 
-export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWorkspace, onGenerateFrom }: ChatMessageProps) {
+export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWorkspace, onGenerateFrom, onRegenerateMermaid }: ChatMessageProps) {
   const isUser = message.role === 'user'
   const [copied, setCopied] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -194,7 +196,7 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
                 return <ChatArtifactChart key={i} data={seg.data} />
               }
               if (seg.type === 'artifact-mermaid') {
-                return <ChatArtifactMermaid key={i} data={seg.data} />
+                return <ChatArtifactMermaid key={i} data={seg.data} onRegenerateMermaid={onRegenerateMermaid} />
               }
               if (seg.type === 'artifact-kanban') {
                 return <ChatArtifactKanban key={i} data={seg.data} />
@@ -213,6 +215,11 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
               )
             })}
           </div>
+        )}
+
+        {/* DeepBrain results */}
+        {!isUser && message.deepbrainResults && (
+          <ChatDeepBrainResults results={message.deepbrainResults} />
         )}
 
         {/* Citations */}

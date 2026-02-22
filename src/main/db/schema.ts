@@ -55,6 +55,7 @@ export const chatMessages = sqliteTable('chat_messages', {
   role: text('role', { enum: ['user', 'assistant', 'system'] }).notNull(),
   content: text('content').notNull(),
   citations: text('citations', { mode: 'json' }).notNull().default('[]'),
+  metadata: text('metadata', { mode: 'json' }),
   createdAt: text('created_at').notNull(),
 })
 

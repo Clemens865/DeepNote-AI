@@ -65,6 +65,7 @@ const api = {
     notebookId: string
     stylePresetId: string
     aspectRatio: '16:9' | '4:3' | '1:1'
+    renderMode?: 'full-image' | 'hybrid'
     userInstructions?: string
     customStyleImagePath?: string
     customStyleColors?: string[]
@@ -360,20 +361,30 @@ const api = {
   globalSearch: (args: { query: string; notebookIds?: string[]; limit?: number }) =>
     ipcRenderer.invoke(IPC_CHANNELS.SEARCH_GLOBAL, args),
 
-  // SuperBrain Integration
-  superbrainStatus: () => ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_STATUS),
-  superbrainRecall: (args: { query: string; limit?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_RECALL, args),
-  superbrainSearch: (args: { query: string; limit?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_SEARCH, args),
-  superbrainClipboard: (args?: { limit?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_CLIPBOARD, args),
-  superbrainRemember: (args: { content: string; memoryType?: string; importance?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_REMEMBER, args),
-  superbrainThink: (args: { input: string }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_THINK, args),
-  superbrainConfigure: (args: { port?: number; token?: string | null; enabled?: boolean }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SUPERBRAIN_CONFIGURE, args),
+  // DeepBrain Integration
+  deepbrainStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_STATUS),
+  deepbrainRecall: (args: { query: string; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_RECALL, args),
+  deepbrainSearch: (args: { query: string; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_SEARCH, args),
+  deepbrainClipboard: (args?: { limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_CLIPBOARD, args),
+  deepbrainRemember: (args: { content: string; memoryType?: string; importance?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_REMEMBER, args),
+  deepbrainThink: (args: { input: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_THINK, args),
+  deepbrainConfigure: (args: { port?: number; token?: string | null; enabled?: boolean }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_CONFIGURE, args),
+
+  // System
+  systemOpenFile: (args: { filePath: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_FILE, args),
+
+  // DeepBrain (extra)
+  deepbrainSearchEmails: (args: { query: string; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_SEARCH_EMAILS, args),
+  deepbrainActivityCurrent: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_ACTIVITY_CURRENT),
 
   // DeepNote API
   deepnoteApiStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEEPNOTE_API_STATUS),

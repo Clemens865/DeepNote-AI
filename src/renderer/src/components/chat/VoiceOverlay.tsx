@@ -4,9 +4,11 @@ import { Mic, MicOff, X, Loader2, Volume2 } from 'lucide-react'
 interface VoiceOverlayProps {
   notebookId: string
   onClose: () => void
+  onUserMessage?: (text: string) => void
+  onAiMessage?: (text: string) => void
 }
 
-export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
+export function VoiceOverlay({ notebookId, onClose, onUserMessage, onAiMessage }: VoiceOverlayProps) {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [recording, setRecording] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -41,15 +43,21 @@ export function VoiceOverlay({ notebookId, onClose }: VoiceOverlayProps) {
     const textCleanup = window.api.onVoiceResponseText((data) => {
       if (mounted) {
         setProcessing(false)
-        setTranscript((prev) => [...prev, data.text])
+        if (data.type === 'transcription') {
+          setTranscript((prev) => [...prev, `You: ${data.text}`])
+          onUserMessage?.(data.text)
+        } else {
+          setTranscript((prev) => [...prev, data.text])
+          onAiMessage?.(data.text)
+        }
       }
     })
     cleanupRefs.current.push(textCleanup)
 
     const audioCleanup = window.api.onVoiceResponseAudio((data) => {
-      if (mounted && data.audioPath) {
-        // Play the audio response
-        const audio = new Audio(`local-file://${data.audioPath}`)
+      if (mounted && data.audioData) {
+        // Play the audio response from base64 data
+        const audio = new Audio(`data:${data.mimeType};base64,${data.audioData}`)
         audio.play().catch(() => {})
       }
     })

@@ -3,7 +3,8 @@ import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { getDatabase, schema } from '../db'
 import { embeddingsService } from '../services/embeddings'
 import { vectorStoreService } from '../services/vectorStore'
-import { superbrainService } from '../services/superbrain'
+import { deepbrainService } from '../services/deepbrain'
+import { configService } from '../services/config'
 
 export function registerSearchHandlers() {
   ipcMain.handle(
@@ -23,11 +24,12 @@ export function registerSearchHandlers() {
         return { results: [], systemResults: { memories: [], files: [] } }
       }
 
-      // Search notebook vectors AND SuperBrain in parallel
+      // Search notebook vectors AND DeepBrain in parallel (if enabled)
+      const sbEnabled = configService.getAll().deepbrainEnabled !== false
       const [queryVector, sbMemories, sbFiles] = await Promise.all([
         embeddingsService.embedQuery(args.query),
-        superbrainService.recall(args.query, 5).catch(() => []),
-        superbrainService.searchFiles(args.query, 5).catch(() => []),
+        sbEnabled ? deepbrainService.recall(args.query, 5).catch(() => []) : Promise.resolve([]),
+        sbEnabled ? deepbrainService.searchFiles(args.query, 5).catch(() => []) : Promise.resolve([]),
       ])
 
       // Search across all notebooks

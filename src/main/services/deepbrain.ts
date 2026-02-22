@@ -1,18 +1,18 @@
 /**
- * SuperBrain Bridge Service
+ * DeepBrain Bridge Service
  *
- * HTTP client wrapping SuperBrain's REST API (localhost:19519).
+ * HTTP client wrapping DeepBrain's REST API (localhost:19519).
  * Provides system-wide memory, file search, clipboard history,
  * and cognitive operations to DeepNote AI.
  *
- * All methods gracefully return null/empty when SuperBrain is offline.
+ * All methods gracefully return null/empty when DeepBrain is offline.
  */
 
 import { configService } from './config'
 
 // --- Types ---
 
-export interface SuperBrainStatus {
+export interface DeepBrainStatus {
   available: boolean
   memoryCount: number
   thoughtCount: number
@@ -70,7 +70,7 @@ export type MemoryType =
 
 // --- Service ---
 
-class SuperBrainService {
+class DeepBrainService {
   private baseUrl = 'http://127.0.0.1:19519'
   private apiToken: string | null = null
   private availableCache: { value: boolean; timestamp: number } | null = null
@@ -81,8 +81,8 @@ class SuperBrainService {
     // Load config on first use
     try {
       const config = configService.getAll()
-      if (config.superbrainPort) this.baseUrl = `http://127.0.0.1:${config.superbrainPort}`
-      if (config.superbrainToken) this.apiToken = config.superbrainToken
+      if (config.deepbrainPort) this.baseUrl = `http://127.0.0.1:${config.deepbrainPort}`
+      if (config.deepbrainToken) this.apiToken = config.deepbrainToken
     } catch {
       // Config not ready yet, use defaults
     }
@@ -120,13 +120,13 @@ class SuperBrainService {
       clearTimeout(timeout)
 
       if (!res.ok) {
-        console.warn(`[SuperBrain] ${path} returned ${res.status}`)
+        console.warn(`[DeepBrain] ${path} returned ${res.status}`)
         return null
       }
 
       return (await res.json()) as T
     } catch (err) {
-      // Silent fail — SuperBrain may not be running
+      // Silent fail — DeepBrain may not be running
       if ((err as Error).name !== 'AbortError') {
         // Only log non-timeout errors occasionally
       }
@@ -151,7 +151,7 @@ class SuperBrainService {
     return available
   }
 
-  async getStatus(): Promise<SuperBrainStatus | null> {
+  async getStatus(): Promise<DeepBrainStatus | null> {
     const available = await this.isAvailable()
     if (!available) {
       return {
@@ -265,6 +265,44 @@ class SuperBrainService {
     }))
   }
 
+  // --- Email Search ---
+
+  async searchEmails(
+    query: string,
+    limit = 5
+  ): Promise<{ subject: string; sender: string; date: string; chunk: string; similarity: number }[]> {
+    if (!(await this.isAvailable())) return []
+
+    const raw = await this.fetch<Array<Record<string, unknown>>>('/api/search/emails', {
+      method: 'POST',
+      body: JSON.stringify({ query, limit }),
+    })
+    if (!raw || !Array.isArray(raw)) return []
+
+    return raw.map((r) => ({
+      subject: (r.subject as string) || '',
+      sender: (r.sender as string) || '',
+      date: (r.date as string) || '',
+      chunk: (r.chunk as string) || '',
+      similarity: (r.similarity as number) || 0,
+    }))
+  }
+
+  // --- Activity Observer ---
+
+  async getActivityCurrent(): Promise<{ app: string; window: string; file?: string } | null> {
+    if (!(await this.isAvailable())) return null
+
+    const raw = await this.fetch<Record<string, unknown>>('/api/activity/current')
+    if (!raw) return null
+
+    return {
+      app: (raw.app as string) || '',
+      window: (raw.window as string) || '',
+      file: (raw.file as string) || undefined,
+    }
+  }
+
   // --- Clipboard ---
 
   async getClipboardHistory(limit = 10): Promise<ClipboardEntry[]> {
@@ -280,4 +318,4 @@ class SuperBrainService {
   }
 }
 
-export const superbrainService = new SuperBrainService()
+export const deepbrainService = new DeepBrainService()

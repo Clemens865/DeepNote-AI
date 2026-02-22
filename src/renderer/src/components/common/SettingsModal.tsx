@@ -12,7 +12,7 @@ interface SettingsModalProps {
 
 type Tab = 'settings' | 'integrations' | 'about'
 
-interface SuperBrainStatus {
+interface DeepBrainStatus {
   available: boolean
   enabled: boolean
   memoryCount: number
@@ -60,15 +60,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null)
 
-  // SuperBrain state
-  const [sbStatus, setSbStatus] = useState<SuperBrainStatus | null>(null)
+  // DeepBrain state
+  const [sbStatus, setSbStatus] = useState<DeepBrainStatus | null>(null)
   const [sbLoading, setSbLoading] = useState(false)
   const [dnApiPort, setDnApiPort] = useState<number | null>(null)
 
-  const loadSuperBrainStatus = useCallback(async () => {
+  const loadDeepBrainStatus = useCallback(async () => {
     setSbLoading(true)
     try {
-      const status = await window.api.superbrainStatus() as SuperBrainStatus | null
+      const status = await window.api.deepbrainStatus() as DeepBrainStatus | null
       setSbStatus(status)
       const apiStatus = await window.api.deepnoteApiStatus() as { port: number }
       setDnApiPort(apiStatus.port)
@@ -98,9 +98,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       }).catch(() => {})
       setSavedKeys({})
       setTestResult(null)
-      loadSuperBrainStatus()
+      loadDeepBrainStatus()
     }
-  }, [isOpen, loadSuperBrainStatus])
+  }, [isOpen, loadDeepBrainStatus])
 
   const handleSaveKey = async (providerId: string) => {
     const value = providerKeys[providerId]
@@ -260,25 +260,25 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         {tab === 'integrations' && (
           <div className="space-y-5">
-            {/* SuperBrain */}
+            {/* DeepBrain */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Brain size={16} className={sbStatus?.enabled !== false ? 'text-purple-500' : 'text-slate-400'} />
-                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">SuperBrain</h4>
+                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">DeepBrain</h4>
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Enable/Disable toggle */}
                   <button
                     onClick={async () => {
                       const newEnabled = !(sbStatus?.enabled !== false)
-                      await window.api.superbrainConfigure({ enabled: newEnabled })
+                      await window.api.deepbrainConfigure({ enabled: newEnabled })
                       setSbStatus((prev) => prev ? { ...prev, enabled: newEnabled } : prev)
                     }}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                       sbStatus?.enabled !== false ? 'bg-purple-500' : 'bg-slate-300 dark:bg-slate-600'
                     }`}
-                    title={sbStatus?.enabled !== false ? 'Disable SuperBrain' : 'Enable SuperBrain'}
+                    title={sbStatus?.enabled !== false ? 'Disable DeepBrain' : 'Enable DeepBrain'}
                   >
                     <span
                       className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
@@ -295,7 +295,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </div>
                   )}
                   <button
-                    onClick={loadSuperBrainStatus}
+                    onClick={loadDeepBrainStatus}
                     className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
                   >
                     Refresh
@@ -328,8 +328,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
               ) : (
                 <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
-                  SuperBrain provides system-wide memory, file indexing, clipboard history, and Ollama integration.
-                  Start SuperBrain to enable OS-level AI features.
+                  DeepBrain provides system-wide memory, file indexing, clipboard history, and local LLM integration.
+                  Start DeepBrain to enable OS-level AI features.
                 </p>
               )}
             </div>
@@ -356,7 +356,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   http://127.0.0.1:{dnApiPort || 19520}
                 </code>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed">
-                  SuperBrain, shell scripts, Raycast, and other tools can query your notebooks via this API.
+                  DeepBrain, shell scripts, Raycast, and other tools can query your notebooks via this API.
                 </p>
               </div>
             </div>

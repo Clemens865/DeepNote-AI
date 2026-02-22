@@ -3,7 +3,7 @@
  *
  * Exposes DeepNote's knowledge (notebooks, sources, chat, content)
  * as a local REST API on localhost:19520. This enables bidirectional
- * integration with SuperBrain, shell scripts, Raycast, Alfred, and
+ * integration with DeepBrain, shell scripts, Raycast, Alfred, and
  * any other local tool.
  */
 

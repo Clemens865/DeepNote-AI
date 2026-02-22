@@ -83,8 +83,8 @@ export function ChatPanel() {
 
   useEffect(() => {
     loadMessages()
-    // Load SuperBrain enabled state
-    window.api.superbrainStatus().then((status) => {
+    // Load DeepBrain enabled state
+    window.api.deepbrainStatus().then((status) => {
       if (status && typeof (status as { enabled?: boolean }).enabled === 'boolean') {
         setSbEnabled((status as { enabled: boolean }).enabled)
       }
@@ -482,8 +482,8 @@ export function ChatPanel() {
         </div>
       )}
 
-      {/* Model selector + Artifact shortcut chips + SuperBrain toggle */}
-      <div className="flex items-center gap-1.5 px-6 py-1.5 max-w-3xl mx-auto w-full overflow-x-auto">
+      {/* Model selector + Artifact shortcut chips + DeepBrain toggle */}
+      <div className="flex flex-wrap items-center gap-1.5 px-6 py-1.5 max-w-3xl mx-auto w-full">
         {/* Model selector */}
         <div className="relative flex-shrink-0" ref={modelMenuRef}>
           <button
@@ -531,22 +531,22 @@ export function ChatPanel() {
 
         <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
 
-        {/* SuperBrain toggle */}
+        {/* DeepBrain toggle */}
         <button
           onClick={async () => {
             const newEnabled = !sbEnabled
             setSbEnabled(newEnabled)
-            await window.api.superbrainConfigure({ enabled: newEnabled })
+            await window.api.deepbrainConfigure({ enabled: newEnabled })
           }}
           className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
             sbEnabled
               ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-600 dark:text-purple-400'
               : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
           }`}
-          title={sbEnabled ? 'SuperBrain enabled — click to disable' : 'SuperBrain disabled — click to enable'}
+          title={sbEnabled ? 'DeepBrain enabled — click to disable' : 'DeepBrain disabled — click to enable'}
         >
           <Brain size={12} />
-          <span className="hidden sm:inline">{sbEnabled ? 'SuperBrain' : 'SuperBrain off'}</span>
+          <span className="hidden sm:inline">{sbEnabled ? 'DeepBrain' : 'DeepBrain off'}</span>
           <div className={`w-1.5 h-1.5 rounded-full ${sbEnabled ? 'bg-purple-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
         </button>
 

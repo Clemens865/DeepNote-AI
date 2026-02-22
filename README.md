@@ -66,6 +66,8 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | **Export** | Download audio as WAV, slides as PNG, whitepapers as PDF, copy reports to clipboard |
 | **AI Architecture** | Agentic RAG (multi-query retrieval), multi-agent generation pipeline (Research → Write → Review), AI output validation with retry, cross-session memory |
 | **Embeddings** | Tiered embedding system: local ONNX (all-MiniLM-L6-v2) → Gemini API → hash fallback |
+| **DeepBrain** | System-wide memory recall, file search, email search, activity context — results shown as preview cards in chat |
+| **Multi-Provider Chat** | Gemini (default), Claude, OpenAI, Groq — switch providers and models in Settings |
 | **Productivity** | Clipboard quick-capture via system tray (Cmd+Shift+N), chat-to-source pipeline, smart source recommendations |
 
 ---
@@ -85,6 +87,8 @@ Nine major features have been added to transform DeepNote AI from a notebook too
 | **Smart Recommendations** | Cross-notebook source recommendations via vector similarity search |
 | **Clipboard Quick-Capture** | System tray icon + Cmd+Shift+N global shortcut to capture clipboard content to your notebook |
 | **Local ONNX Embeddings** | Offline embeddings via all-MiniLM-L6-v2 with tiered fallback (ONNX → Gemini → hash) |
+| **Multi-Provider Chat** | Switch between Gemini, Claude, OpenAI, and Groq with per-provider API key configuration |
+| **DeepBrain Preview Cards** | File matches, emails, and memories from DeepBrain appear as clickable cards below AI responses — files open in your default app |
 
 ---
 
@@ -97,7 +101,7 @@ Nine major features have been added to transform DeepNote AI from a notebook too
 | **State** | Zustand |
 | **Routing** | react-router-dom v7 |
 | **Database** | SQLite (better-sqlite3 v12.6) + Drizzle ORM |
-| **AI** | Google Gemini (`@google/genai`) |
+| **AI** | Google Gemini, Anthropic Claude, OpenAI, Groq (`@google/genai`, multi-provider) |
 | **Local Embeddings** | ONNX Runtime (all-MiniLM-L6-v2, 384-dim) |
 | **Rich Text** | Tiptap (ProseMirror-based) |
 | **Drag & Drop** | react-draggable |
@@ -106,7 +110,8 @@ Nine major features have been added to transform DeepNote AI from a notebook too
 | **Font** | Inter (bundled via @fontsource-variable) |
 
 **AI Models Used:**
-- `gemini-2.0-flash` - Chat, content generation, document analysis, sub-query generation, memory extraction, voice transcription
+- `gemini-2.5-flash` (default) / `gemini-2.5-pro` / `gemini-3.1-pro` - Chat, content generation, document analysis
+- Claude Sonnet / Opus, OpenAI GPT-4o, Groq Llama — alternative chat providers
 - `gemini-2.5-flash-preview-tts` - Multi-speaker text-to-speech
 - `gemini-embedding-exp-03-07` - Text embeddings for RAG (cloud tier)
 - `all-MiniLM-L6-v2` - Local ONNX embeddings (offline tier)
@@ -220,6 +225,7 @@ The **Chat Panel** is the main interaction mode. Ask questions and get AI-genera
 - **Save to Note** - Save any AI response as a note for later reference
 - **Clear history** - Reset the conversation
 - **Cross-session memory** - The AI remembers your preferences and learning patterns
+- **DeepBrain integration** - When DeepBrain is running, the AI can search your system files, emails, and memories. Results appear as clickable preview cards below each response (file cards open in your default app)
 
 **Interactive Artifacts:**
 
@@ -575,7 +581,8 @@ src/
       index.ts          # SQLite database initialization (auto-create tables)
       schema.ts         # Drizzle ORM schema definitions (including user_memory)
     ipc/
-      chat.ts           # Chat message handlers (streaming, agentic RAG)
+      chat.ts           # Chat message handlers (streaming, agentic RAG, DeepBrain context)
+      deepbrain.ts      # DeepBrain bridge handlers (status, recall, file/email search, activity)
       clipboard.ts      # Clipboard history & add-to-notebook handlers
       config.ts         # API key management
       memory.ts         # Cross-session memory CRUD handlers
@@ -623,7 +630,7 @@ src/
       hooks/
         useNotebooks.ts # Notebook listing hook
       components/
-        chat/           # ChatPanel, ChatInput, ChatMessage, VoiceOverlay
+        chat/           # ChatPanel, ChatInput, ChatMessage, ChatDeepBrainResults, VoiceOverlay
         common/         # Button, Modal, Spinner, Toast, SettingsModal
         dashboard/      # Dashboard, NotebookCard
         layout/         # AppLayout, Header, ResizablePanel
@@ -649,7 +656,7 @@ DeepNote AI uses SQLite with 8 tables:
 | `sources` | Ingested documents (content, type, selection state, source guide) |
 | `chunks` | Chunked text with token counts for RAG retrieval |
 | `notes` | User-created notes (title, content, converted-to-source flag) |
-| `chat_messages` | Chat history with citations (role, content, citations JSON) |
+| `chat_messages` | Chat history with citations and DeepBrain metadata (role, content, citations JSON, metadata JSON) |
 | `generated_content` | Studio outputs (type, data JSON, status, source IDs) |
 | `workspace_files` | Workspace file manifest (path, hash, status, linked source ID) |
 | `user_memory` | Cross-session AI memory (type, key, value, confidence score, timestamps) |
