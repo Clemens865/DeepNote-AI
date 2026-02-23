@@ -1,6 +1,8 @@
 # DeepNote AI
 
-A feature-rich, open-source desktop application inspired by Google's NotebookLM. Built with Electron, React, and powered by Google Gemini AI. Upload documents, chat with your sources, and generate studio-quality content including AI podcasts, image slide decks with a drag-and-drop editor, flashcards, quizzes, mind maps, reports, and more — with agentic RAG, multi-agent generation pipelines, voice Q&A, cross-session memory, and local embeddings.
+> **Beta Release** — This is the first public beta. Expect rough edges, evolving APIs, and occasional AI generation failures. We welcome bug reports and feedback via [GitHub Issues](https://github.com/Clemens865/DeepNote-AI/issues).
+
+A feature-rich, open-source desktop application inspired by Google's NotebookLM. Built with Electron, React, and powered by multi-provider AI (Gemini, Claude, OpenAI, Groq). Upload documents, chat with your sources, and generate studio-quality content — AI podcasts, image slide decks with a drag-and-drop editor, whitepapers, infographics, flashcards, quizzes, mind maps, dashboards, literature reviews, competitive analyses, reports, and more — with agentic RAG, multi-agent generation pipelines, voice Q&A, cross-session memory, DeepBrain system integration, and local embeddings.
 
 <!-- TODO: Add hero screenshot -->
 
@@ -9,7 +11,7 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 ## Table of Contents
 
 - [Features Overview](#features-overview)
-- [What's New — v2.0](#whats-new--v20)
+- [What's New — Beta](#whats-new--beta)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
@@ -59,11 +61,13 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | **AI Chat** | Streaming responses, source-grounded citations, conversation history, suggested prompts, 6 interactive artifact types (Table, Chart, Mermaid, Kanban, KPI, Timeline), one-click artifact shortcut chips, voice Q&A |
 | **Deep Research** | Multi-step AI analysis with real-time progress updates |
 | **Audio Overview** | Multi-speaker AI podcast with 4 format styles (Deep Dive, Brief, Critical Analysis, Debate) |
-| **Image Slides** | AI-generated slide decks with 6 visual styles, 2 render modes, fullscreen presenter, rich text drag-and-drop editor |
-| **Study Tools** | Flashcards, Quizzes (multiple choice), Reports, Mind Maps, Data Tables, search/filter/sort for generated content |
+| **Image Slides** | AI-generated slide decks with 6 visual styles + custom style builder, 2 render modes (full-image / hybrid editable), fullscreen presenter, rich text drag-and-drop editor, Save button with feedback, PDF export with text overlays |
+| **White Paper** | AI-generated multi-section white papers with cover image, section illustrations, table of contents, references, and A4 PDF export |
+| **Infographic** | AI-generated single-page infographics in full-image or hybrid mode with custom color palettes |
+| **Study Tools** | Flashcards, Quizzes (multiple choice), Reports, Mind Maps, Data Tables, Dashboards, Literature Reviews, Competitive Analyses, Document Comparisons, Citation Graphs — search/filter/sort for all generated content |
 | **Notes** | Create, edit, auto-save notes; convert notes to sources for AI context |
 | **Workspace** | Link local folders, file tree browser, text editor with AI rewrite, .gitignore support |
-| **Export** | Download audio as WAV, slides as PNG, whitepapers as PDF, copy reports to clipboard |
+| **Export** | Download audio as WAV, slides as PNG, slide decks as PDF (with text overlays for hybrid mode), whitepapers as A4 PDF, copy reports to clipboard |
 | **AI Architecture** | Agentic RAG (multi-query retrieval), multi-agent generation pipeline (Research → Write → Review), AI output validation with retry, cross-session memory |
 | **Embeddings** | Tiered embedding system: local ONNX (all-MiniLM-L6-v2) → Gemini API → hash fallback |
 | **DeepBrain** | System-wide memory recall, file search, email search, activity context — results shown as preview cards in chat |
@@ -72,23 +76,28 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 
 ---
 
-## What's New — v2.0
+## What's New — Beta
 
-Nine major features have been added to transform DeepNote AI from a notebook tool into an intelligent research platform:
+This beta includes 15+ major features transforming DeepNote AI from a notebook tool into a full intelligent research platform:
 
 | Feature | Description |
 |---------|-------------|
-| **Agentic RAG** | Multi-query retrieval where the AI reasons about what to search, generating 2-3 targeted sub-queries for better context |
-| **Multi-Agent Pipeline** | Complex studio content (reports, whitepapers, etc.) now goes through a Research → Write → Review pipeline with automatic revision |
-| **AI Output Validation** | Middleware pipeline validates all AI-generated JSON, strips markdown fences, retries with error feedback up to 3 times |
-| **Cross-Session Memory** | AI remembers your preferences and learning patterns across conversations per notebook |
-| **Voice Q&A** | Speak to your sources — audio transcription → RAG chat → TTS response cycle |
-| **Chat-to-Source Pipeline** | Save any AI chat response as a note, source, workspace file, or send it to studio for generation |
-| **Smart Recommendations** | Cross-notebook source recommendations via vector similarity search |
-| **Clipboard Quick-Capture** | System tray icon + Cmd+Shift+N global shortcut to capture clipboard content to your notebook |
+| **15 Studio Tools** | Audio, Image Slides, Flashcards, Quiz, Report, Mind Map, Data Table, Dashboard, Literature Review, Competitive Analysis, Document Comparison, Citation Graph, Infographic, White Paper, and Deep Research |
+| **White Paper Generator** | Multi-section academic/business/technical papers with cover images, section illustrations, ToC, references, and A4 PDF export |
+| **Infographic Generator** | Full-image or hybrid infographics with 6 style presets + custom style builder with reference image analysis |
+| **Hybrid Slide Editor** | Drag-and-drop text overlays on AI backgrounds, Save button with visual feedback, arrow key navigation respects text editing, PDF export includes text overlays |
+| **Custom Style Builder** | Upload a reference image — the AI extracts and replicates its visual style for slides, infographics, and whitepapers |
+| **Glass Morphism UI** | Polished dark/light theme with frosted glass effects, refined modals, and fullscreen dialogs |
+| **Agentic RAG** | Multi-query retrieval: AI generates 2-3 targeted sub-queries, deduplicates results, checks sufficiency |
+| **Multi-Agent Pipeline** | Complex content goes through Research → Write → Review pipeline with automatic revision if quality < 6/10 |
+| **AI Output Validation** | Middleware validates all JSON output, strips markdown fences, retries with error feedback (3 attempts) |
+| **Cross-Session Memory** | AI remembers preferences and learning patterns per notebook with confidence scoring |
+| **Voice Q&A** | Audio transcription → RAG chat → TTS response — speak to your sources |
+| **Multi-Provider Chat** | Gemini, Claude, OpenAI, Groq — switch providers and models per conversation |
+| **DeepBrain Integration** | System-wide memory, file search, email search, activity context — results as clickable preview cards |
 | **Local ONNX Embeddings** | Offline embeddings via all-MiniLM-L6-v2 with tiered fallback (ONNX → Gemini → hash) |
-| **Multi-Provider Chat** | Switch between Gemini, Claude, OpenAI, and Groq with per-provider API key configuration |
-| **DeepBrain Preview Cards** | File matches, emails, and memories from DeepBrain appear as clickable cards below AI responses — files open in your default app |
+| **Global Search** | System-wide search across all notebooks, sources, files, emails, and memories (Cmd+K) |
+| **Clipboard Quick-Capture** | System tray icon + Cmd+Shift+N to capture clipboard content to your notebook |
 
 ---
 
@@ -110,12 +119,14 @@ Nine major features have been added to transform DeepNote AI from a notebook too
 | **Font** | Inter (bundled via @fontsource-variable) |
 
 **AI Models Used:**
-- `gemini-2.5-flash` (default) / `gemini-2.5-pro` / `gemini-3.1-pro` - Chat, content generation, document analysis
-- Claude Sonnet / Opus, OpenAI GPT-4o, Groq Llama — alternative chat providers
-- `gemini-2.5-flash-preview-tts` - Multi-speaker text-to-speech
-- `gemini-embedding-exp-03-07` - Text embeddings for RAG (cloud tier)
-- `all-MiniLM-L6-v2` - Local ONNX embeddings (offline tier)
-- Image generation model - AI slide backgrounds
+- `gemini-3-flash-preview` (default) / `gemini-3-pro-preview` / `gemini-2.5-flash` / `gemini-2.5-pro` — Chat, content generation, document analysis, agentic RAG
+- `claude-sonnet-4-6` / `claude-opus-4-6` / `claude-haiku-4-5` — Claude chat providers
+- `gpt-4o` / `gpt-4o-mini` — OpenAI chat providers
+- `llama-3.3-70b-versatile` — Groq chat provider
+- `gemini-2.5-flash-preview-tts` — Multi-speaker text-to-speech (Kore & Puck voices)
+- `gemini-3-pro-image-preview` — AI image generation for slides, infographics, whitepapers
+- `text-embedding-004` — Text embeddings for RAG (Gemini cloud tier)
+- `all-MiniLM-L6-v2` — Local ONNX embeddings (offline tier, 384-dim)
 
 ---
 
@@ -295,7 +306,7 @@ The **Notes Panel** provides a scratchpad for your own thoughts alongside AI-gen
 
 ### Studio
 
-The **Studio Panel** contains 7 AI-powered content generation tools. Each tool transforms your selected sources into a different output format.
+The **Studio Panel** contains 15 AI-powered content generation tools. Each tool transforms your selected sources into a different output format.
 
 All studio tools support:
 - **Custom instructions** - Guide the AI's focus and audience
@@ -382,11 +393,12 @@ Click the pencil icon on any hybrid slide to enter edit mode:
 - **Delete Elements** - Remove unwanted text boxes (minimum 1 must remain)
 - **Resize** - Drag the corner handle to adjust element width
 - **Auto-save** - All changes persist automatically (800ms debounce)
+- **Save Button** - Explicit save with visual feedback (saving spinner → "Saved" checkmark)
 - **Click outside** to deselect elements
 
 **Presentation Features:**
 - **Fullscreen Mode** - Press the expand button for a full-screen presentation
-- **Keyboard Navigation** - Arrow keys and Space to advance slides
+- **Keyboard Navigation** - Arrow keys and Space to advance slides (disabled while editing text to preserve cursor position)
 - **Thumbnail Strip** - Visual slide navigator
 - **Speaker Notes** - Show/hide AI-generated speaker notes per slide
 - **Download** - Save individual slides as PNG files
@@ -558,7 +570,8 @@ A **system tray icon** provides quick access to capture clipboard content withou
 | Shortcut | Action |
 |----------|--------|
 | `Cmd/Ctrl + S` | Save file in workspace editor |
-| `Cmd/Ctrl + K` | Open AI rewrite popup (with text selected) |
+| `Cmd/Ctrl + K` | Open AI rewrite popup (with text selected) / Open global search |
+| `Cmd + Shift + F` | Open global search |
 | `Cmd + Shift + N` | Capture clipboard to notebook (global) |
 | `Arrow Right` / `Space` | Next slide (fullscreen) |
 | `Arrow Left` | Previous slide (fullscreen) |
@@ -662,6 +675,27 @@ DeepNote AI uses SQLite with 8 tables:
 | `user_memory` | Cross-session AI memory (type, key, value, confidence score, timestamps) |
 
 All data is stored locally in `~/.config/deepnote-ai/` (or platform equivalent). No data is sent to external servers except Gemini API calls for AI features.
+
+---
+
+## Known Issues (Beta)
+
+This is a beta release. The following issues are known and tracked for future releases:
+
+| Category | Issue | Severity |
+|----------|-------|----------|
+| **Performance** | Chat message list not virtualized — may slow with very long histories | Medium |
+| **Performance** | Vector search uses linear scan (no indexing) — scales poorly with many sources | Medium |
+| **Caching** | Audio cache and slide image cache grow unbounded — no automatic cleanup | Low |
+| **Caching** | Config file re-read from disk on every access — no in-memory cache | Low |
+| **Error Handling** | Some API errors silently swallowed via `.catch(() => {})` — user sees no feedback | Medium |
+| **Error Handling** | No error boundaries around chat artifact rendering — malformed data crashes message | Medium |
+| **Security** | API keys stored as plaintext JSON in config file — should use OS keychain | Medium |
+| **UX** | Modal dialogs lack focus trapping and ARIA labels | Low |
+| **UX** | Toast notifications can stack/overlap | Low |
+| **Accessibility** | Icon-only buttons missing `aria-label` in several components | Low |
+
+We welcome bug reports at [GitHub Issues](https://github.com/Clemens865/DeepNote-AI/issues).
 
 ---
 
