@@ -14,8 +14,8 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 - [What's New — Beta](#whats-new--beta)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
+  - [Quick Install (macOS)](#quick-install-macos)
+  - [Build from Source](#build-from-source)
   - [Configuration](#configuration)
   - [Running](#running)
   - [Building](#building)
@@ -132,12 +132,23 @@ This beta includes 15+ major features transforming DeepNote AI from a notebook t
 
 ## Getting Started
 
-### Prerequisites
+### Quick Install (macOS)
+
+1. Download the latest **DMG** from [Releases](https://github.com/Clemens865/DeepNote-AI/releases)
+2. Open the DMG and drag **DeepNote AI** to your Applications folder
+3. Launch the app, open **Settings** (gear icon), and enter your **Gemini API Key**
+4. Click **Test** to verify, then **Save** — you're ready to go
+
+> **Note:** The app is signed but not notarized. On first launch macOS may show a security warning — right-click the app and choose "Open" to bypass it.
+
+### Build from Source
+
+#### Prerequisites
 
 - **Node.js** 20+ and npm
 - **Google Gemini API Key** (free at [aistudio.google.com](https://aistudio.google.com/apikey))
 
-### Installation
+#### Installation
 
 ```bash
 # Clone the repository
@@ -689,7 +700,7 @@ This is a beta release. The following issues are known and tracked for future re
 | **Caching** | Audio cache and slide image cache grow unbounded — no automatic cleanup | Low |
 | **Caching** | Config file re-read from disk on every access — no in-memory cache | Low |
 | **Error Handling** | Some API errors silently swallowed via `.catch(() => {})` — user sees no feedback | Medium |
-| **Error Handling** | No error boundaries around chat artifact rendering — malformed data crashes message | Medium |
+| **Error Handling** | ~~No error boundaries around chat artifact rendering~~ — **Fixed** in latest build | ~~Medium~~ |
 | **Security** | API keys stored as plaintext JSON in config file — should use OS keychain | Medium |
 | **UX** | Modal dialogs lack focus trapping and ARIA labels | Low |
 | **UX** | Toast notifications can stack/overlap | Low |
