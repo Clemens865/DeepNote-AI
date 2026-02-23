@@ -59,6 +59,7 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
   const totalCount = sources.length
 
   const handleClick = async (tool: Tool) => {
+    if (generating) return // guard against double-clicks
     if (!tool.enabled) {
       setToast(`${tool.label} coming soon!`)
       setTimeout(() => setToast(null), 2000)
@@ -67,19 +68,25 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
 
     // Intercept slides to open image slides wizard
     if (tool.id === 'slides' && onOpenImageSlidesWizard) {
+      setGenerating(tool.id)
       onOpenImageSlidesWizard()
+      setTimeout(() => setGenerating(null), 500)
       return
     }
 
     // Intercept infographic for fire-and-forget generation
     if (tool.id === 'infographic' && onStartInfographic) {
+      setGenerating(tool.id)
       onStartInfographic()
+      setTimeout(() => setGenerating(null), 500)
       return
     }
 
     // Intercept whitepaper for fire-and-forget generation
     if (tool.id === 'whitepaper' && onStartWhitePaper) {
+      setGenerating(tool.id)
       onStartWhitePaper()
+      setTimeout(() => setGenerating(null), 500)
       return
     }
 

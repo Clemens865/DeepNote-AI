@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { BookmarkPlus, Copy, Check, FileText, FolderPlus, Sparkles } from 'lucide-react'
+import { useState, Component } from 'react'
+import type { ReactNode, ErrorInfo } from 'react'
+import { BookmarkPlus, Copy, Check, FileText, FolderPlus, Sparkles, AlertTriangle } from 'lucide-react'
 import type { ChatMessage as ChatMessageType } from '@shared/types'
 import { parseArtifacts } from '../../utils/artifactParser'
 import { ChatArtifactTable } from './ChatArtifactTable'
@@ -9,6 +10,36 @@ import { ChatArtifactKanban } from './ChatArtifactKanban'
 import { ChatArtifactKpi } from './ChatArtifactKpi'
 import { ChatArtifactTimeline } from './ChatArtifactTimeline'
 import { ChatDeepBrainResults } from './ChatDeepBrainResults'
+
+class ArtifactErrorBoundary extends Component<
+  { children: ReactNode; type: string },
+  { hasError: boolean; error: string }
+> {
+  constructor(props: { children: ReactNode; type: string }) {
+    super(props)
+    this.state = { hasError: false, error: '' }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error(`Artifact render error (${this.props.type}):`, error, info.componentStack)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center gap-2 px-3 py-2 my-2 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-xs text-red-600 dark:text-red-400">
+          <AlertTriangle size={14} />
+          <span>Failed to render {this.props.type}</span>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 interface ChatMessageProps {
   message: ChatMessageType
@@ -190,22 +221,22 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
           <div className="chat-markdown">
             {parseArtifacts(message.content).map((seg, i) => {
               if (seg.type === 'artifact-table') {
-                return <ChatArtifactTable key={i} data={seg.data} />
+                return <ArtifactErrorBoundary key={i} type="table"><ChatArtifactTable data={seg.data} /></ArtifactErrorBoundary>
               }
               if (seg.type === 'artifact-chart') {
-                return <ChatArtifactChart key={i} data={seg.data} />
+                return <ArtifactErrorBoundary key={i} type="chart"><ChatArtifactChart data={seg.data} /></ArtifactErrorBoundary>
               }
               if (seg.type === 'artifact-mermaid') {
-                return <ChatArtifactMermaid key={i} data={seg.data} onRegenerateMermaid={onRegenerateMermaid} />
+                return <ArtifactErrorBoundary key={i} type="diagram"><ChatArtifactMermaid data={seg.data} onRegenerateMermaid={onRegenerateMermaid} /></ArtifactErrorBoundary>
               }
               if (seg.type === 'artifact-kanban') {
-                return <ChatArtifactKanban key={i} data={seg.data} />
+                return <ArtifactErrorBoundary key={i} type="kanban"><ChatArtifactKanban data={seg.data} /></ArtifactErrorBoundary>
               }
               if (seg.type === 'artifact-kpi') {
-                return <ChatArtifactKpi key={i} data={seg.data} />
+                return <ArtifactErrorBoundary key={i} type="KPI"><ChatArtifactKpi data={seg.data} /></ArtifactErrorBoundary>
               }
               if (seg.type === 'artifact-timeline') {
-                return <ChatArtifactTimeline key={i} data={seg.data} />
+                return <ArtifactErrorBoundary key={i} type="timeline"><ChatArtifactTimeline data={seg.data} /></ArtifactErrorBoundary>
               }
               return (
                 <div

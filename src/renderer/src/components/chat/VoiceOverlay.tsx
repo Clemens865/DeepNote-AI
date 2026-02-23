@@ -122,12 +122,24 @@ export function VoiceOverlay({ notebookId, onClose, onUserMessage, onAiMessage }
   }, [recording])
 
   const handleClose = useCallback(() => {
-    if (recording) stopRecording()
+    // Stop media tracks directly to prevent mic leak even if stop() wasn't called
+    if (mediaRecorderRef.current) {
+      try {
+        const recorder = mediaRecorderRef.current
+        if (recorder.state !== 'inactive') recorder.stop()
+        // Access the stream directly and stop all tracks
+        recorder.stream.getTracks().forEach((track) => track.stop())
+      } catch {
+        // Ignore — recorder may already be stopped
+      }
+      mediaRecorderRef.current = null
+    }
+    setRecording(false)
     if (sessionId) {
       window.api.voiceStop({ sessionId }).catch(() => {})
     }
     onClose()
-  }, [recording, sessionId, stopRecording, onClose])
+  }, [sessionId, onClose])
 
   return (
     <div className="fixed inset-0 z-50 bg-zinc-900/80 backdrop-blur-sm flex flex-col items-center justify-center">
