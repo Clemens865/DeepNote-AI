@@ -261,49 +261,50 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         {tab === 'integrations' && (
           <div className="space-y-5">
             {/* DeepBrain */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Brain size={16} className={sbStatus?.enabled !== false ? 'text-purple-500' : 'text-zinc-400'} />
-                  <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">DeepBrain</h4>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Enable/Disable toggle */}
-                  <button
-                    onClick={async () => {
-                      const newEnabled = !(sbStatus?.enabled !== false)
-                      await window.api.deepbrainConfigure({ enabled: newEnabled })
-                      setSbStatus((prev) => prev ? { ...prev, enabled: newEnabled } : prev)
-                    }}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      sbStatus?.enabled !== false ? 'bg-purple-500' : 'bg-zinc-300 dark:bg-zinc-600'
-                    }`}
-                    title={sbStatus?.enabled !== false ? 'Disable DeepBrain' : 'Enable DeepBrain'}
-                  >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        sbStatus?.enabled !== false ? 'translate-x-[18px]' : 'translate-x-[3px]'
+            {sbStatus?.available ? (
+              /* Full integration UI when DeepBrain is connected (for testing) */
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Brain size={16} className={sbStatus?.enabled !== false ? 'text-purple-500' : 'text-zinc-400'} />
+                    <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">DeepBrain</h4>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Enable/Disable toggle */}
+                    <button
+                      onClick={async () => {
+                        const newEnabled = !(sbStatus?.enabled !== false)
+                        await window.api.deepbrainConfigure({ enabled: newEnabled })
+                        setSbStatus((prev) => prev ? { ...prev, enabled: newEnabled } : prev)
+                      }}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        sbStatus?.enabled !== false ? 'bg-purple-500' : 'bg-zinc-300 dark:bg-zinc-600'
                       }`}
-                    />
-                  </button>
-                  {sbLoading ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <div className={`flex items-center gap-1.5 text-xs ${sbStatus?.available && sbStatus?.enabled !== false ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
-                      <div className={`w-2 h-2 rounded-full ${sbStatus?.available && sbStatus?.enabled !== false ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300 dark:bg-zinc-600'}`} />
-                      {sbStatus?.enabled === false ? 'Disabled' : sbStatus?.available ? 'Connected' : 'Not connected'}
-                    </div>
-                  )}
-                  <button
-                    onClick={loadDeepBrainStatus}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                  >
-                    Refresh
-                  </button>
+                      title={sbStatus?.enabled !== false ? 'Disable DeepBrain' : 'Enable DeepBrain'}
+                    >
+                      <span
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                          sbStatus?.enabled !== false ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                        }`}
+                      />
+                    </button>
+                    {sbLoading ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <div className={`flex items-center gap-1.5 text-xs ${sbStatus?.available && sbStatus?.enabled !== false ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                        <div className={`w-2 h-2 rounded-full ${sbStatus?.available && sbStatus?.enabled !== false ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300 dark:bg-zinc-600'}`} />
+                        {sbStatus?.enabled === false ? 'Disabled' : sbStatus?.available ? 'Connected' : 'Not connected'}
+                      </div>
+                    )}
+                    <button
+                      onClick={loadDeepBrainStatus}
+                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                    >
+                      Refresh
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {sbStatus?.available ? (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20">
                     <p className="text-[10px] text-purple-500 dark:text-purple-400 uppercase tracking-wide">Memories</p>
@@ -326,13 +327,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200 capitalize">{sbStatus.learningTrend}</p>
                   </div>
                 </div>
-              ) : (
+              </div>
+            ) : (
+              /* "Coming Soon" teaser when DeepBrain is not available */
+              <div className="px-4 py-4 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Brain size={16} className="text-purple-400 dark:text-purple-500" />
+                  <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">DeepBrain</h4>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-500/15 dark:text-purple-400 font-medium">Coming Soon</span>
+                </div>
                 <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed">
-                  DeepBrain provides system-wide memory, file indexing, clipboard history, and local LLM integration.
-                  Start DeepBrain to enable OS-level AI features.
+                  System-wide memory, file indexing, email search, clipboard history, and cross-app AI context.
+                  DeepBrain will connect your operating system to your notebooks for a seamless AI experience.
                 </p>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Divider */}
             <div className="border-t border-black/[0.04] dark:border-white/[0.04]" />

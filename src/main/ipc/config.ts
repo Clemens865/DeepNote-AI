@@ -69,9 +69,21 @@ export function registerConfigHandlers() {
         resetMemoryClient()
         resetMiddlewareClient()
       }
-      if (args.claudeKey !== undefined) updates.claudeApiKey = args.claudeKey.trim()
-      if (args.openaiKey !== undefined) updates.openaiApiKey = args.openaiKey.trim()
-      if (args.groqKey !== undefined) updates.groqApiKey = args.groqKey.trim()
+      if (args.claudeKey !== undefined) {
+        const k = args.claudeKey.trim()
+        if (k && !k.startsWith('sk-ant-')) throw new Error('Invalid Claude key — must start with sk-ant-')
+        updates.claudeApiKey = k
+      }
+      if (args.openaiKey !== undefined) {
+        const k = args.openaiKey.trim()
+        if (k && !k.startsWith('sk-')) throw new Error('Invalid OpenAI key — must start with sk-')
+        updates.openaiApiKey = k
+      }
+      if (args.groqKey !== undefined) {
+        const k = args.groqKey.trim()
+        if (k && !k.startsWith('gsk_')) throw new Error('Invalid Groq key — must start with gsk_')
+        updates.groqApiKey = k
+      }
       configService.setConfig(updates)
     }
   )

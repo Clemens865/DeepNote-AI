@@ -52,8 +52,12 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.STUDIO_GENERATE, args),
   studioSaveFile: (args: { sourcePath: string; defaultName: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.STUDIO_SAVE_FILE, args),
-  studioExportPdf: (args: { imagePaths: string[]; aspectRatio: '16:9' | '4:3'; defaultName: string }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.STUDIO_EXPORT_PDF, args),
+  studioExportPdf: (args: {
+    imagePaths: string[]
+    aspectRatio: '16:9' | '4:3'
+    defaultName: string
+    textOverlays?: Array<{ elements: Array<{ content: string; x: number; y: number; width: number; fontSize: number; align: string; color?: string; bold?: boolean }> }>
+  }) => ipcRenderer.invoke(IPC_CHANNELS.STUDIO_EXPORT_PDF, args),
   studioStatus: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.STUDIO_STATUS, id),
   studioList: (notebookId: string) => ipcRenderer.invoke(IPC_CHANNELS.STUDIO_LIST, notebookId),
   studioDelete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.STUDIO_DELETE, id),

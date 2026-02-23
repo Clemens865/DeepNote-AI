@@ -202,10 +202,8 @@ export function registerChatHandlers() {
       deepbrainResults = undefined
     }
 
-    // Tell the AI about DeepBrain status so it doesn't say "I can't access your files"
-    if (!deepbrainConnected) {
-      deepbrainContext = `\n\n--- SYSTEM-WIDE DATA ---\nDeepBrain is not running. You cannot access system files or emails right now. Tell the user to start DeepBrain to enable system-wide search across emails, files, and apps.`
-    }
+    // When DeepBrain is not connected, omit system prompt about it entirely
+    // to avoid AI mentioning a feature users don't have access to
 
     // Combine RAG context with DeepBrain context
     context = context + deepbrainContext
@@ -334,11 +332,18 @@ export function registerChatHandlers() {
         'literature-review': 'Literature Review', 'competitive-analysis': 'Competitive Analysis',
       }
 
+      // Get notebook title for naming
+      const notebooks = await db
+        .select()
+        .from(schema.notebooks)
+        .where(eq(schema.notebooks.id, args.notebookId))
+      const notebookTitle = notebooks[0]?.title || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
       const record = {
         id: contentId,
         notebookId: args.notebookId,
         type: args.type as 'report',
-        title: `${TYPE_TITLES[args.type] || args.type} from Chat - ${new Date().toLocaleDateString()}`,
+        title: `${TYPE_TITLES[args.type] || args.type} — ${notebookTitle}`,
         data: JSON.stringify(result),
         sourceIds: JSON.stringify([sourceId]),
         status: 'completed' as const,

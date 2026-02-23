@@ -487,7 +487,15 @@ export function ChatPanel() {
         {/* Model selector */}
         <div className="relative flex-shrink-0" ref={modelMenuRef}>
           <button
-            onClick={() => setShowModelMenu(!showModelMenu)}
+            onClick={() => {
+              if (!showModelMenu) {
+                // Refresh key availability when opening the menu (in case keys were saved in Settings)
+                window.api.getChatConfig().then((cfg: { provider: string; model: string; hasGeminiKey: boolean; hasClaudeKey: boolean; hasOpenaiKey: boolean; hasGroqKey: boolean }) => {
+                  setProviderKeys({ hasGeminiKey: cfg.hasGeminiKey, hasClaudeKey: cfg.hasClaudeKey, hasOpenaiKey: cfg.hasOpenaiKey, hasGroqKey: cfg.hasGroqKey })
+                }).catch(() => {})
+              }
+              setShowModelMenu(!showModelMenu)
+            }}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${PROVIDER_COLORS[chatProvider]}`}
           >
             <span className="max-w-[120px] truncate">{modelDisplayName}</span>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronLeft, ChevronRight, StickyNote, Download, Maximize2, X, Pencil, FileDown } from 'lucide-react'
+import { ChevronLeft, ChevronRight, StickyNote, Download, Maximize2, X, Pencil, FileDown, Check, Loader2, Save } from 'lucide-react'
 import type { ImageSlidesGeneratedData, ImageSlideData, HybridSlideData, SlideTextElement } from '@shared/types'
 import { DraggableTextElement } from './DraggableTextElement'
 import { SlideEditorToolbar } from './SlideEditorToolbar'
@@ -116,6 +116,8 @@ function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onCl
   const [editMode, setEditMode] = useState(false)
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
   const [activeEditor, setActiveEditor] = useState<Editor | null>(null)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const saveStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Initialize elements: use existing or migrate from title+bullets
   const [elements, setElements] = useState<SlideTextElement[]>(() => {
@@ -145,7 +147,7 @@ function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onCl
 
   // Immediate save function (no debounce)
   const saveNow = useCallback(
-    (els: SlideTextElement[]) => {
+    (els: SlideTextElement[], showFeedback = false) => {
       const titleEl = els.find((e) => e.type === 'title')
       const bulletEls = els.filter((e) => e.type === 'bullet')
       const title = titleEl
@@ -155,12 +157,22 @@ function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onCl
         ? bulletEls.map((b) => b.content.replace(/<[^>]*>/g, ''))
         : slide.bullets
 
+      if (showFeedback) setSaveStatus('saving')
+
       window.api.imageSlidesUpdateText({
         generatedContentId: contentId,
         slideNumber: slide.slideNumber,
         title,
         bullets,
         elements: els,
+      }).then(() => {
+        if (showFeedback) {
+          setSaveStatus('saved')
+          if (saveStatusTimerRef.current) clearTimeout(saveStatusTimerRef.current)
+          saveStatusTimerRef.current = setTimeout(() => setSaveStatus('idle'), 1500)
+        }
+      }).catch(() => {
+        if (showFeedback) setSaveStatus('idle')
       })
     },
     [contentId, slide.slideNumber, slide.title, slide.bullets]
@@ -179,13 +191,13 @@ function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onCl
     [saveNow]
   )
 
-  // Flush pending save immediately (used when exiting edit mode)
-  const flushSave = useCallback(() => {
+  // Flush pending save immediately (used when exiting edit mode or clicking Save)
+  const flushSave = useCallback((showFeedback = false) => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
       debounceRef.current = null
-      saveNow(latestElementsRef.current)
     }
+    saveNow(latestElementsRef.current, showFeedback)
   }, [saveNow])
 
   const handleElementUpdate = useCallback(
@@ -325,6 +337,33 @@ function HybridSlide({ slide, style, aspectRatio, contentId, customPalette, onCl
           />
         ))}
 
+        {/* Save button (visible in edit mode) */}
+        {editMode && (
+          <button
+            className={`absolute top-2 right-12 z-30 h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-colors ${
+              saveStatus === 'saved'
+                ? 'bg-emerald-500/90 text-white'
+                : saveStatus === 'saving'
+                  ? 'bg-indigo-500/70 text-white/80'
+                  : 'bg-black/40 text-white/70 hover:bg-black/60 hover:text-white'
+            }`}
+            onClick={(e) => {
+              e.stopPropagation()
+              flushSave(true)
+            }}
+            title="Save changes"
+          >
+            {saveStatus === 'saving' ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : saveStatus === 'saved' ? (
+              <Check size={12} />
+            ) : (
+              <Save size={12} />
+            )}
+            {saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? '' : 'Save'}
+          </button>
+        )}
+
         {/* Edit mode toggle button */}
         <button
           className={`absolute top-2 right-2 z-30 w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
@@ -379,6 +418,15 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
         setIsFullscreen(false)
         return
       }
+
+      // Don't intercept keys when user is editing text (Tiptap, input, textarea)
+      const active = document.activeElement
+      const isEditing =
+        active?.closest('[contenteditable="true"]') ||
+        active?.tagName === 'INPUT' ||
+        active?.tagName === 'TEXTAREA'
+      if (isEditing) return
+
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault()
         goNext()
@@ -469,10 +517,29 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
                 const allPaths = slides.map((s) =>
                   isHybrid ? (s as HybridSlideData).imagePath : (s as ImageSlideData).imagePath
                 )
+                const textOverlays = isHybrid
+                  ? slides.map((s) => {
+                      const hs = s as HybridSlideData
+                      const els = hs.elements || []
+                      return {
+                        elements: els.map((el) => ({
+                          content: el.content.replace(/<[^>]*>/g, ''),
+                          x: el.x,
+                          y: el.y,
+                          width: el.width,
+                          fontSize: el.style?.fontSize || 16,
+                          align: el.style?.align || 'left',
+                          color: el.style?.color,
+                          bold: el.type === 'title',
+                        })),
+                      }
+                    })
+                  : undefined
                 window.api.studioExportPdf({
                   imagePaths: allPaths,
                   aspectRatio: (slidesData.aspectRatio === '4:3' ? '4:3' : '16:9') as '16:9' | '4:3',
                   defaultName: 'slide-deck.pdf',
+                  textOverlays,
                 })
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"

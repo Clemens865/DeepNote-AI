@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Spinner } from '../common/Spinner'
 import { useNotebookStore } from '../../stores/notebookStore'
 import type { GeneratedContent, StudioToolOptions } from '@shared/types'
@@ -47,8 +47,13 @@ interface ToolGridProps {
 export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize, onOpenReportFormat, onStartInfographic, onStartWhitePaper }: ToolGridProps) {
   const [toast, setToast] = useState<string | null>(null)
   const [generating, setGenerating] = useState<string | null>(null)
+  const [hasGeminiKey, setHasGeminiKey] = useState(true) // optimistic default
   const currentNotebook = useNotebookStore((s) => s.currentNotebook)
   const sources = useNotebookStore((s) => s.sources)
+
+  useEffect(() => {
+    window.api.getApiKey().then((key: string) => setHasGeminiKey(!!key))
+  }, [])
 
   const selectedCount = sources.filter((s) => s.isSelected).length
   const totalCount = sources.length
@@ -125,12 +130,17 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
 
   return (
     <div className="space-y-3">
+      {!hasGeminiKey && (
+        <div className="px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+          Set your Gemini API key in Settings to unlock Studio generation.
+        </div>
+      )}
       {TOOLS.map((tool) => (
         <button
           key={tool.id}
           onClick={() => handleClick(tool)}
-          disabled={generating !== null}
-          className="w-full text-left p-4 rounded-2xl glass-panel glass-panel-hover group relative overflow-hidden disabled:opacity-60"
+          disabled={generating !== null || !hasGeminiKey}
+          className={`w-full text-left p-4 rounded-2xl glass-panel glass-panel-hover group relative overflow-hidden disabled:opacity-60 ${!hasGeminiKey ? 'opacity-40 pointer-events-none' : ''}`}
         >
           <div className="flex items-start gap-3 relative z-10">
             <div className="w-10 h-10 bg-indigo-50/80 dark:bg-indigo-500/[0.08] rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-500 group-hover:text-white transition-colors flex-shrink-0 shadow-inner">

@@ -2,7 +2,7 @@ import { ipcMain, BrowserWindow, dialog } from 'electron'
 import { copyFile, readFile, writeFile } from 'fs/promises'
 import { extname } from 'path'
 import { randomUUID } from 'crypto'
-import { eq } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { getDatabase, schema } from '../db'
 import { aiService } from '../services/ai'
@@ -60,12 +60,19 @@ export function registerStudioHandlers() {
     const sourceIds = selectedSources.map((s) => s.id)
     const sourceTexts = selectedSources.map((s) => s.content)
 
+    // Get notebook title for naming
+    const notebooks = await db
+      .select()
+      .from(schema.notebooks)
+      .where(eq(schema.notebooks.id, args.notebookId))
+    const notebookTitle = notebooks[0]?.title || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
     // Create record with generating status
     const record = {
       id,
       notebookId: args.notebookId,
       type: args.type as 'report' | 'quiz' | 'flashcard',
-      title: `${TYPE_TITLES[args.type] || args.type} - ${new Date().toLocaleDateString()}`,
+      title: `${TYPE_TITLES[args.type] || args.type} — ${notebookTitle}`,
       data: JSON.stringify({}),
       sourceIds: JSON.stringify(sourceIds),
       status: 'generating' as const,
@@ -157,6 +164,7 @@ export function registerStudioHandlers() {
       .select()
       .from(schema.generatedContent)
       .where(eq(schema.generatedContent.notebookId, notebookId))
+      .orderBy(desc(schema.generatedContent.createdAt))
   })
 
   // Delete generated content
@@ -1183,8 +1191,24 @@ CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the
   // Export all slides as PDF
   ipcMain.handle(
     IPC_CHANNELS.STUDIO_EXPORT_PDF,
-    async (_event, args: { imagePaths: string[]; aspectRatio: '16:9' | '4:3'; defaultName: string }) => {
-      const { PDFDocument } = await import('pdf-lib')
+    async (_event, args: {
+      imagePaths: string[]
+      aspectRatio: '16:9' | '4:3'
+      defaultName: string
+      textOverlays?: Array<{
+        elements: Array<{
+          content: string
+          x: number
+          y: number
+          width: number
+          fontSize: number
+          align: string
+          color?: string
+          bold?: boolean
+        }>
+      }>
+    }) => {
+      const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
 
       const { canceled, filePath } = await dialog.showSaveDialog({
         defaultPath: args.defaultName,
@@ -1196,13 +1220,43 @@ CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the
       }
 
       const pdfDoc = await PDFDocument.create()
+      const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica)
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
 
       // Page dimensions in points (72pt/inch)
       const isWide = args.aspectRatio === '16:9'
       const pageWidth = isWide ? 960 : 720
       const pageHeight = isWide ? 540 : 540
 
-      for (const imgPath of args.imagePaths) {
+      // Helper: parse hex color to rgb()
+      function hexToRgb(hex: string): ReturnType<typeof rgb> {
+        const clean = hex.replace('#', '')
+        const r = parseInt(clean.substring(0, 2), 16) / 255
+        const g = parseInt(clean.substring(2, 4), 16) / 255
+        const b = parseInt(clean.substring(4, 6), 16) / 255
+        return rgb(r, g, b)
+      }
+
+      // Helper: word-wrap text into lines that fit a given width
+      function wrapText(text: string, font: typeof fontRegular, fontSize: number, maxWidth: number): string[] {
+        const words = text.split(/\s+/)
+        const lines: string[] = []
+        let line = ''
+        for (const word of words) {
+          const test = line ? `${line} ${word}` : word
+          if (font.widthOfTextAtSize(test, fontSize) > maxWidth && line) {
+            lines.push(line)
+            line = word
+          } else {
+            line = test
+          }
+        }
+        if (line) lines.push(line)
+        return lines
+      }
+
+      for (let i = 0; i < args.imagePaths.length; i++) {
+        const imgPath = args.imagePaths[i]
         try {
           const imgBytes = await readFile(imgPath)
 
@@ -1216,7 +1270,6 @@ CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the
           } else if (isJpeg) {
             image = await pdfDoc.embedJpg(imgBytes)
           } else {
-            // Try both — PNG first, then JPEG
             try {
               image = await pdfDoc.embedPng(imgBytes)
             } catch {
@@ -1231,6 +1284,49 @@ CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the
             width: pageWidth,
             height: pageHeight,
           })
+
+          // Render text overlays for hybrid slides
+          const overlay = args.textOverlays?.[i]
+          if (overlay && overlay.elements.length > 0) {
+            for (const el of overlay.elements) {
+              if (!el.content.trim()) continue
+
+              const font = el.bold ? fontBold : fontRegular
+              // Scale fontSize from CSS px to PDF points (~0.75 ratio, then scale up for slide size)
+              const pdfFontSize = Math.round(el.fontSize * 0.75 * (pageWidth / 960) * 1.8)
+              const color = el.color ? hexToRgb(el.color) : rgb(0.9, 0.9, 0.9)
+
+              // Convert percentage positions to page-point coordinates
+              const elX = (el.x / 100) * pageWidth
+              const elY = pageHeight - (el.y / 100) * pageHeight
+              const elWidth = (el.width / 100) * pageWidth
+
+              const lines = wrapText(el.content, font, pdfFontSize, elWidth)
+              const lineHeight = pdfFontSize * 1.4
+
+              let drawY = elY
+              for (const line of lines) {
+                // Alignment offset
+                let drawX = elX
+                if (el.align === 'center') {
+                  const lineWidth = font.widthOfTextAtSize(line, pdfFontSize)
+                  drawX = elX + (elWidth - lineWidth) / 2
+                } else if (el.align === 'right') {
+                  const lineWidth = font.widthOfTextAtSize(line, pdfFontSize)
+                  drawX = elX + elWidth - lineWidth
+                }
+
+                page.drawText(line, {
+                  x: drawX,
+                  y: drawY,
+                  size: pdfFontSize,
+                  font,
+                  color,
+                })
+                drawY -= lineHeight
+              }
+            }
+          }
         } catch (err) {
           console.error(`Failed to embed slide image: ${imgPath}`, err)
         }

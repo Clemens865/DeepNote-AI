@@ -210,13 +210,14 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
               </button>
               <button
                 onClick={() => setRenderMode('hybrid')}
-                className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+                className={`flex-1 py-2.5 text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
                   renderMode === 'hybrid'
                     ? 'bg-black/[0.04] dark:bg-white/[0.04] text-zinc-800 dark:text-zinc-100'
                     : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
                 }`}
               >
                 Editable Text
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">Beta</span>
               </button>
             </div>
             <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">

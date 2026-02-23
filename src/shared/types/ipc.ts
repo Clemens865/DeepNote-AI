@@ -295,7 +295,23 @@ export interface IpcHandlerMap {
     return: { success: boolean; filePath?: string }
   }
   [IPC_CHANNELS.STUDIO_EXPORT_PDF]: {
-    args: [{ imagePaths: string[]; aspectRatio: '16:9' | '4:3'; defaultName: string }]
+    args: [{
+      imagePaths: string[]
+      aspectRatio: '16:9' | '4:3'
+      defaultName: string
+      textOverlays?: Array<{
+        elements: Array<{
+          content: string
+          x: number
+          y: number
+          width: number
+          fontSize: number
+          align: string
+          color?: string
+          bold?: boolean
+        }>
+      }>
+    }]
     return: { success: boolean; filePath?: string }
   }
 
