@@ -76,11 +76,11 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
         <Button variant="ghost" size="sm" onClick={onBack}>
           &larr; Back
         </Button>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex-1">{content.title}</h3>
+        <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 flex-1">{content.title}</h3>
         {showFullscreenButton && (
           <button
             onClick={() => setIsFullscreen(true)}
-            className="px-2 py-1 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="px-2 py-1 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
             title="Fullscreen"
           >
             <Maximize2 size={14} />
@@ -88,7 +88,7 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
         )}
         <button
           onClick={handleCopy}
-          className="px-3 py-1 text-xs rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="px-3 py-1 text-xs rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
@@ -111,7 +111,7 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
       {content.type === 'whitepaper' && <WhitePaperView {...viewerProps} />}
 
       {data.raw != null && (
-        <pre className="text-xs text-slate-500 dark:text-slate-400 whitespace-pre-wrap bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+        <pre className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap bg-black/[0.02] dark:bg-white/[0.02] rounded-lg p-4 border border-black/[0.06] dark:border-white/[0.06]">
           {String(data.raw)}
         </pre>
       )}

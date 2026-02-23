@@ -41,7 +41,7 @@ export function FileTreeView() {
 
   if (scanning && !tree) {
     return (
-      <div className="flex items-center justify-center py-8 text-slate-400 dark:text-slate-500">
+      <div className="flex items-center justify-center py-8 text-zinc-400 dark:text-zinc-500">
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
         <span className="text-sm">Scanning files...</span>
       </div>
@@ -50,7 +50,7 @@ export function FileTreeView() {
 
   if (!tree || !tree.children || tree.children.length === 0) {
     return (
-      <div className="text-center py-6 text-slate-400 dark:text-slate-500">
+      <div className="text-center py-6 text-zinc-400 dark:text-zinc-500">
         <FolderOpen className="w-8 h-8 mx-auto mb-2 opacity-50" />
         <p className="text-xs">No files found in workspace</p>
       </div>
@@ -60,13 +60,13 @@ export function FileTreeView() {
   return (
     <div>
       <div className="flex items-center justify-between mb-2 px-1">
-        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em]">
+        <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.15em]">
           Workspace Files
         </p>
         <button
           onClick={handleRefresh}
           disabled={scanning}
-          className="p-1 rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+          className="p-1 rounded-md text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors disabled:opacity-50"
           title="Refresh file tree"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${scanning ? 'animate-spin' : ''}`} />

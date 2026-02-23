@@ -69,6 +69,8 @@ export function registerSearchHandlers() {
             chunk: f.chunk.slice(0, 300),
             similarity: f.similarity,
             fileType: f.fileType,
+            project: f.project,
+            modified: f.modified,
           })),
           emails: sbEmails.map((e) => ({
             subject: e.subject,

@@ -68,7 +68,7 @@ function AudioOverviewContent({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="space-y-4">
       {audioPath && (
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+        <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-lg border border-black/[0.06] dark:border-white/[0.06] p-4 space-y-3">
           <audio
             ref={audioRef}
             src={`local-file://${audioPath}`}
@@ -90,9 +90,9 @@ function AudioOverviewContent({ data }: { data: Record<string, unknown> }) {
                 step={0.1}
                 value={currentTime}
                 onChange={handleSeek}
-                className="w-full h-1.5 rounded-full appearance-none bg-slate-200 dark:bg-slate-700 cursor-pointer accent-indigo-600 dark:accent-indigo-400"
+                className="w-full h-1.5 rounded-full appearance-none bg-black/[0.06] dark:bg-white/[0.06] cursor-pointer accent-indigo-600 dark:accent-indigo-400"
               />
-              <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500">
+              <div className="flex justify-between text-xs text-zinc-400 dark:text-zinc-500">
                 <span>{formatTime(currentTime)}</span>
                 <span>{duration ? formatTime(duration) : '0:00'}</span>
               </div>
@@ -105,7 +105,7 @@ function AudioOverviewContent({ data }: { data: Record<string, unknown> }) {
         <div className="flex justify-end">
           <button
             onClick={() => window.api.studioSaveFile({ sourcePath: audioPath, defaultName: 'audio-overview.wav' })}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
           >
             <Download size={12} />
             Download audio
@@ -115,14 +115,14 @@ function AudioOverviewContent({ data }: { data: Record<string, unknown> }) {
 
       {scriptTurns && scriptTurns.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Transcript</h4>
-          <div className="max-h-80 overflow-auto space-y-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+          <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">Transcript</h4>
+          <div className="max-h-80 overflow-auto space-y-2 bg-black/[0.02] dark:bg-white/[0.02] rounded-lg border border-black/[0.06] dark:border-white/[0.06] p-4">
             {scriptTurns.map((turn, i) => (
               <div key={i} className="flex gap-2">
-                <span className={`text-xs font-semibold flex-shrink-0 w-16 ${speakerColors[turn.speaker] || 'text-slate-500 dark:text-slate-400'}`}>
+                <span className={`text-xs font-semibold flex-shrink-0 w-16 ${speakerColors[turn.speaker] || 'text-zinc-500 dark:text-zinc-400'}`}>
                   {turn.speaker}:
                 </span>
-                <p className="text-sm text-slate-600 dark:text-slate-300">{turn.text}</p>
+                <p className="text-sm text-zinc-600 dark:text-zinc-300">{turn.text}</p>
               </div>
             ))}
           </div>

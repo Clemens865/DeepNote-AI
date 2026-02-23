@@ -134,13 +134,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     <Modal isOpen={isOpen} onClose={onClose} title="">
       <div className="min-h-[420px]">
         {/* Tab bar */}
-        <div className="flex gap-1 mb-5 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex gap-1 mb-5 border-b border-black/[0.06] dark:border-white/[0.06]">
           <button
             onClick={() => setTab('settings')}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
               tab === 'settings'
                 ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
             }`}
           >
             <Settings size={14} />
@@ -151,7 +151,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
               tab === 'integrations'
                 ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
             }`}
           >
             <Brain size={14} />
@@ -162,7 +162,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
               tab === 'about'
                 ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
             }`}
           >
             <Info size={14} />
@@ -171,15 +171,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         {tab === 'settings' && (
-          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          <div className="space-y-4">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
               Configure API keys for each AI provider. Switch between models in the chat panel.
             </p>
 
             {CHAT_PROVIDERS.map((provider) => (
               <div key={provider.id} className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+                  <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-300">
                     {provider.name}
                   </label>
                   {provider.id === 'gemini' && (
@@ -208,7 +208,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       }
                     }}
                     placeholder={provider.keyPlaceholder}
-                    className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500/50"
+                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500/50"
                   />
                   <button
                     onClick={() => handleSaveKey(provider.id)}
@@ -218,7 +218,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     Save
                   </button>
                 </div>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
                   Get your key from{' '}
                   <span className="text-indigo-600 dark:text-indigo-400">{provider.keyUrl}</span>
                 </p>
@@ -264,8 +264,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Brain size={16} className={sbStatus?.enabled !== false ? 'text-purple-500' : 'text-slate-400'} />
-                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">DeepBrain</h4>
+                  <Brain size={16} className={sbStatus?.enabled !== false ? 'text-purple-500' : 'text-zinc-400'} />
+                  <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">DeepBrain</h4>
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Enable/Disable toggle */}
@@ -276,7 +276,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       setSbStatus((prev) => prev ? { ...prev, enabled: newEnabled } : prev)
                     }}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      sbStatus?.enabled !== false ? 'bg-purple-500' : 'bg-slate-300 dark:bg-slate-600'
+                      sbStatus?.enabled !== false ? 'bg-purple-500' : 'bg-zinc-300 dark:bg-zinc-600'
                     }`}
                     title={sbStatus?.enabled !== false ? 'Disable DeepBrain' : 'Enable DeepBrain'}
                   >
@@ -289,8 +289,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   {sbLoading ? (
                     <Spinner size="sm" />
                   ) : (
-                    <div className={`flex items-center gap-1.5 text-xs ${sbStatus?.available && sbStatus?.enabled !== false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                      <div className={`w-2 h-2 rounded-full ${sbStatus?.available && sbStatus?.enabled !== false ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                    <div className={`flex items-center gap-1.5 text-xs ${sbStatus?.available && sbStatus?.enabled !== false ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                      <div className={`w-2 h-2 rounded-full ${sbStatus?.available && sbStatus?.enabled !== false ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300 dark:bg-zinc-600'}`} />
                       {sbStatus?.enabled === false ? 'Disabled' : sbStatus?.available ? 'Connected' : 'Not connected'}
                     </div>
                   )}
@@ -313,21 +313,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <p className="text-[10px] text-purple-500 dark:text-purple-400 uppercase tracking-wide">Indexed Files</p>
                     <p className="text-lg font-bold text-purple-700 dark:text-purple-300">{sbStatus.indexedFiles.toLocaleString()}</p>
                   </div>
-                  <div className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">AI Provider</p>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{sbStatus.aiProvider}</p>
+                  <div className="px-3 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">AI Provider</p>
+                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">{sbStatus.aiProvider}</p>
                   </div>
-                  <div className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">Embeddings</p>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{sbStatus.embeddingProvider}</p>
+                  <div className="px-3 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Embeddings</p>
+                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">{sbStatus.embeddingProvider}</p>
                   </div>
-                  <div className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 col-span-2">
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">Learning Trend</p>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200 capitalize">{sbStatus.learningTrend}</p>
+                  <div className="px-3 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04] col-span-2">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Learning Trend</p>
+                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200 capitalize">{sbStatus.learningTrend}</p>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed">
                   DeepBrain provides system-wide memory, file indexing, clipboard history, and local LLM integration.
                   Start DeepBrain to enable OS-level AI features.
                 </p>
@@ -335,14 +335,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
 
             {/* Divider */}
-            <div className="border-t border-slate-100 dark:border-slate-700" />
+            <div className="border-t border-black/[0.04] dark:border-white/[0.04]" />
 
             {/* DeepNote API */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Server size={16} className="text-indigo-500" />
-                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">DeepNote API</h4>
+                  <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">DeepNote API</h4>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -350,12 +350,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
               </div>
 
-              <div className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Endpoint</p>
+              <div className="px-3 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Endpoint</p>
                 <code className="text-xs text-indigo-600 dark:text-indigo-400 font-mono">
                   http://127.0.0.1:{dnApiPort || 19520}
                 </code>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed">
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1.5 leading-relaxed">
                   DeepBrain, shell scripts, Raycast, and other tools can query your notebooks via this API.
                 </p>
               </div>
@@ -373,31 +373,31 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div className="space-y-5">
             {/* App info */}
             <div className="text-center">
-              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">DeepNote AI</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">v2.0.0</p>
-              <p className="text-sm text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
+              <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">DeepNote AI</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">v2.0.0</p>
+              <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-2 leading-relaxed">
                 AI-powered notebook with document analysis, RAG chat, studio content generation, voice Q&A, and cross-session memory. Powered by Google Gemini.
               </p>
             </div>
 
             {/* Features grid */}
             <div>
-              <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Key Features</h4>
+              <h4 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Key Features</h4>
               <div className="grid grid-cols-2 gap-1.5 max-h-52 overflow-y-auto pr-1">
                 {FEATURES.map((f) => (
                   <div
                     key={f.label}
-                    className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700"
+                    className="px-2.5 py-1.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]"
                   >
-                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">{f.label}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{f.desc}</p>
+                    <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">{f.label}</p>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">{f.desc}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Tech info */}
-            <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-700">
+            <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500 pt-2 border-t border-black/[0.04] dark:border-white/[0.04]">
               <span>Electron + React + Gemini AI</span>
               <span>SQLite + Drizzle ORM</span>
             </div>

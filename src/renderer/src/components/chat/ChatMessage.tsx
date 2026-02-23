@@ -32,7 +32,7 @@ function inlineFormat(text: string): string {
     .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
     .replace(
       /`([^`]+)`/g,
-      '<code class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded text-[11px] font-mono">$1</code>'
+      '<code class="bg-black/[0.05] dark:bg-white/[0.05] text-zinc-700 dark:text-zinc-300 px-1.5 py-0.5 rounded text-[11px] font-mono">$1</code>'
     )
     .replace(
       /\[Source ([^\]]+)\]/g,
@@ -46,7 +46,7 @@ function renderMarkdown(text: string): string {
   let processed = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, _lang, code) => {
     const i = codeBlocks.length
     codeBlocks.push(
-      `<pre class="bg-slate-900 dark:bg-slate-950 rounded-lg p-3 my-3 overflow-x-auto"><code class="text-xs font-mono text-slate-100 leading-relaxed">${escapeHtml(code.trim())}</code></pre>`
+      `<pre class="bg-zinc-900 dark:bg-zinc-950 rounded-lg p-3 my-3 overflow-x-auto"><code class="text-xs font-mono text-zinc-100 leading-relaxed">${escapeHtml(code.trim())}</code></pre>`
     )
     return `\x00CB${i}\x00`
   })
@@ -66,15 +66,15 @@ function renderMarkdown(text: string): string {
       // Headers
       const h3 = trimmed.match(/^### (.+)$/m)
       if (h3)
-        return `<h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 mt-4 mb-1">${inlineFormat(h3[1])}</h4>`
+        return `<h4 class="text-sm font-bold text-zinc-800 dark:text-zinc-100 mt-4 mb-1">${inlineFormat(h3[1])}</h4>`
 
       const h2 = trimmed.match(/^## (.+)$/m)
       if (h2)
-        return `<h3 class="text-[15px] font-bold text-slate-800 dark:text-slate-100 mt-4 mb-1">${inlineFormat(h2[1])}</h3>`
+        return `<h3 class="text-[15px] font-bold text-zinc-800 dark:text-zinc-100 mt-4 mb-1">${inlineFormat(h2[1])}</h3>`
 
       const h1 = trimmed.match(/^# (.+)$/m)
       if (h1)
-        return `<h2 class="text-base font-bold text-slate-800 dark:text-slate-100 mt-4 mb-2">${inlineFormat(h1[1])}</h2>`
+        return `<h2 class="text-base font-bold text-zinc-800 dark:text-zinc-100 mt-4 mb-2">${inlineFormat(h1[1])}</h2>`
 
       // Process multi-line blocks — detect lists
       const lines = trimmed.split('\n')
@@ -102,7 +102,7 @@ function renderMarkdown(text: string): string {
       // Blockquote
       if (trimmed.startsWith('>')) {
         const content = trimmed.replace(/^>\s?/gm, '')
-        return `<blockquote class="border-l-2 border-indigo-300 dark:border-indigo-500 pl-3 my-2 text-slate-600 dark:text-slate-400 italic text-sm">${inlineFormat(content)}</blockquote>`
+        return `<blockquote class="border-l-2 border-indigo-300 dark:border-indigo-500 pl-3 my-2 text-zinc-500 dark:text-zinc-400 italic text-sm">${inlineFormat(content)}</blockquote>`
       }
 
       // Mixed block: some lines are list items, some are not
@@ -178,10 +178,10 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+        className={`max-w-[85%] rounded-2xl px-5 py-4 ${
           isUser
-            ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-md'
-            : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm'
+            ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-900 dark:text-indigo-50 border border-indigo-200 dark:border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.04)]'
+            : 'glass-panel text-zinc-800 dark:text-zinc-200'
         }`}
       >
         {isUser ? (
@@ -225,7 +225,7 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
         {/* Citations */}
         {citations.length > 0 && (
           <div
-            className={`mt-3 pt-3 flex flex-wrap gap-1.5 ${isUser ? 'border-t border-white/20' : 'border-t border-slate-200 dark:border-slate-700'}`}
+            className={`mt-3 pt-3 flex flex-wrap gap-1.5 ${isUser ? 'border-t border-indigo-200/50 dark:border-indigo-500/15' : 'border-t border-black/[0.05] dark:border-white/[0.05]'}`}
           >
             {citations.map(
               (
@@ -234,10 +234,10 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
               ) => (
                 <span
                   key={i}
-                  className={`inline-block text-[9px] font-bold rounded px-2 py-0.5 uppercase tracking-tight ${
+                  className={`inline-block text-[9px] font-bold rounded-md px-2 py-0.5 uppercase tracking-tight ${
                     isUser
-                      ? 'bg-white/15 text-white/80'
-                      : 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600'
+                      ? 'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-300'
+                      : 'bg-black/[0.04] dark:bg-white/[0.04] text-zinc-500 dark:text-zinc-400 border border-black/[0.06] dark:border-white/[0.06]'
                   }`}
                   title={cit.chunkText}
                 >
@@ -251,11 +251,11 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
 
         {/* Action buttons for assistant messages */}
         {!isUser && message.content && (
-          <div className="flex items-center gap-1 mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <div className="flex items-center gap-1 mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
             {onSaveToNote && (
               <button
                 onClick={handleSaveToNote}
-                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-zinc-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
               >
                 {saved ? <Check size={12} /> : <BookmarkPlus size={12} />}
                 {saved ? 'Saved!' : 'Note'}
@@ -264,7 +264,7 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
             {onSaveAsSource && (
               <button
                 onClick={handleSaveAsSource}
-                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-zinc-400 dark:text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
               >
                 {savedSource ? <Check size={12} /> : <FileText size={12} />}
                 {savedSource ? 'Added!' : 'Source'}
@@ -273,7 +273,7 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
             {onSaveToWorkspace && (
               <button
                 onClick={handleSaveToWorkspace}
-                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-zinc-400 dark:text-zinc-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
               >
                 {savedWorkspace ? <Check size={12} /> : <FolderPlus size={12} />}
                 {savedWorkspace ? 'Saved!' : 'Workspace'}
@@ -282,7 +282,7 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
             {onGenerateFrom && (
               <button
                 onClick={handleGenerateFrom}
-                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-zinc-400 dark:text-zinc-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors"
               >
                 <Sparkles size={12} />
                 Generate
@@ -290,7 +290,7 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
             )}
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors"
             >
               {copied ? <Check size={12} /> : <Copy size={12} />}
               {copied ? 'Copied!' : 'Copy'}

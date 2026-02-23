@@ -380,7 +380,7 @@ export function ChatPanel() {
     <div className="h-full flex flex-col">
       {/* Research progress indicator */}
       {researching && researchProgress && (
-        <div className="px-6 py-2 bg-indigo-50 dark:bg-indigo-500/10 border-b border-indigo-100 dark:border-indigo-500/20 flex items-center gap-2">
+        <div className="px-6 py-2 bg-indigo-50/50 dark:bg-indigo-500/[0.06] border-b border-indigo-100/50 dark:border-indigo-500/10 flex items-center gap-2">
           <Spinner size="sm" />
           <span className="text-xs text-indigo-600 dark:text-indigo-400">{researchProgress}</span>
         </div>
@@ -391,11 +391,11 @@ export function ChatPanel() {
         <div className={`max-w-3xl mx-auto w-full px-6 py-6 ${messages.length === 0 ? 'h-full' : ''}`}>
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center h-full">
-              <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-500/15 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                <MessageSquare size={40} className="text-indigo-600 dark:text-indigo-400" />
+              <div className="w-20 h-20 bg-black/[0.03] dark:bg-white/[0.03] rounded-3xl flex items-center justify-center mx-auto mb-6 border border-black/[0.05] dark:border-white/[0.05]">
+                <MessageSquare size={40} className="text-zinc-400 dark:text-zinc-500" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Ask your notebook</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed mb-8">
+              <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2 tracking-tight">Ask your notebook</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto leading-relaxed mb-8">
                 {sources.length === 0
                   ? "Add sources to your notebook first, then ask questions about them."
                   : "I'll answer based on your uploaded sources with citations."}
@@ -408,7 +408,7 @@ export function ChatPanel() {
                         key={suggestion}
                         onClick={() => handleSuggestionClick(suggestion)}
                         disabled={sending}
-                        className="px-4 py-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:text-indigo-600 dark:hover:text-indigo-400 hover:shadow-sm transition-all disabled:opacity-50"
+                        className="px-4 py-2.5 rounded-full bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-black/[0.06] dark:border-white/[0.06] text-sm text-zinc-600 dark:text-zinc-400 hover:border-black/[0.15] dark:hover:border-white/[0.15] hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.05] transition-all disabled:opacity-50 shadow-sm"
                       >
                         {suggestion}
                       </button>
@@ -446,9 +446,9 @@ export function ChatPanel() {
               ))}
               {sending && messages[messages.length - 1]?.content === '' && (
                 <div className="flex justify-start">
-                  <div className="bg-white dark:bg-slate-800 rounded-xl p-3 flex items-center gap-2 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <Loader2 size={14} className="animate-spin text-indigo-600 dark:text-indigo-400" />
-                    <span className="text-xs text-slate-500 dark:text-slate-400">Analyzing sources...</span>
+                  <div className="glass-panel rounded-2xl p-3 flex items-center gap-2">
+                    <Loader2 size={14} className="animate-spin text-indigo-500 dark:text-indigo-400" />
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">Analyzing sources...</span>
                   </div>
                 </div>
               )}
@@ -474,7 +474,7 @@ export function ChatPanel() {
             )}
             <button
               onClick={handleClear}
-              className="px-3 py-1 text-xs rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="px-3 py-1 text-xs rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors"
             >
               Clear
             </button>
@@ -495,12 +495,12 @@ export function ChatPanel() {
           </button>
 
           {showModelMenu && (
-            <div className="absolute bottom-full left-0 mb-1 w-64 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl z-50 py-1 max-h-80 overflow-y-auto">
+            <div className="absolute bottom-full left-0 mb-1 w-64 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-xl border border-black/[0.08] dark:border-white/[0.08] shadow-xl z-50 py-1 max-h-80 overflow-y-auto">
               {CHAT_PROVIDERS.map((provider) => {
                 const hasKey = hasKeyForProvider(provider.id)
                 return (
                   <div key={provider.id}>
-                    <div className="px-3 py-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    <div className="px-3 py-1.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                       {provider.name}
                     </div>
                     {hasKey ? (
@@ -511,14 +511,14 @@ export function ChatPanel() {
                           className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
                             chatProvider === provider.id && chatModel === model.id
                               ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium'
-                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                              : 'text-zinc-600 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
                           }`}
                         >
                           {model.name}
                         </button>
                       ))
                     ) : (
-                      <div className="px-3 py-1.5 text-[11px] text-slate-400 dark:text-slate-500 italic">
+                      <div className="px-3 py-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 italic">
                         Set key in Settings
                       </div>
                     )}
@@ -529,7 +529,7 @@ export function ChatPanel() {
           )}
         </div>
 
-        <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+        <div className="w-px h-4 bg-black/[0.08] dark:bg-white/[0.08] flex-shrink-0" />
 
         {/* DeepBrain toggle */}
         <button
@@ -541,24 +541,24 @@ export function ChatPanel() {
           className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
             sbEnabled
               ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-600 dark:text-purple-400'
-              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
+              : 'bg-black/[0.03] dark:bg-white/[0.03] border-black/[0.06] dark:border-white/[0.06] text-zinc-400 dark:text-zinc-500'
           }`}
           title={sbEnabled ? 'DeepBrain enabled — click to disable' : 'DeepBrain disabled — click to enable'}
         >
           <Brain size={12} />
           <span className="hidden sm:inline">{sbEnabled ? 'DeepBrain' : 'DeepBrain off'}</span>
-          <div className={`w-1.5 h-1.5 rounded-full ${sbEnabled ? 'bg-purple-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
+          <div className={`w-1.5 h-1.5 rounded-full ${sbEnabled ? 'bg-purple-500 animate-pulse' : 'bg-zinc-300 dark:bg-zinc-600'}`} />
         </button>
 
         {hasSelectedSources && (
           <>
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+            <div className="w-px h-4 bg-black/[0.08] dark:bg-white/[0.08] flex-shrink-0" />
             {ARTIFACT_SHORTCUTS.map((shortcut) => (
               <button
                 key={shortcut.label}
                 onClick={() => handleSend(shortcut.prompt)}
                 disabled={sending}
-                className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:border-black/[0.15] dark:hover:border-white/[0.15] hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.05] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
               >
                 <shortcut.icon size={12} />
                 {shortcut.label}
@@ -634,7 +634,7 @@ export function ChatPanel() {
         {!showVoice && (
           <button
             onClick={() => setShowVoice(true)}
-            className="mb-3 p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/15 transition-colors"
+            className="mb-3 p-2.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] text-zinc-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors border border-black/[0.05] dark:border-white/[0.05]"
             title="Voice Q&A"
           >
             <Mic size={18} />

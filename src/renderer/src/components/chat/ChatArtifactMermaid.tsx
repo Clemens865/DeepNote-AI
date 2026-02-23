@@ -76,7 +76,7 @@ export function ChatArtifactMermaid({ data, onRegenerateMermaid }: ChatArtifactM
 
   return (
     <ArtifactWrapper title={data.title || 'Diagram'} jsonData={data}>
-      <div className="p-4 bg-white dark:bg-slate-900 overflow-x-auto">
+      <div className="p-4 bg-white dark:bg-zinc-900 overflow-x-auto">
         {error ? (
           <div className="space-y-3">
             <div className="text-xs text-red-500 dark:text-red-400 p-2 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-200 dark:border-red-500/20">
@@ -93,13 +93,13 @@ export function ChatArtifactMermaid({ data, onRegenerateMermaid }: ChatArtifactM
               )}
               <button
                 onClick={() => setShowCode(!showCode)}
-                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
+                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-black/[0.02] dark:bg-white/[0.02] text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors border border-black/[0.06] dark:border-white/[0.06]"
               >
                 {showCode ? 'Hide Code' : 'Show Code'}
               </button>
             </div>
             {showCode && (
-              <pre className="text-xs font-mono bg-slate-900 dark:bg-slate-950 text-slate-100 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
+              <pre className="text-xs font-mono bg-zinc-900 dark:bg-zinc-950 text-zinc-100 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
                 {data.code}
               </pre>
             )}
@@ -108,7 +108,7 @@ export function ChatArtifactMermaid({ data, onRegenerateMermaid }: ChatArtifactM
           <div className="flex flex-col items-center">
             <div ref={containerRef} className="mermaid-container [&_svg]:max-w-full" />
             {wasCorrected && (
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 italic">
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 italic">
                 Auto-corrected syntax
               </p>
             )}

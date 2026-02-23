@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -24,16 +25,18 @@ export function FullscreenWrapper({ isOpen, onClose, title, actions, children, w
 
   if (!isOpen) return null
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col">
+  // Portal to document.body so `position: fixed` isn't trapped by ancestor
+  // `backdrop-filter` (which creates a new CSS containing block).
+  return createPortal(
+    <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 bg-slate-900/80 border-b border-slate-800">
+      <div className="flex items-center justify-between px-5 py-3 bg-zinc-900/80 border-b border-zinc-800">
         <h3 className="text-sm font-semibold text-white truncate">{title}</h3>
         <div className="flex items-center gap-2">
           {actions}
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
             title="Close fullscreen"
           >
             <X size={18} />
@@ -47,6 +50,7 @@ export function FullscreenWrapper({ isOpen, onClose, title, actions, children, w
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

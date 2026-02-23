@@ -65,13 +65,13 @@ export function FileTreeNode({ node, depth }: FileTreeNodeProps) {
       <div>
         <button
           onClick={() => toggleExpanded(node.relativePath)}
-          className="flex items-center gap-1.5 w-full px-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors text-sm text-slate-600 dark:text-slate-300"
+          className="flex items-center gap-1.5 w-full px-2 py-1 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] rounded-lg transition-colors text-sm text-zinc-600 dark:text-zinc-300"
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
         >
           {isExpanded ? (
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+            <ChevronDown className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
           ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+            <ChevronRight className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
           )}
           {isExpanded ? (
             <FolderOpen className="w-4 h-4 text-amber-500 flex-shrink-0" />
@@ -155,7 +155,7 @@ export function FileTreeNode({ node, depth }: FileTreeNodeProps) {
       } ${
         isActive
           ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
-          : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+          : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
       }`}
       style={{ paddingLeft: `${depth * 16 + 8}px` }}
       onMouseEnter={() => setCheckHover(true)}
@@ -171,7 +171,7 @@ export function FileTreeNode({ node, depth }: FileTreeNodeProps) {
               type="checkbox"
               checked={isIndexed || isStale}
               onChange={handleCheckboxChange}
-              className={`w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer ${
+              className={`w-3.5 h-3.5 rounded border-zinc-300 dark:border-zinc-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer ${
                 !checkHover && !isIndexed && !isStale ? 'opacity-0' : 'opacity-100'
               } transition-opacity`}
             />
@@ -180,12 +180,12 @@ export function FileTreeNode({ node, depth }: FileTreeNodeProps) {
       </div>
 
       <Icon className={`w-4 h-4 flex-shrink-0 ${
-        isActive ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'
+        isActive ? 'text-indigo-500 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'
       }`} />
       <span className={`truncate text-sm ${
         isActive
           ? 'font-medium text-indigo-700 dark:text-indigo-300'
-          : 'text-slate-600 dark:text-slate-300'
+          : 'text-zinc-600 dark:text-zinc-300'
       }`}>
         {node.name}
       </span>

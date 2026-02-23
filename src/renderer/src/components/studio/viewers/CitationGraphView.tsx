@@ -157,11 +157,11 @@ function CitationGraphContent({
   }, [sourceNodes, onNodeSelect])
 
   if (sourceNodes.length === 0) {
-    return <div className="text-center text-sm text-slate-400 py-8">No graph data available</div>
+    return <div className="text-center text-sm text-zinc-400 py-8">No graph data available</div>
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden" style={{ height }}>
+    <div className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden" style={{ height }}>
       <ReactFlow
         key={layout}
         nodes={nodes}
@@ -210,16 +210,16 @@ function ControlsToolbar({
     <div className="flex flex-wrap items-center gap-4 mb-3 px-1">
       {/* Layout toggle */}
       <div className="flex items-center gap-1.5">
-        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Layout:</span>
-        <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Layout:</span>
+        <div className="flex rounded-lg border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
           {(['grid', 'circular'] as const).map((l) => (
             <button
               key={l}
               onClick={() => setLayout(l)}
               className={`px-2.5 py-1 text-xs font-medium transition-colors ${
                 layout === l
-                  ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
-                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ? 'bg-black/[0.04] dark:bg-white/[0.04] text-zinc-800 dark:text-zinc-100'
+                  : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
               }`}
             >
               {l === 'grid' ? 'Grid' : 'Circular'}
@@ -230,7 +230,7 @@ function ControlsToolbar({
 
       {/* Weight threshold */}
       <div className="flex items-center gap-1.5">
-        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Min Weight:</span>
+        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Min Weight:</span>
         <input
           type="range"
           min={0}
@@ -240,19 +240,19 @@ function ControlsToolbar({
           onChange={(e) => setWeightThreshold(parseFloat(e.target.value))}
           className="w-20 h-1 accent-indigo-500"
         />
-        <span className="text-xs text-slate-500 dark:text-slate-400 w-6 text-right">{weightThreshold.toFixed(1)}</span>
+        <span className="text-xs text-zinc-500 dark:text-zinc-400 w-6 text-right">{weightThreshold.toFixed(1)}</span>
       </div>
 
       {/* Toggles */}
-      <label className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+      <label className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer">
         <input type="checkbox" checked={showEdgeLabels} onChange={(e) => setShowEdgeLabels(e.target.checked)} className="accent-indigo-500" />
         Labels
       </label>
-      <label className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+      <label className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer">
         <input type="checkbox" checked={showTopicBadges} onChange={(e) => setShowTopicBadges(e.target.checked)} className="accent-indigo-500" />
         Topics
       </label>
-      <label className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+      <label className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer">
         <input type="checkbox" checked={showMinimap} onChange={(e) => setShowMinimap(e.target.checked)} className="accent-indigo-500" />
         Minimap
       </label>
@@ -291,15 +291,15 @@ function NodeDetailPanel({
   }, [node, sourceEdges, sourceNodes, weightThreshold])
 
   return (
-    <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
+    <div className="mt-3 rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] p-4">
       <div className="flex items-start justify-between mb-2">
         <div>
-          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">{node.label}</h4>
-          {node.type && <span className="text-xs text-slate-500 dark:text-slate-400">{node.type}</span>}
+          <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{node.label}</h4>
+          {node.type && <span className="text-xs text-zinc-500 dark:text-zinc-400">{node.type}</span>}
         </div>
         <button
           onClick={onClose}
-          className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          className="w-6 h-6 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.06] dark:hover:bg-white/[0.06] transition-colors"
         >
           <X size={14} />
         </button>
@@ -315,12 +315,12 @@ function NodeDetailPanel({
 
       {connectedNodes.length > 0 && (
         <div>
-          <h5 className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Connected Sources</h5>
+          <h5 className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 mb-1.5">Connected Sources</h5>
           <div className="space-y-1">
             {connectedNodes.map((cn, i) => (
               <div key={i} className="flex items-center justify-between text-xs">
-                <span className="text-slate-700 dark:text-slate-300">{cn.node.label}</span>
-                <span className="text-slate-400 dark:text-slate-500 text-[10px]">{cn.label} ({cn.weight.toFixed(1)})</span>
+                <span className="text-zinc-700 dark:text-zinc-300">{cn.node.label}</span>
+                <span className="text-zinc-400 dark:text-zinc-500 text-[10px]">{cn.label} ({cn.weight.toFixed(1)})</span>
               </div>
             ))}
           </div>
@@ -328,7 +328,7 @@ function NodeDetailPanel({
       )}
 
       {connectedNodes.length === 0 && (
-        <p className="text-xs text-slate-400">No connections above current weight threshold.</p>
+        <p className="text-xs text-zinc-400">No connections above current weight threshold.</p>
       )}
     </div>
   )
@@ -349,7 +349,7 @@ export function CitationGraphView({ data, isFullscreen, onCloseFullscreen, title
   return (
     <>
       {summary && (
-        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">{summary}</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3">{summary}</p>
       )}
       <ControlsToolbar
         layout={layout}

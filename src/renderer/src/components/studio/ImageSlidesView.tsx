@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, StickyNote, Download, Maximize2, X, Pencil, FileDown } from 'lucide-react'
 import type { ImageSlidesGeneratedData, ImageSlideData, HybridSlideData, SlideTextElement } from '@shared/types'
 import { DraggableTextElement } from './DraggableTextElement'
@@ -392,7 +393,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
 
   if (slides.length === 0) {
     return (
-      <p className="text-sm text-slate-400 dark:text-slate-500 italic">
+      <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">
         No slides generated yet.
       </p>
     )
@@ -453,12 +454,12 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsFullscreen(true)}
-              className="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 transition-colors"
+              className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06] flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors"
               title="Fullscreen"
             >
               <Maximize2 size={14} />
             </button>
-            <span className="text-xs text-slate-400 dark:text-slate-500">
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">
               {currentSlide + 1} / {slides.length}
             </span>
           </div>
@@ -474,14 +475,14 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
                   defaultName: 'slide-deck.pdf',
                 })
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
             >
               <FileDown size={12} />
               PDF
             </button>
             <button
               onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: `slide-${currentSlide + 1}.png` })}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
             >
               <Download size={12} />
               Slide
@@ -500,7 +501,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
                 className={`flex-shrink-0 w-16 h-9 rounded border-2 overflow-hidden transition-colors ${
                   i === currentSlide
                     ? 'border-indigo-500'
-                    : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
+                    : 'border-transparent hover:border-zinc-300 dark:hover:border-zinc-600'
                 }`}
               >
                 <img
@@ -518,14 +519,14 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
           <div>
             <button
               onClick={() => setShowNotes(!showNotes)}
-              className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
             >
               <StickyNote size={12} />
               {showNotes ? 'Hide' : 'Show'} speaker notes
             </button>
             {showNotes && (
-              <div className="mt-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              <div className="mt-2 bg-black/[0.02] dark:bg-white/[0.02] rounded-lg border border-black/[0.06] dark:border-white/[0.06] p-3">
+                <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
                   {slide.speakerNotes}
                 </p>
               </div>
@@ -534,28 +535,28 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
         )}
       </div>
 
-      {/* Fullscreen overlay */}
-      {isFullscreen && (
-        <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col">
+      {/* Fullscreen overlay — portaled to body to escape backdrop-blur containing block */}
+      {isFullscreen && createPortal(
+        <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-3 bg-slate-900/80 border-b border-slate-800">
+          <div className="flex items-center justify-between px-5 py-3 bg-zinc-900/80 border-b border-zinc-800">
             <div className="flex items-center gap-3 min-w-0">
               <h3 className="text-sm font-semibold text-white truncate">{slide.title}</h3>
-              <span className="text-xs text-slate-400 flex-shrink-0">
+              <span className="text-xs text-zinc-400 flex-shrink-0">
                 {currentSlide + 1} of {slides.length}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: `slide-${currentSlide + 1}.png` })}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                 title="Download slide"
               >
                 <Download size={16} />
               </button>
               <button
                 onClick={() => setIsFullscreen(false)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                 title="Close fullscreen"
               >
                 <X size={18} />
@@ -591,7 +592,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
               {currentSlide > 0 && (
                 <button
                   onClick={goPrev}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-white transition-colors"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-zinc-800/70 hover:bg-zinc-700 flex items-center justify-center text-white transition-colors"
                 >
                   <ChevronLeft size={22} />
                 </button>
@@ -599,7 +600,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
               {currentSlide < slides.length - 1 && (
                 <button
                   onClick={goNext}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-zinc-800/70 hover:bg-zinc-700 flex items-center justify-center text-white transition-colors"
                 >
                   <ChevronRight size={22} />
                 </button>
@@ -607,7 +608,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
             </div>
 
             {/* Thumbnail sidebar */}
-            <div className="w-32 border-l border-slate-800 bg-slate-900/50 overflow-y-auto py-3 px-2 flex flex-col gap-2">
+            <div className="w-32 border-l border-zinc-800 bg-zinc-900/50 overflow-y-auto py-3 px-2 flex flex-col gap-2">
               {slides.map((s, i) => {
                 const thumbPath = isHybrid ? (s as HybridSlideData).imagePath : (s as ImageSlideData).imagePath
                 return (
@@ -617,7 +618,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
                     className={`relative flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
                       i === currentSlide
                         ? 'border-indigo-500 shadow-lg shadow-indigo-500/20'
-                        : 'border-transparent hover:border-slate-600'
+                        : 'border-transparent hover:border-zinc-600'
                     }`}
                   >
                     <img
@@ -626,7 +627,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
                       className="w-full aspect-video object-cover"
                     />
                     <span className={`absolute bottom-0.5 right-1 text-[10px] font-medium ${
-                      i === currentSlide ? 'text-indigo-300' : 'text-slate-500'
+                      i === currentSlide ? 'text-indigo-300' : 'text-zinc-500'
                     }`}>
                       {i + 1}
                     </span>
@@ -638,16 +639,17 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
 
           {/* Speaker notes bar (if notes exist) */}
           {slide.speakerNotes && (
-            <div className="px-5 py-3 bg-slate-900/80 border-t border-slate-800">
+            <div className="px-5 py-3 bg-zinc-900/80 border-t border-zinc-800">
               <div className="flex items-start gap-2">
-                <StickyNote size={12} className="text-slate-500 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
+                <StickyNote size={12} className="text-zinc-500 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-zinc-400 leading-relaxed line-clamp-2">
                   {slide.speakerNotes}
                 </p>
               </div>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

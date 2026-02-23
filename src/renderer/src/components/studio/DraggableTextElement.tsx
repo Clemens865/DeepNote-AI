@@ -209,11 +209,11 @@ export function DraggableTextElement({
           {/* Drag handle (top bar) */}
           <div className="drag-handle absolute -top-5 left-0 right-0 h-5 flex items-center justify-center cursor-move opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="flex gap-0.5">
-              <span className="w-1 h-1 rounded-full bg-slate-400" />
-              <span className="w-1 h-1 rounded-full bg-slate-400" />
-              <span className="w-1 h-1 rounded-full bg-slate-400" />
-              <span className="w-1 h-1 rounded-full bg-slate-400" />
-              <span className="w-1 h-1 rounded-full bg-slate-400" />
+              <span className="w-1 h-1 rounded-full bg-zinc-400" />
+              <span className="w-1 h-1 rounded-full bg-zinc-400" />
+              <span className="w-1 h-1 rounded-full bg-zinc-400" />
+              <span className="w-1 h-1 rounded-full bg-zinc-400" />
+              <span className="w-1 h-1 rounded-full bg-zinc-400" />
             </div>
           </div>
 

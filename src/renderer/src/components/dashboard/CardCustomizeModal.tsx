@@ -103,7 +103,7 @@ export function CardCustomizeModal({ notebook, isOpen, onClose, onSave }: CardCu
       <div className="space-y-5">
         {/* Image Section */}
         <div>
-          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+          <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-2">
             Background image
           </label>
           <input
@@ -131,7 +131,7 @@ export function CardCustomizeModal({ notebook, isOpen, onClose, onSave }: CardCu
           ) : (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full h-28 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+              className="w-full h-28 rounded-xl border-2 border-dashed border-black/[0.06] dark:border-white/[0.06] hover:border-indigo-300 dark:hover:border-indigo-500/50 flex flex-col items-center justify-center gap-2 text-zinc-400 dark:text-zinc-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
             >
               <ImagePlus className="w-6 h-6" />
               <span className="text-xs">Choose image</span>
@@ -151,7 +151,7 @@ export function CardCustomizeModal({ notebook, isOpen, onClose, onSave }: CardCu
 
         {/* Gradient Section */}
         <div>
-          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+          <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-2">
             Gradient color
           </label>
           <div className="flex flex-wrap gap-2 mb-3">
@@ -165,7 +165,7 @@ export function CardCustomizeModal({ notebook, isOpen, onClose, onSave }: CardCu
                 title={preset.label}
                 className={`w-10 h-10 rounded-lg transition-all hover:scale-110 ${
                   gradientFrom === preset.from && gradientTo === preset.to
-                    ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900'
+                    ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-zinc-900'
                     : ''
                 }`}
                 style={{
@@ -182,9 +182,9 @@ export function CardCustomizeModal({ notebook, isOpen, onClose, onSave }: CardCu
                 onChange={(e) => setGradientFrom(e.target.value)}
                 className="w-8 h-8 rounded-lg cursor-pointer border-0 bg-transparent"
               />
-              <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">{gradientFrom}</span>
+              <span className="text-xs text-zinc-400 dark:text-zinc-500 font-mono">{gradientFrom}</span>
             </div>
-            <span className="text-xs text-slate-400 dark:text-slate-500">→</span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">→</span>
             <div className="flex items-center gap-2 flex-1">
               <input
                 type="color"
@@ -192,7 +192,7 @@ export function CardCustomizeModal({ notebook, isOpen, onClose, onSave }: CardCu
                 onChange={(e) => setGradientTo(e.target.value)}
                 className="w-8 h-8 rounded-lg cursor-pointer border-0 bg-transparent"
               />
-              <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">{gradientTo}</span>
+              <span className="text-xs text-zinc-400 dark:text-zinc-500 font-mono">{gradientTo}</span>
             </div>
           </div>
           {/* Gradient preview */}
@@ -213,7 +213,7 @@ export function CardCustomizeModal({ notebook, isOpen, onClose, onSave }: CardCu
         </div>
 
         {/* Reset */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="pt-2 border-t border-black/[0.04] dark:border-white/[0.04]">
           <Button
             variant="ghost"
             onClick={handleReset}

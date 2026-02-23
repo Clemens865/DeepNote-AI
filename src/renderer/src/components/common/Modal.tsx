@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 interface ModalProps {
@@ -21,26 +22,27 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
   if (!isOpen) return null
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose()
       }}
     >
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">{title}</h2>
+      <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col border border-black/[0.08] dark:border-white/[0.08]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06] dark:border-white/[0.06] shrink-0">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="px-6 py-4">{children}</div>
+        <div className="px-6 py-4 overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

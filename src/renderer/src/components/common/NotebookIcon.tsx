@@ -31,5 +31,5 @@ export function NotebookIcon({ iconId, size = 24, className = '' }: NotebookIcon
     return <span className={className} style={{ fontSize: size }}>{iconId}</span>
   }
 
-  return <Icon className={`text-slate-500 dark:text-slate-400 ${className}`} size={size} />
+  return <Icon className={`text-zinc-500 dark:text-zinc-400 ${className}`} size={size} />
 }

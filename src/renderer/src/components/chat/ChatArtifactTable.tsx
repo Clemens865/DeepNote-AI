@@ -49,7 +49,7 @@ export function ChatArtifactTable({ data }: ChatArtifactTableProps) {
       headerActions={
         <button
           onClick={handleCopyCsv}
-          className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+          className="flex items-center gap-1 text-[10px] text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
         >
           {copied ? <Check size={10} /> : <Copy size={10} />}
           {copied ? 'Copied' : 'CSV'}
@@ -58,13 +58,13 @@ export function ChatArtifactTable({ data }: ChatArtifactTableProps) {
     >
       <div className="max-h-[300px] overflow-auto">
         <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800">
+          <thead className="sticky top-0 bg-black/[0.03] dark:bg-white/[0.03]">
             <tr>
               {data.columns.map((col, i) => (
                 <th
                   key={i}
                   onClick={() => handleSort(i)}
-                  className="px-3 py-2 text-left font-semibold text-slate-600 dark:text-slate-300 cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+                  className="px-3 py-2 text-left font-semibold text-zinc-600 dark:text-zinc-300 cursor-pointer select-none hover:bg-black/[0.06] dark:hover:bg-white/[0.06] transition-colors whitespace-nowrap"
                 >
                   <span className="flex items-center gap-1">
                     {col}
@@ -81,14 +81,14 @@ export function ChatArtifactTable({ data }: ChatArtifactTableProps) {
               <tr
                 key={ri}
                 className={ri % 2 === 0
-                  ? 'bg-white dark:bg-slate-900'
-                  : 'bg-slate-50 dark:bg-slate-800/50'
+                  ? 'bg-white dark:bg-zinc-900'
+                  : 'bg-black/[0.02] dark:bg-white/[0.02]'
                 }
               >
                 {row.map((cell, ci) => (
                   <td
                     key={ci}
-                    className="px-3 py-1.5 text-slate-700 dark:text-slate-300 whitespace-nowrap"
+                    className="px-3 py-1.5 text-zinc-700 dark:text-zinc-300 whitespace-nowrap"
                   >
                     {cell}
                   </td>

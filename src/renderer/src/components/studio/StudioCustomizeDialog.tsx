@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Check, Loader2 } from 'lucide-react'
 import type { StudioToolOptions } from '@shared/types'
 
@@ -24,18 +25,18 @@ function ToggleGroup({
 }) {
   return (
     <div>
-      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
+      <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
         {label}
       </label>
-      <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <div className="flex rounded-lg border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
         {options.map((opt) => (
           <button
             key={opt.value}
             onClick={() => onChange(opt.value)}
             className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
               value === opt.value
-                ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                ? 'bg-black/[0.04] dark:bg-white/[0.04] text-zinc-800 dark:text-zinc-100'
+                : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
             }`}
           >
             {value === opt.value && <Check size={12} />}
@@ -130,26 +131,26 @@ export function StudioCustomizeDialog({
     'citation-graph': 'Describe what relationships to focus on — e.g., shared themes, methodology links...',
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-black/[0.06] dark:border-white/[0.06] w-full max-w-lg mx-4 max-h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10 rounded-t-2xl">
-          <h2 className="font-bold text-slate-800 dark:text-slate-100">Customize {toolLabel}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06] dark:border-white/[0.04] shrink-0 rounded-t-2xl">
+          <h2 className="font-bold text-zinc-800 dark:text-zinc-100">Customize {toolLabel}</h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
           >
             <X size={16} />
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 overflow-y-auto">
           {/* Audio-specific options */}
           {toolId === 'audio' && (
             <>
               <div>
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
+                <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
                   Format
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -165,14 +166,14 @@ export function StudioCustomizeDialog({
                       className={`text-left p-3 rounded-xl border-2 transition-all ${
                         audioFormat === fmt.id
                           ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                          : 'border-black/[0.06] dark:border-white/[0.06] hover:border-zinc-300'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{fmt.name}</span>
+                        <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">{fmt.name}</span>
                         {audioFormat === fmt.id && <Check size={14} className="text-indigo-500" />}
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{fmt.desc}</p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">{fmt.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -344,7 +345,7 @@ export function StudioCustomizeDialog({
 
           {/* Description textarea (all tools) */}
           <div>
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
               {toolId === 'audio' ? 'Focus' : 'Description'}
             </label>
             <textarea
@@ -352,7 +353,7 @@ export function StudioCustomizeDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder={placeholders[toolId] || 'Add any special instructions or focus areas...'}
               rows={3}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-400 resize-none"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-indigo-400 resize-none"
             />
           </div>
 
@@ -360,7 +361,7 @@ export function StudioCustomizeDialog({
           {isGenerating && (
             <div className="flex items-center gap-2">
               <Loader2 size={14} className="text-indigo-500 animate-spin" />
-              <p className="text-xs text-slate-500 dark:text-slate-400">Generating...</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Generating...</p>
             </div>
           )}
 
@@ -376,6 +377,7 @@ export function StudioCustomizeDialog({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

@@ -54,7 +54,7 @@ export function SlideEditorToolbar({
       className={`w-7 h-7 rounded flex items-center justify-center transition-colors ${
         active
           ? 'bg-indigo-500 text-white'
-          : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+          : 'text-zinc-300 hover:bg-zinc-700 hover:text-white'
       }`}
       title={title}
     >
@@ -64,7 +64,7 @@ export function SlideEditorToolbar({
 
   return (
     <div
-      className="flex items-center gap-0.5 bg-slate-800 rounded-lg px-2 py-1 shadow-xl border border-slate-700"
+      className="flex items-center gap-0.5 bg-zinc-800 rounded-lg px-2 py-1 shadow-xl border border-zinc-700"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Format group */}
@@ -73,23 +73,23 @@ export function SlideEditorToolbar({
       {btn(editor.isActive('underline'), () => editor.chain().focus().toggleUnderline().run(), <UnderlineIcon size={14} />, 'Underline')}
       {btn(editor.isActive('strike'), () => editor.chain().focus().toggleStrike().run(), <Strikethrough size={14} />, 'Strikethrough')}
 
-      <div className="w-px h-5 bg-slate-600 mx-1" />
+      <div className="w-px h-5 bg-zinc-600 mx-1" />
 
       {/* List */}
       {btn(editor.isActive('bulletList'), () => editor.chain().focus().toggleBulletList().run(), <List size={14} />, 'Bullet list')}
 
-      <div className="w-px h-5 bg-slate-600 mx-1" />
+      <div className="w-px h-5 bg-zinc-600 mx-1" />
 
       {/* Alignment */}
       {btn(editor.isActive({ textAlign: 'left' }), () => editor.chain().focus().setTextAlign('left').run(), <AlignLeft size={14} />, 'Align left')}
       {btn(editor.isActive({ textAlign: 'center' }), () => editor.chain().focus().setTextAlign('center').run(), <AlignCenter size={14} />, 'Align center')}
       {btn(editor.isActive({ textAlign: 'right' }), () => editor.chain().focus().setTextAlign('right').run(), <AlignRight size={14} />, 'Align right')}
 
-      <div className="w-px h-5 bg-slate-600 mx-1" />
+      <div className="w-px h-5 bg-zinc-600 mx-1" />
 
       {/* Font size */}
       <select
-        className="h-7 bg-slate-700 text-slate-200 text-xs rounded px-1 border-none outline-none cursor-pointer"
+        className="h-7 bg-zinc-700 text-zinc-200 text-xs rounded px-1 border-none outline-none cursor-pointer"
         value=""
         onChange={(e) => {
           const size = e.target.value
@@ -109,17 +109,17 @@ export function SlideEditorToolbar({
         ))}
       </select>
 
-      <div className="w-px h-5 bg-slate-600 mx-1" />
+      <div className="w-px h-5 bg-zinc-600 mx-1" />
 
       {/* Color */}
       <div className="relative">
         {btn(false, () => setShowColors(!showColors), <Palette size={14} />, 'Text color')}
         {showColors && (
-          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 p-1.5 bg-slate-800 rounded-lg border border-slate-700 shadow-xl grid grid-cols-5 gap-1 z-50">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 p-1.5 bg-zinc-800 rounded-lg border border-zinc-700 shadow-xl grid grid-cols-5 gap-1 z-50">
             {COLOR_PALETTE.map((color) => (
               <button
                 key={color}
-                className="w-5 h-5 rounded-full border border-slate-600 hover:scale-110 transition-transform"
+                className="w-5 h-5 rounded-full border border-zinc-600 hover:scale-110 transition-transform"
                 style={{ backgroundColor: color }}
                 onClick={(e) => {
                   e.preventDefault()
@@ -145,7 +145,7 @@ export function SlideEditorToolbar({
         }
       }, <LinkIcon size={14} />, 'Link')}
 
-      <div className="w-px h-5 bg-slate-600 mx-1" />
+      <div className="w-px h-5 bg-zinc-600 mx-1" />
 
       {/* Add text box */}
       {btn(false, onAddElement, <Plus size={14} />, 'Add text box')}
@@ -161,7 +161,7 @@ export function SlideEditorToolbar({
         className={`w-7 h-7 rounded flex items-center justify-center transition-colors ${
           canDelete
             ? 'text-red-400 hover:bg-red-500/20 hover:text-red-300'
-            : 'text-slate-600 cursor-not-allowed'
+            : 'text-zinc-600 cursor-not-allowed'
         }`}
         title="Delete element"
       >

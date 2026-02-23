@@ -65,13 +65,13 @@ export function ReportFormatDialog({ onGenerate, onClose, isGenerating, notebook
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-black/[0.06] dark:border-white/[0.06] w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10 rounded-t-2xl">
-          <h2 className="font-bold text-slate-800 dark:text-slate-100">Create Report</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06] dark:border-white/[0.04] sticky top-0 bg-white dark:bg-zinc-900 z-10 rounded-t-2xl">
+          <h2 className="font-bold text-zinc-800 dark:text-zinc-100">Create Report</h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
           >
             <X size={16} />
           </button>
@@ -80,7 +80,7 @@ export function ReportFormatDialog({ onGenerate, onClose, isGenerating, notebook
         <div className="p-6 space-y-5">
           {/* Preset Formats */}
           <div>
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
               Format
             </label>
             <div className="grid grid-cols-1 gap-2">
@@ -91,11 +91,11 @@ export function ReportFormatDialog({ onGenerate, onClose, isGenerating, notebook
                   className={`text-left p-3 rounded-xl border-2 transition-all ${
                     selectedFormat?.title === fmt.title
                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10'
-                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                      : 'border-black/[0.06] dark:border-white/[0.06] hover:border-zinc-300 dark:hover:border-zinc-600'
                   }`}
                 >
-                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{fmt.title}</span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{fmt.description}</p>
+                  <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">{fmt.title}</span>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{fmt.description}</p>
                 </button>
               ))}
             </div>
@@ -103,14 +103,14 @@ export function ReportFormatDialog({ onGenerate, onClose, isGenerating, notebook
 
           {/* AI-Suggested Formats */}
           <div>
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 flex items-center gap-1.5">
               <Sparkles size={14} className="text-amber-500" />
               Suggested for Your Sources
             </label>
             {loadingSuggestions ? (
               <div className="flex items-center gap-2 py-4 justify-center">
                 <Loader2 size={14} className="text-indigo-500 animate-spin" />
-                <span className="text-xs text-slate-400">Analyzing your sources...</span>
+                <span className="text-xs text-zinc-400">Analyzing your sources...</span>
               </div>
             ) : suggestedFormats.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
@@ -121,19 +121,19 @@ export function ReportFormatDialog({ onGenerate, onClose, isGenerating, notebook
                     className={`text-left p-3 rounded-xl border-2 transition-all ${
                       selectedFormat?.title === fmt.title
                         ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                        : 'border-black/[0.06] dark:border-white/[0.06] hover:border-zinc-300 dark:hover:border-zinc-600'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
                       <Sparkles size={10} className="text-amber-500 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{fmt.title}</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">{fmt.title}</span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{fmt.description}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{fmt.description}</p>
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 dark:text-slate-500 italic py-2">
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 italic py-2">
                 No suggestions available — select a preset or describe your report below.
               </p>
             )}
@@ -141,7 +141,7 @@ export function ReportFormatDialog({ onGenerate, onClose, isGenerating, notebook
 
           {/* Custom description */}
           <div>
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
               Custom Instructions (optional)
             </label>
             <textarea
@@ -149,7 +149,7 @@ export function ReportFormatDialog({ onGenerate, onClose, isGenerating, notebook
               onChange={(e) => setCustomDescription(e.target.value)}
               placeholder="Add any specific focus areas, topics to emphasize, or special instructions..."
               rows={3}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-400 resize-none"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-indigo-400 resize-none"
             />
           </div>
 
@@ -157,7 +157,7 @@ export function ReportFormatDialog({ onGenerate, onClose, isGenerating, notebook
           {isGenerating && (
             <div className="flex items-center gap-2">
               <Loader2 size={14} className="text-indigo-500 animate-spin" />
-              <p className="text-xs text-slate-500 dark:text-slate-400">Generating report...</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Generating report...</p>
             </div>
           )}
 

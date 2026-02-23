@@ -30,7 +30,7 @@ interface ChatArtifactChartProps {
 export function ChatArtifactChart({ data }: ChatArtifactChartProps) {
   if (!data.data || data.data.length === 0) {
     return (
-      <div className="my-2 p-4 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-400">
+      <div className="my-2 p-4 rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-xs text-zinc-400">
         No chart data available
       </div>
     )
@@ -38,7 +38,7 @@ export function ChatArtifactChart({ data }: ChatArtifactChartProps) {
 
   return (
     <ArtifactWrapper title={data.title || 'Chart'} jsonData={data}>
-      <div className="p-3 bg-white dark:bg-slate-900" style={{ height: 300 }}>
+      <div className="p-3 bg-white dark:bg-zinc-900" style={{ height: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
           {data.chartType === 'pie' ? (
             <PieChart>

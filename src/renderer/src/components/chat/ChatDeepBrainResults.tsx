@@ -14,7 +14,7 @@ export function ChatDeepBrainResults({ results }: ChatDeepBrainResultsProps) {
   }
 
   return (
-    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 space-y-2">
+    <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] space-y-2">
       {/* Memories */}
       {memories.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -44,18 +44,18 @@ export function ChatDeepBrainResults({ results }: ChatDeepBrainResultsProps) {
               <FileText size={14} className="mt-0.5 text-purple-400 dark:text-purple-500 shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">
                     {f.name}
                   </span>
                   <span className="text-[9px] text-purple-500 dark:text-purple-400 font-medium shrink-0">
                     {Math.round(f.similarity * 100)}%
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate">
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono truncate">
                   {f.path}
                 </p>
                 {f.chunk && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-2">
                     {f.chunk}
                   </p>
                 )}
@@ -76,18 +76,18 @@ export function ChatDeepBrainResults({ results }: ChatDeepBrainResultsProps) {
               <Mail size={14} className="mt-0.5 text-purple-400 dark:text-purple-500 shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">
                     {e.subject}
                   </span>
                   <span className="text-[9px] text-purple-500 dark:text-purple-400 font-medium shrink-0">
                     {Math.round(e.similarity * 100)}%
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
                   {e.sender}{e.date ? ` · ${e.date}` : ''}
                 </p>
                 {e.chunk && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-2">
                     {e.chunk}
                   </p>
                 )}

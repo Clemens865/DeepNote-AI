@@ -21,7 +21,7 @@ const priorityColors: Record<string, string> = {
 }
 
 const statusColors: Record<string, string> = {
-  todo: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+  todo: 'bg-black/[0.03] text-zinc-600 dark:bg-white/[0.04] dark:text-zinc-300',
   'in-progress': 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400',
   done: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400',
 }
@@ -44,7 +44,7 @@ export function ChatArtifactKanban({ data }: ChatArtifactKanbanProps) {
 
   return (
     <ArtifactWrapper title={data.title || 'Action Items'} jsonData={data}>
-      <div className="p-3 bg-white dark:bg-slate-900">
+      <div className="p-3 bg-white dark:bg-zinc-900">
         {activeGroups.length > 1 ? (
           <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${activeGroups.length}, 1fr)` }}>
             {activeGroups.map(([status, items]) => (
@@ -74,8 +74,8 @@ export function ChatArtifactKanban({ data }: ChatArtifactKanbanProps) {
 
 function KanbanCard({ item, showStatus }: { item: KanbanItem; showStatus?: boolean }) {
   return (
-    <div className="rounded-md border border-slate-200 dark:border-slate-700 p-2.5 bg-slate-50 dark:bg-slate-800/50">
-      <p className="text-xs font-medium text-slate-800 dark:text-slate-200 leading-snug">{item.task}</p>
+    <div className="rounded-md border border-black/[0.06] dark:border-white/[0.06] p-2.5 bg-black/[0.02] dark:bg-white/[0.02]">
+      <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 leading-snug">{item.task}</p>
       <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
         {item.assignee && (
           <span className="text-[9px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400 rounded px-1.5 py-0.5">

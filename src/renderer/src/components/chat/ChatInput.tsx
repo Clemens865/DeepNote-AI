@@ -21,11 +21,11 @@ export function ChatInput({ onSend, disabled, onUpload, uploadingFile }: ChatInp
   }
 
   return (
-    <div className="px-6 py-5 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+    <div className="px-6 py-5">
       <div className="max-w-3xl mx-auto w-full">
         {/* Upload indicator chip */}
         {uploadingFile && (
-          <div className="flex items-center gap-1.5 mb-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg w-fit">
+          <div className="flex items-center gap-1.5 mb-2 px-3 py-1.5 bg-indigo-50/50 dark:bg-indigo-500/[0.06] rounded-full w-fit border border-indigo-200/50 dark:border-indigo-500/10">
             <Loader2 size={12} className="animate-spin text-indigo-500" />
             <span className="text-xs text-indigo-600 dark:text-indigo-400">Adding {uploadingFile}...</span>
           </div>
@@ -37,7 +37,7 @@ export function ChatInput({ onSend, disabled, onUpload, uploadingFile }: ChatInp
             onClick={onUpload}
             disabled={!!uploadingFile}
             title="Upload a file as source"
-            className="flex-shrink-0 w-9 h-9 mb-[6px] rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-shrink-0 w-9 h-9 mb-[6px] rounded-xl flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Paperclip size={18} />
           </button>
@@ -55,12 +55,12 @@ export function ChatInput({ onSend, disabled, onUpload, uploadingFile }: ChatInp
               placeholder={hasSources ? 'Ask a question about your sources...' : 'Add sources or upload a file to start...'}
               disabled={(!hasSources && !onUpload) || disabled}
               rows={1}
-              className="w-full pl-5 pr-14 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500/50 resize-none h-[52px] text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50"
+              className="w-full pl-5 pr-14 py-3.5 bg-white/80 dark:bg-black/60 backdrop-blur-2xl border border-black/[0.1] dark:border-white/[0.1] rounded-2xl focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 resize-none h-[52px] text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 disabled:opacity-50 shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all"
             />
             <button
               onClick={handleSend}
               disabled={!message.trim() || disabled || !hasSources}
-              className="absolute right-2.5 bottom-2.5 w-9 h-9 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-400 transition-all disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-white dark:disabled:text-slate-500 flex items-center justify-center shadow-sm"
+              className="absolute right-2.5 bottom-2.5 w-9 h-9 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all disabled:bg-zinc-300 dark:disabled:bg-zinc-700 disabled:text-white dark:disabled:text-zinc-500 flex items-center justify-center shadow-md hover:scale-105 active:scale-95"
             >
               <Send size={16} />
             </button>

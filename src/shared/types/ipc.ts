@@ -475,7 +475,14 @@ export interface IpcHandlerMap {
   }
   [IPC_CHANNELS.DEEPBRAIN_ACTIVITY_CURRENT]: {
     args: []
-    return: { app: string; window: string; file?: string } | null
+    return: {
+      activeApp: string
+      windowTitle: string
+      project?: string
+      idleSeconds: number
+      recentFiles: { path: string; timestamp: number }[]
+      recentClipboard?: string
+    } | null
   }
 
   // DeepNote API

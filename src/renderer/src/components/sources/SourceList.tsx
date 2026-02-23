@@ -49,10 +49,10 @@ export function SourceList({ sources }: { sources: Source[] }) {
           <div key={source.id}>
             <div
               onClick={() => handleRowClick(source.id)}
-              className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all cursor-pointer ${
+              className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all cursor-pointer ${
                 isExpanded
-                  ? 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50'
-                  : 'hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
+                  ? 'bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05]'
+                  : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.03] border border-transparent hover:border-black/[0.05] dark:hover:border-white/[0.05]'
               }`}
             >
               <input
@@ -65,8 +65,8 @@ export function SourceList({ sources }: { sources: Source[] }) {
                 onClick={(e) => e.stopPropagation()}
                 className="w-4 h-4 rounded accent-indigo-600 flex-shrink-0"
               />
-              <Icon size={14} className={isExpanded ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'} />
-              <span className="text-sm text-slate-700 dark:text-slate-300 truncate flex-1">
+              <Icon size={14} className={isExpanded ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'} />
+              <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate flex-1">
                 {source.title}
               </span>
               <button
@@ -74,17 +74,17 @@ export function SourceList({ sources }: { sources: Source[] }) {
                   e.stopPropagation()
                   handleDelete(source.id)
                 }}
-                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 dark:text-slate-500 hover:text-red-500 transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 dark:text-zinc-500 hover:text-red-500 transition-all"
                 title="Delete source"
               >
                 <Trash2 size={12} />
               </button>
             </div>
             {isExpanded && (
-              <div className="mx-2 mb-1 px-3 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50">
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              <div className="mx-2 mb-1 px-3 py-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
                   {source.sourceGuide || (
-                    <span className="text-slate-400 dark:text-slate-500 italic">Generating summary...</span>
+                    <span className="text-zinc-400 dark:text-zinc-500 italic">Generating summary...</span>
                   )}
                 </p>
               </div>

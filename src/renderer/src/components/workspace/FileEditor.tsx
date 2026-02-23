@@ -194,7 +194,7 @@ export function FileEditor() {
 
   if (!editorTab) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-950">
+      <div className="flex-1 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 bg-black/[0.02] dark:bg-white/[0.01]">
         <FileCode className="w-12 h-12 mb-3 opacity-30" />
         <p className="text-sm">Click a file in the tree to view or edit it</p>
         <p className="text-xs mt-1 opacity-60">Text files are editable, others are read-only</p>
@@ -206,19 +206,19 @@ export function FileEditor() {
   const Icon = getHeaderIcon(editorTab.relativePath)
 
   return (
-    <div className="flex-1 flex flex-col bg-white dark:bg-slate-900 min-h-0">
+    <div className="flex-1 flex flex-col bg-white dark:bg-zinc-900 min-h-0">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-black/[0.06] dark:border-white/[0.04] bg-black/[0.02] dark:bg-zinc-900 flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <Icon className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
-          <span className="text-sm text-slate-600 dark:text-slate-300 truncate" title={editorTab.relativePath}>
+          <Icon className="w-4 h-4 text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
+          <span className="text-sm text-zinc-600 dark:text-zinc-300 truncate" title={editorTab.relativePath}>
             {editorTab.relativePath}
           </span>
           {editorTab.isDirty && !editorTab.isReadOnly && (
             <Circle className="w-2.5 h-2.5 fill-amber-500 text-amber-500 flex-shrink-0" />
           )}
           {editorTab.isReadOnly && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[10px] font-medium flex-shrink-0">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.03] text-zinc-400 dark:text-zinc-500 text-[10px] font-medium flex-shrink-0">
               <Lock className="w-2.5 h-2.5" />
               Read-only
             </span>
@@ -247,7 +247,7 @@ export function FileEditor() {
           )}
           <button
             onClick={handleClose}
-            className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
             title="Close editor"
           >
             <X className="w-4 h-4" />
@@ -269,8 +269,8 @@ export function FileEditor() {
           readOnly={editorTab.isReadOnly}
           className={`absolute inset-0 p-4 text-sm leading-6 resize-none focus:outline-none border-none ${
             editorTab.isReadOnly
-              ? 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 cursor-default'
-              : 'bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200'
+              ? 'bg-black/[0.02] dark:bg-white/[0.01] text-zinc-600 dark:text-zinc-400 cursor-default'
+              : 'bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200'
           } font-mono overflow-auto`}
           spellCheck={false}
           placeholder={editorTab.isReadOnly ? `Viewing ${fileName}` : `Editing ${fileName}...`}
@@ -280,18 +280,18 @@ export function FileEditor() {
         {aiPopup.visible && (
           <div
             data-ai-popup
-            className="absolute z-50 w-[340px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden"
+            className="absolute z-50 w-[340px] bg-white dark:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.06] rounded-xl shadow-2xl shadow-zinc-200/50 dark:shadow-zinc-900/50 overflow-hidden"
             style={{ top: aiPopup.top, left: aiPopup.left }}
           >
-            <div className="px-3 py-2 bg-violet-50 dark:bg-violet-500/10 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+            <div className="px-3 py-2 bg-violet-50 dark:bg-violet-500/10 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-violet-500" />
               <span className="text-xs font-medium text-violet-700 dark:text-violet-300">AI Edit</span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto">
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 ml-auto">
                 {aiPopup.selectedText.length} chars selected
               </span>
             </div>
             <div className="p-2">
-              <div className="max-h-16 overflow-auto px-2 py-1.5 mb-2 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs text-slate-500 dark:text-slate-400 font-mono leading-relaxed">
+              <div className="max-h-16 overflow-auto px-2 py-1.5 mb-2 bg-black/[0.02] dark:bg-zinc-900 rounded-lg text-xs text-zinc-500 dark:text-zinc-400 font-mono leading-relaxed">
                 {aiPopup.selectedText.length > 150
                   ? aiPopup.selectedText.slice(0, 150) + '...'
                   : aiPopup.selectedText}
@@ -313,7 +313,7 @@ export function FileEditor() {
                   }}
                   placeholder="e.g. Make it more concise..."
                   disabled={aiPopup.loading}
-                  className="flex-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 dark:focus:border-violet-500/50"
+                  className="flex-1 px-3 py-2 text-sm bg-black/[0.02] dark:bg-zinc-900 border border-black/[0.06] dark:border-white/[0.06] rounded-lg text-zinc-700 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 dark:focus:border-violet-500/50"
                 />
                 <button
                   onClick={handleAiRewrite}
@@ -334,11 +334,11 @@ export function FileEditor() {
 
       {/* Footer hint */}
       {!editorTab.isReadOnly && (
-        <div className="px-4 py-1.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex-shrink-0">
-          <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Select text + <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[9px] font-mono">Cmd+K</kbd> for AI edit
+        <div className="px-4 py-1.5 border-t border-black/[0.04] dark:border-white/[0.04] bg-black/[0.02] dark:bg-zinc-900 flex-shrink-0">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
+            Select text + <kbd className="px-1 py-0.5 bg-black/[0.06] dark:bg-white/[0.06] rounded text-[9px] font-mono">Cmd+K</kbd> for AI edit
             &nbsp;&middot;&nbsp;
-            <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[9px] font-mono">Cmd+S</kbd> to save
+            <kbd className="px-1 py-0.5 bg-black/[0.06] dark:bg-white/[0.06] rounded text-[9px] font-mono">Cmd+S</kbd> to save
           </p>
         </div>
       )}

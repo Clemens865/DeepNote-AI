@@ -51,6 +51,27 @@ export interface FileSearchResult {
   chunk: string
   similarity: number
   fileType: string
+  project?: string
+  modified?: string
+}
+
+export interface ActivityCurrent {
+  activeApp: string
+  windowTitle: string
+  project?: string
+  idleSeconds: number
+  recentFiles: { path: string; timestamp: number }[]
+  recentClipboard?: string
+}
+
+export interface ActivityEvent {
+  id: string
+  timestamp: number
+  eventType: string
+  appName: string
+  windowTitle: string
+  filePath?: string
+  project?: string
 }
 
 export interface ClipboardEntry {
@@ -262,6 +283,8 @@ class DeepBrainService {
       chunk: (r.chunk as string) || '',
       similarity: (r.similarity as number) || 0,
       fileType: (r.file_type as string) || '',
+      project: (r.project as string) || undefined,
+      modified: (r.modified as string) || undefined,
     }))
   }
 
@@ -290,17 +313,54 @@ class DeepBrainService {
 
   // --- Activity Observer ---
 
-  async getActivityCurrent(): Promise<{ app: string; window: string; file?: string } | null> {
+  async getActivityCurrent(): Promise<ActivityCurrent | null> {
     if (!(await this.isAvailable())) return null
 
     const raw = await this.fetch<Record<string, unknown>>('/api/activity/current')
     if (!raw) return null
 
+    const recentFiles = Array.isArray(raw.recent_files)
+      ? (raw.recent_files as { path: string; timestamp: number }[])
+      : []
+
     return {
-      app: (raw.app as string) || '',
-      window: (raw.window as string) || '',
-      file: (raw.file as string) || undefined,
+      activeApp: (raw.active_app as string) || '',
+      windowTitle: (raw.window_title as string) || '',
+      project: (raw.project as string) || undefined,
+      idleSeconds: (raw.idle_seconds as number) || 0,
+      recentFiles,
+      recentClipboard: (raw.recent_clipboard as string) || undefined,
     }
+  }
+
+  /** Fetch activity history for a time range */
+  async getActivityStream(
+    since: string,
+    opts?: { until?: string; types?: string[]; project?: string; limit?: number }
+  ): Promise<ActivityEvent[]> {
+    if (!(await this.isAvailable())) return []
+
+    const raw = await this.fetch<Array<Record<string, unknown>>>('/api/activity/stream', {
+      method: 'POST',
+      body: JSON.stringify({
+        since,
+        until: opts?.until,
+        types: opts?.types,
+        project: opts?.project,
+        limit: opts?.limit || 50,
+      }),
+    })
+    if (!raw || !Array.isArray(raw)) return []
+
+    return raw.map((r) => ({
+      id: (r.id as string) || '',
+      timestamp: (r.timestamp as number) || 0,
+      eventType: (r.event_type as string) || '',
+      appName: (r.app_name as string) || '',
+      windowTitle: (r.window_title as string) || '',
+      filePath: (r.file_path as string) || undefined,
+      project: (r.project as string) || undefined,
+    }))
   }
 
   // --- Clipboard ---

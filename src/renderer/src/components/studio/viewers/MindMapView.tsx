@@ -97,32 +97,32 @@ function MindMapContent({ data, maxHeight = '500px' }: { data: Record<string, un
       <div className="flex items-center gap-1 justify-end">
         <button
           onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
           title="Zoom in"
         >
           <ZoomIn size={14} />
         </button>
         <button
           onClick={() => setZoom(1)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
           title="Reset zoom"
         >
           <RotateCcw size={14} />
         </button>
         <button
           onClick={() => setZoom((z) => Math.max(0.3, z - 0.1))}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
           title="Zoom out"
         >
           <ZoomOut size={14} />
         </button>
-        <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1 w-8 text-center">
+        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 ml-1 w-8 text-center">
           {Math.round(zoom * 100)}%
         </span>
       </div>
 
       {/* Scrollable map container */}
-      <div className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 p-4 min-h-[200px]" style={{ maxHeight }}>
+      <div className="overflow-auto rounded-lg border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] p-4 min-h-[200px]" style={{ maxHeight }}>
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }} className="transition-transform duration-150">
           <div className="flex items-start gap-4">
             {/* Root node */}

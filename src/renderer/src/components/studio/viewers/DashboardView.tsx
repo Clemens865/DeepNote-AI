@@ -38,13 +38,13 @@ interface TableItem {
 
 function KpiCard({ kpi }: { kpi: KpiItem }) {
   const TrendIcon = kpi.trend === 'up' ? TrendingUp : kpi.trend === 'down' ? TrendingDown : Minus
-  const trendColor = kpi.trend === 'up' ? 'text-emerald-500' : kpi.trend === 'down' ? 'text-red-500' : 'text-slate-400'
+  const trendColor = kpi.trend === 'up' ? 'text-emerald-500' : kpi.trend === 'down' ? 'text-red-500' : 'text-zinc-400'
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-      <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{kpi.label}</p>
+    <div className="bg-white dark:bg-zinc-800 rounded-xl border border-black/[0.06] dark:border-white/[0.06] p-4">
+      <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">{kpi.label}</p>
       <div className="flex items-end gap-2 mt-1">
-        <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">{kpi.value}</span>
+        <span className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">{kpi.value}</span>
         {kpi.change && (
           <span className={`flex items-center gap-0.5 text-xs font-medium ${trendColor} pb-0.5`}>
             <TrendIcon size={12} />
@@ -58,8 +58,8 @@ function KpiCard({ kpi }: { kpi: KpiItem }) {
 
 function DashboardChart({ chart }: { chart: ChartItem }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-      <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-3">{chart.title}</h4>
+    <div className="bg-white dark:bg-zinc-800 rounded-xl border border-black/[0.06] dark:border-white/[0.06] p-4">
+      <h4 className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-3">{chart.title}</h4>
       <div style={{ height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           {chart.chartType === 'pie' ? (
@@ -107,7 +107,7 @@ function DashboardContent({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="space-y-4">
-      {dashTitle && <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">{dashTitle}</h3>}
+      {dashTitle && <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-100">{dashTitle}</h3>}
 
       {kpis.length > 0 && (
         <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(kpis.length, 4)}, 1fr)` }}>
@@ -122,24 +122,24 @@ function DashboardContent({ data }: { data: Record<string, unknown> }) {
       )}
 
       {tables.map((table, ti) => (
-        <div key={ti} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
-            <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300">{table.title}</h4>
+        <div key={ti} className="bg-white dark:bg-zinc-800 rounded-xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
+          <div className="px-4 py-2 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/[0.06] dark:border-white/[0.06]">
+            <h4 className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">{table.title}</h4>
           </div>
           <div className="overflow-auto max-h-[300px]">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
+              <thead className="sticky top-0 bg-black/[0.02] dark:bg-white/[0.02]">
                 <tr>
                   {table.columns.map((col, i) => (
-                    <th key={i} className="px-3 py-2 text-left font-semibold text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">{col}</th>
+                    <th key={i} className="px-3 py-2 text-left font-semibold text-zinc-600 dark:text-zinc-300 border-b border-black/[0.06] dark:border-white/[0.06]">{col}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {table.rows.map((row, ri) => (
-                  <tr key={ri} className="border-b border-slate-100 dark:border-slate-700/50 last:border-b-0">
+                  <tr key={ri} className="border-b border-black/[0.03] dark:border-white/[0.03] last:border-b-0">
                     {row.map((cell, ci) => (
-                      <td key={ci} className="px-3 py-1.5 text-slate-700 dark:text-slate-300">{cell}</td>
+                      <td key={ci} className="px-3 py-1.5 text-zinc-700 dark:text-zinc-300">{cell}</td>
                     ))}
                   </tr>
                 ))}

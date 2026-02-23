@@ -130,10 +130,10 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
           key={tool.id}
           onClick={() => handleClick(tool)}
           disabled={generating !== null}
-          className="w-full text-left p-4 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-100/50 dark:hover:shadow-slate-900/50 transition-all group relative overflow-hidden disabled:opacity-60 shadow-sm"
+          className="w-full text-left p-4 rounded-2xl glass-panel glass-panel-hover group relative overflow-hidden disabled:opacity-60"
         >
           <div className="flex items-start gap-3 relative z-10">
-            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-500 group-hover:text-white transition-colors flex-shrink-0">
+            <div className="w-10 h-10 bg-indigo-50/80 dark:bg-indigo-500/[0.08] rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-500 group-hover:text-white transition-colors flex-shrink-0 shadow-inner">
               {generating === tool.id ? (
                 <Spinner size="sm" />
               ) : (
@@ -141,15 +141,15 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-0.5">
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-200 mb-0.5">
                 {generating === tool.id ? 'Generating...' : tool.label}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{tool.description}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">{tool.description}</p>
             </div>
             {/* Edit button */}
             <div
               onClick={(e) => handleEditClick(e, tool)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0 cursor-pointer z-20"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-300 dark:text-zinc-600 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0 cursor-pointer z-20"
               title={`Customize ${tool.label}`}
             >
               <Pencil size={14} />
@@ -162,23 +162,23 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
       ))}
 
       {/* Notebook Health */}
-      <div className="mt-6 bg-slate-50 dark:bg-slate-800/30 rounded-2xl p-5 border border-slate-100 dark:border-slate-700/50">
-        <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
+      <div className="mt-6 bg-black/[0.02] dark:bg-white/[0.01] rounded-2xl p-5 border border-black/[0.05] dark:border-white/[0.05]">
+        <h3 className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-3 flex items-center gap-1.5">
           <CheckCircle2 size={14} className="text-green-500" />
           Notebook Health
         </h3>
         <div className="space-y-2">
-          <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
             <span>Sources Selected</span>
-            <span className="font-bold text-slate-700 dark:text-slate-300">{selectedCount}/{totalCount}</span>
+            <span className="font-bold text-zinc-700 dark:text-zinc-300">{selectedCount}/{totalCount}</span>
           </div>
-          <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-black/[0.05] dark:bg-white/[0.05] h-1.5 rounded-full overflow-hidden">
             <div
-              className="bg-indigo-600 dark:bg-indigo-500 h-full rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-indigo-500 to-violet-500 h-full rounded-full transition-all duration-500 relative"
               style={{ width: `${totalCount ? (selectedCount / totalCount) * 100 : 0}%` }}
             />
           </div>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 italic">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 italic">
             {totalCount > 0
               ? 'AI has indexed your context for grounded responses.'
               : 'Add sources to begin.'}
@@ -188,7 +188,7 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-6 py-3 rounded-xl shadow-xl text-sm text-slate-800 dark:text-slate-200 z-50">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.08] px-6 py-3 rounded-xl shadow-xl text-sm text-zinc-800 dark:text-zinc-200 z-50">
           {toast}
         </div>
       )}

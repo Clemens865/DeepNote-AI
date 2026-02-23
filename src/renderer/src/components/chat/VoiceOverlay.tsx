@@ -130,7 +130,7 @@ export function VoiceOverlay({ notebookId, onClose, onUserMessage, onAiMessage }
   }, [recording, sessionId, stopRecording, onClose])
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center">
+    <div className="fixed inset-0 z-50 bg-zinc-900/80 backdrop-blur-sm flex flex-col items-center justify-center">
       {/* Close button */}
       <button
         onClick={handleClose}

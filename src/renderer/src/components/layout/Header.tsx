@@ -63,13 +63,13 @@ export function Header() {
   const viewTitle = activeView === 'chat' ? 'Notebook Chat' : 'Notes'
 
   return (
-    <header className="titlebar-drag flex items-center h-12 px-5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
+    <header className="titlebar-drag flex items-center h-12 px-5 bg-white/80 dark:bg-black/40 backdrop-blur-xl border-b border-black/[0.06] dark:border-white/[0.06] shrink-0">
       <div className="w-[70px] shrink-0" />
 
       {isWorkspace && (
         <button
           onClick={() => navigate('/')}
-          className="titlebar-no-drag mr-4 flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors text-sm"
+          className="titlebar-no-drag mr-4 flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           Home
@@ -78,11 +78,11 @@ export function Header() {
 
       <div className="flex items-center gap-2 titlebar-no-drag">
         {isWorkspace && currentNotebook ? (
-          <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 tracking-tight">
+          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
             {viewTitle}
           </span>
         ) : (
-          <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">DeepNote AI</span>
+          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">DeepNote AI</span>
         )}
       </div>
 
@@ -92,22 +92,22 @@ export function Header() {
         <div className="relative" ref={exportRef}>
           <button
             onClick={() => setShowExport(!showExport)}
-            className="titlebar-no-drag w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mr-1"
+            className="titlebar-no-drag w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors mr-1"
             title="Export notebook"
           >
             <Download className="w-4 h-4" />
           </button>
           {showExport && (
-            <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1">
+            <div className="absolute right-0 top-full mt-1 w-44 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-xl z-50 py-1">
               <button
                 onClick={() => handleExport('json')}
-                className="w-full text-left px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                className="w-full text-left px-3 py-2 text-sm text-zinc-600 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
               >
                 Export as JSON
               </button>
               <button
                 onClick={() => handleExport('html')}
-                className="w-full text-left px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                className="w-full text-left px-3 py-2 text-sm text-zinc-600 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
               >
                 Export as HTML
               </button>
@@ -118,7 +118,7 @@ export function Header() {
 
       <button
         onClick={() => { setSearchInitialFilter('all'); setShowSearch(true) }}
-        className="titlebar-no-drag w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mr-1"
+        className="titlebar-no-drag w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors mr-1"
         title="Search all notebooks (Cmd+K)"
       >
         <Search className="w-4 h-4" />
@@ -126,7 +126,7 @@ export function Header() {
 
       <button
         onClick={() => setShowManual(true)}
-        className="titlebar-no-drag w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mr-1"
+        className="titlebar-no-drag w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors mr-1"
         title="User Manual"
       >
         <BookOpen className="w-4 h-4" />
@@ -134,7 +134,7 @@ export function Header() {
 
       <button
         onClick={toggleDarkMode}
-        className="titlebar-no-drag w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mr-1"
+        className="titlebar-no-drag w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors mr-1"
         title={darkMode ? 'Light mode' : 'Dark mode'}
       >
         {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -142,7 +142,7 @@ export function Header() {
 
       <button
         onClick={() => setShowSettings(true)}
-        className="titlebar-no-drag w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        className="titlebar-no-drag w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors"
         title="Settings"
       >
         <Settings className="w-4 h-4" />

@@ -329,20 +329,20 @@ export function ManualDialog({ isOpen, onClose }: ManualDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh]">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl max-h-[80vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-2xl max-h-[80vh] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3 shrink-0">
+        <div className="px-5 py-4 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-3 shrink-0">
           <BookOpen size={18} className="text-indigo-500 flex-shrink-0" />
-          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex-1">User Manual</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+          <h2 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 flex-1">User Manual</h2>
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
             <X size={16} />
           </button>
         </div>
 
         {/* Search */}
-        <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-            <Search size={14} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+        <div className="px-5 py-3 border-b border-black/[0.04] dark:border-white/[0.04] shrink-0">
+          <div className="flex items-center gap-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
+            <Search size={14} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
             <input
               ref={inputRef}
               type="text"
@@ -352,12 +352,12 @@ export function ManualDialog({ isOpen, onClose }: ManualDialogProps) {
                 if (e.target.value.trim()) setExpandedSection(null)
               }}
               placeholder="Search the manual..."
-              className="flex-1 bg-transparent text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none"
+              className="flex-1 bg-transparent text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
               >
                 <X size={12} />
               </button>
@@ -368,7 +368,7 @@ export function ManualDialog({ isOpen, onClose }: ManualDialogProps) {
         {/* Content */}
         <div ref={contentRef} className="flex-1 overflow-y-auto">
           {filtered.length === 0 && (
-            <div className="px-5 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+            <div className="px-5 py-8 text-center text-sm text-zinc-400 dark:text-zinc-500">
               No results for "{searchQuery}"
             </div>
           )}
@@ -376,23 +376,23 @@ export function ManualDialog({ isOpen, onClose }: ManualDialogProps) {
           {filtered.map((section) => {
             const isExpanded = searchQuery.trim() ? true : expandedSection === section.id
             return (
-              <div key={section.id} className="border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+              <div key={section.id} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-b-0">
                 <button
                   onClick={() => toggleSection(section.id)}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors text-left"
                 >
                   <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0">
                     <section.Icon size={14} />
                   </div>
-                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex-1">
+                  <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 flex-1">
                     {section.title}
                   </span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 mr-1">
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 mr-1">
                     {section.content.length} {section.content.length === 1 ? 'topic' : 'topics'}
                   </span>
                   <ChevronRight
                     size={14}
-                    className={`text-slate-400 dark:text-slate-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                    className={`text-zinc-400 dark:text-zinc-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                   />
                 </button>
 
@@ -400,10 +400,10 @@ export function ManualDialog({ isOpen, onClose }: ManualDialogProps) {
                   <div className="px-5 pb-4">
                     {section.content.map((sub, i) => (
                       <div key={i} className="ml-10 mb-3 last:mb-0">
-                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        <h4 className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                           {sub.heading}
                         </h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
                           {sub.body}
                         </p>
                       </div>
@@ -416,9 +416,9 @@ export function ManualDialog({ isOpen, onClose }: ManualDialogProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-2.5 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30 shrink-0">
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center">
-            DeepNote AI — Press <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[9px] font-mono">Esc</kbd> to close
+        <div className="px-5 py-2.5 border-t border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.03] shrink-0">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center">
+            DeepNote AI — Press <kbd className="px-1 py-0.5 bg-black/[0.06] dark:bg-white/[0.06] rounded text-[9px] font-mono">Esc</kbd> to close
           </p>
         </div>
       </div>

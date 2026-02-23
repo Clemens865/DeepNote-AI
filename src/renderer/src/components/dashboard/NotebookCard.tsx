@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Notebook } from '@shared/types'
 import { MoreVertical, Trash2, FolderOpen, Paintbrush } from 'lucide-react'
 import { NotebookIcon } from '../common/NotebookIcon'
@@ -12,6 +12,18 @@ interface NotebookCardProps {
 
 export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: NotebookCardProps) {
   const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showMenu) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showMenu])
 
   const timeAgo = getTimeAgo(notebook.updatedAt)
 
@@ -34,10 +46,10 @@ export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: Noteb
 
   return (
     <div
-      className={`group relative flex flex-col h-48 rounded-2xl border transition-all cursor-pointer shadow-sm ${
+      className={`group relative flex flex-col h-48 rounded-2xl border transition-all duration-300 cursor-pointer ${
         hasCustomBg
           ? 'border-white/20 dark:border-white/10 hover:border-white/40 dark:hover:border-white/30 hover:shadow-lg'
-          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-100/50 dark:hover:shadow-slate-900/50'
+          : 'glass-panel glass-panel-hover'
       }`}
       style={bgStyle}
       onClick={onClick}
@@ -59,7 +71,7 @@ export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: Noteb
               className={`opacity-0 group-hover:opacity-100 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
                 hasCustomBg
                   ? 'text-white/70 hover:text-white hover:bg-white/20'
-                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05]'
               }`}
             >
               <Paintbrush className="w-4 h-4" />
@@ -72,20 +84,20 @@ export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: Noteb
               className={`opacity-0 group-hover:opacity-100 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
                 hasCustomBg
                   ? 'text-white/70 hover:text-white hover:bg-white/20'
-                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05]'
               }`}
             >
               <MoreVertical className="w-4 h-4" />
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-9 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 py-1">
+              <div ref={menuRef} className="absolute right-0 top-9 w-36 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-xl z-20 py-1">
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     setShowMenu(false)
                     onDelete()
                   }}
-                  className="w-full flex items-center gap-2 text-left px-4 py-2 text-sm text-red-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="w-full flex items-center gap-2 text-left px-4 py-2 text-sm text-red-500 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete
@@ -97,7 +109,7 @@ export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: Noteb
         <h3 className={`mt-3 text-sm font-semibold line-clamp-2 ${
           hasCustomBg
             ? 'text-white drop-shadow-sm'
-            : 'text-slate-800 dark:text-slate-100'
+            : 'text-zinc-900 dark:text-zinc-100'
         }`}>
           {notebook.title}
         </h3>
@@ -105,10 +117,10 @@ export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: Noteb
       <div className={`relative px-5 py-3 flex items-center justify-between ${
         hasCustomBg
           ? 'border-t border-white/10'
-          : 'border-t border-slate-100 dark:border-slate-700/50'
+          : 'border-t border-black/[0.05] dark:border-white/[0.05]'
       }`}>
         <div className="flex items-center gap-2">
-          <span className={`text-xs ${hasCustomBg ? 'text-white/60' : 'text-slate-400 dark:text-slate-500'}`}>{timeAgo}</span>
+          <span className={`text-xs ${hasCustomBg ? 'text-white/60' : 'text-zinc-400 dark:text-zinc-500'}`}>{timeAgo}</span>
           {notebook.workspaceRootPath && (
             <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${
               hasCustomBg
@@ -120,7 +132,7 @@ export function NotebookCard({ notebook, onClick, onDelete, onCustomize }: Noteb
             </span>
           )}
         </div>
-        <span className={`text-xs ${hasCustomBg ? 'text-white/60' : 'text-slate-400 dark:text-slate-500'}`}>
+        <span className={`text-xs ${hasCustomBg ? 'text-white/60' : 'text-zinc-400 dark:text-zinc-500'}`}>
           {notebook.sourceCount || 0} source{(notebook.sourceCount || 0) !== 1 ? 's' : ''}
         </span>
       </div>

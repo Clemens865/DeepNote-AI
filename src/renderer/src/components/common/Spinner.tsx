@@ -7,7 +7,7 @@ export function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 
   return (
     <div
-      className={`${sizeClasses[size]} border-2 border-slate-200 dark:border-slate-700 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin`}
+      className={`${sizeClasses[size]} border-2 border-black/[0.06] dark:border-white/[0.06] border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin`}
     />
   )
 }

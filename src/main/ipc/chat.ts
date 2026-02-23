@@ -102,7 +102,7 @@ export function registerChatHandlers() {
       }
     }
 
-    // DeepBrain: recall memories + search files + emails in parallel (gracefully skips if offline or disabled)
+    // DeepBrain: recall memories + search files + emails + activity in parallel (gracefully skips if offline or disabled)
     const sbEnabled = configService.getAll().deepbrainEnabled !== false
     let deepbrainContext = ''
     let deepbrainConnected = false
@@ -112,11 +112,15 @@ export function registerChatHandlers() {
         deepbrainConnected = await deepbrainService.isAvailable()
       }
       if (deepbrainConnected) {
-        const [sbMemories, sbFiles, sbEmails, sbActivity] = await Promise.all([
+        // Build activity stream time range: last 8 hours
+        const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+
+        const [sbMemories, sbFiles, sbEmails, sbActivity, sbActivityStream] = await Promise.all([
           deepbrainService.recall(args.message, 8).catch(() => []),
           deepbrainService.searchFiles(args.message, 5).catch(() => []),
           deepbrainService.searchEmails(args.message, 5).catch(() => []),
           deepbrainService.getActivityCurrent().catch(() => null),
+          deepbrainService.getActivityStream(eightHoursAgo, { limit: 30 }).catch(() => []),
         ])
 
         // Store results for UI preview cards
@@ -139,7 +143,8 @@ export function registerChatHandlers() {
         if (sbFiles.length > 0) {
           sbParts.push('System files (emails, documents, indexed files):')
           for (const f of sbFiles) {
-            sbParts.push(`  [File: ${f.name}] (${f.path})\n  ${f.chunk}`)
+            const meta = [f.project ? `project: ${f.project}` : '', f.modified ? `modified: ${f.modified}` : ''].filter(Boolean).join(', ')
+            sbParts.push(`  [File: ${f.name}] (${f.path})${meta ? ` [${meta}]` : ''}\n  ${f.chunk}`)
           }
           console.log(`[Chat] DeepBrain provided ${sbFiles.length} file matches`)
         }
@@ -152,9 +157,34 @@ export function registerChatHandlers() {
           console.log(`[Chat] DeepBrain provided ${sbEmails.length} email matches`)
         }
 
-        // Activity context — tell AI what user is currently working on
+        // Current activity context
         if (sbActivity) {
-          sbParts.push(`User activity: Currently using ${sbActivity.app}${sbActivity.file ? ` — editing ${sbActivity.file}` : ` — window: ${sbActivity.window}`}`)
+          const parts = [`Currently using ${sbActivity.activeApp}`]
+          if (sbActivity.project) parts.push(`project: ${sbActivity.project}`)
+          if (sbActivity.windowTitle) parts.push(`window: "${sbActivity.windowTitle}"`)
+          if (sbActivity.recentFiles?.length > 0) {
+            const fileNames = sbActivity.recentFiles.slice(0, 5).map((f) => f.path.split('/').pop()).join(', ')
+            parts.push(`recent files: ${fileNames}`)
+          }
+          sbParts.push(`Current activity: ${parts.join(' — ')}`)
+        }
+
+        // Activity history (app switches, file edits over last 8h)
+        if (sbActivityStream.length > 0) {
+          sbParts.push('Activity history (last 8 hours):')
+          // Deduplicate consecutive identical apps, show timeline
+          let lastApp = ''
+          for (const ev of sbActivityStream) {
+            const time = new Date(ev.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+            const entry = ev.filePath
+              ? `${time} — ${ev.appName}: ${ev.filePath}${ev.project ? ` [${ev.project}]` : ''}`
+              : ev.appName !== lastApp
+                ? `${time} — ${ev.appName}: "${ev.windowTitle}"${ev.project ? ` [${ev.project}]` : ''}`
+                : null
+            if (entry) sbParts.push(`  ${entry}`)
+            lastApp = ev.appName
+          }
+          console.log(`[Chat] DeepBrain provided ${sbActivityStream.length} activity events`)
         }
 
         if (sbParts.length > 0) {

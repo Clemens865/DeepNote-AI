@@ -82,7 +82,7 @@ export function WorkspaceLayout() {
         <SourcesPanel collapsed={sourcesCollapsed} onToggle={toggleSources} />
       </ResizablePanel>
 
-      <div className="flex-1 min-w-0 flex flex-col bg-slate-50 dark:bg-slate-950">
+      <div className="flex-1 min-w-0 flex flex-col bg-zinc-50/50 dark:bg-[#080808]">
         <div className="flex-1 min-h-0 flex flex-col">
           {renderCenterPanel()}
         </div>

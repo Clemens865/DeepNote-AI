@@ -30,8 +30,8 @@ function QuizContent({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="space-y-6">
       {questions.map((q, qi) => (
-        <div key={qi} className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 space-y-3">
-          <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+        <div key={qi} className="bg-black/[0.02] dark:bg-white/[0.02] rounded-lg border border-black/[0.06] dark:border-white/[0.06] p-4 space-y-3">
+          <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
             {qi + 1}. {q.question}
           </p>
           <div className="space-y-2">
@@ -40,7 +40,7 @@ function QuizContent({ data }: { data: Record<string, unknown> }) {
               const isSelected = selected[qi] === oi
               const isCorrect = oi === q.correctIndex
 
-              let optionClass = 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50'
+              let optionClass = 'border-black/[0.06] dark:border-white/[0.06] hover:border-indigo-300 dark:hover:border-indigo-500/50'
               if (isRevealed) {
                 if (isCorrect) optionClass = 'border-green-500 bg-green-500/10'
                 else if (isSelected) optionClass = 'border-red-500 bg-red-500/10'
@@ -53,13 +53,13 @@ function QuizContent({ data }: { data: Record<string, unknown> }) {
                   disabled={isRevealed}
                   className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors ${optionClass}`}
                 >
-                  <span className="text-slate-700 dark:text-slate-200">{opt}</span>
+                  <span className="text-zinc-700 dark:text-zinc-200">{opt}</span>
                 </button>
               )
             })}
           </div>
           {revealed.has(qi) && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 italic">{q.explanation}</p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">{q.explanation}</p>
           )}
         </div>
       ))}

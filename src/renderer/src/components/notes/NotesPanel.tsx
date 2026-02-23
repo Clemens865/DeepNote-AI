@@ -81,13 +81,13 @@ export function NotesPanel() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-slate-900">
+    <div className="h-full flex flex-col bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notes</h2>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06] dark:border-white/[0.06]">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Notes</h2>
         <button
           onClick={handleCreate}
-          className="px-3 py-1.5 text-xs rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 transition-colors flex items-center gap-1 font-medium"
+          className="px-3 py-1.5 text-xs rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all flex items-center gap-1 font-medium shadow-sm"
         >
           <Plus className="w-3.5 h-3.5" />
           New note
@@ -97,13 +97,13 @@ export function NotesPanel() {
       {/* Body */}
       <div className="flex flex-1 min-h-0">
         {/* Note list sidebar */}
-        <div className="w-56 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 overflow-auto bg-slate-50 dark:bg-slate-800/50">
+        <div className="w-56 flex-shrink-0 border-r border-black/[0.06] dark:border-white/[0.06] overflow-auto bg-black/[0.02] dark:bg-white/[0.01]">
           {loading && notes.length === 0 ? (
-            <div className="p-4 text-xs text-slate-400 dark:text-slate-500">Loading...</div>
+            <div className="p-4 text-xs text-zinc-400 dark:text-zinc-500">Loading...</div>
           ) : notes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
-              <StickyNote className="w-8 h-8 text-slate-400 dark:text-slate-500 mb-3" />
-              <p className="text-xs text-slate-400 dark:text-slate-500">
+              <StickyNote className="w-8 h-8 text-zinc-400 dark:text-zinc-500 mb-3" />
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">
                 No notes yet. Click &quot;New note&quot; to get started.
               </p>
             </div>
@@ -115,15 +115,15 @@ export function NotesPanel() {
                   onClick={() => setSelectedId(note.id)}
                   className={`flex items-center justify-between px-3 py-2.5 cursor-pointer group transition-colors ${
                     selectedId === note.id
-                      ? 'bg-indigo-50 dark:bg-indigo-500/10 border-r-2 border-indigo-600 dark:border-indigo-400'
-                      : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-indigo-50/50 dark:bg-indigo-500/[0.06] border-r-2 border-indigo-500 dark:border-indigo-400'
+                      : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
                   }`}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-800 dark:text-slate-200 truncate">
+                    <p className="text-sm text-zinc-800 dark:text-zinc-200 truncate">
                       {note.title || 'Untitled note'}
                     </p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
                       {note.content.slice(0, 50) || 'Empty note'}
                     </p>
                   </div>
@@ -132,7 +132,7 @@ export function NotesPanel() {
                       e.stopPropagation()
                       handleDelete(note.id)
                     }}
-                    className="opacity-0 group-hover:opacity-100 ml-2 w-5 h-5 rounded flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 transition-all"
+                    className="opacity-0 group-hover:opacity-100 ml-2 w-5 h-5 rounded flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-red-500 transition-all"
                     title="Delete note"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -154,11 +154,11 @@ export function NotesPanel() {
             />
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center p-8">
-              <StickyNote className="w-10 h-10 text-slate-400 dark:text-slate-500 mb-4" />
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">
+              <StickyNote className="w-10 h-10 text-zinc-400 dark:text-zinc-500 mb-4" />
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
                 {notes.length === 0 ? 'Create your first note' : 'Select a note'}
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 {notes.length === 0
                   ? 'Click "New note" to start writing.'
                   : 'Choose a note from the list to view and edit it.'}

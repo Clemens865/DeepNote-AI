@@ -35,17 +35,17 @@ const sentimentConfig: Record<string, { bg: string; bar: string; text: string; r
     ring: 'ring-red-200 dark:ring-red-500/30',
   },
   neutral: {
-    bg: 'bg-slate-50 dark:bg-slate-800/50',
-    bar: 'bg-slate-400',
-    text: 'text-slate-700 dark:text-slate-300',
-    ring: 'ring-slate-200 dark:ring-slate-600',
+    bg: 'bg-black/[0.02] dark:bg-white/[0.02]',
+    bar: 'bg-zinc-400',
+    text: 'text-zinc-700 dark:text-zinc-300',
+    ring: 'ring-black/[0.06] dark:ring-white/[0.08]',
   },
 }
 
 export function ChatArtifactKpi({ data }: ChatArtifactKpiProps) {
   return (
     <ArtifactWrapper title={data.title || 'KPI Dashboard'} jsonData={data}>
-      <div className="p-3 bg-white dark:bg-slate-900 grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(data.metrics.length, 3)}, 1fr)` }}>
+      <div className="p-3 bg-white dark:bg-zinc-900 grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(data.metrics.length, 3)}, 1fr)` }}>
         {data.metrics.map((metric, i) => (
           <GaugeCard key={i} metric={metric} />
         ))}
@@ -61,7 +61,7 @@ function GaugeCard({ metric }: { metric: KpiMetric }) {
 
   return (
     <div className={`rounded-lg p-3 ring-1 ${config.bg} ${config.ring}`}>
-      <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">
+      <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">
         {metric.label}
       </p>
       <div className="flex items-baseline gap-1">
@@ -69,14 +69,14 @@ function GaugeCard({ metric }: { metric: KpiMetric }) {
           {typeof metric.value === 'number' ? metric.value.toLocaleString() : metric.value}
         </span>
         {metric.unit && (
-          <span className="text-xs text-slate-500 dark:text-slate-400">{metric.unit}</span>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">{metric.unit}</span>
         )}
         {metric.max != null && (
-          <span className="text-[10px] text-slate-400 dark:text-slate-500">/ {metric.max.toLocaleString()}</span>
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">/ {metric.max.toLocaleString()}</span>
         )}
       </div>
       {percentage != null && (
-        <div className="mt-2 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+        <div className="mt-2 h-1.5 rounded-full bg-black/[0.06] dark:bg-white/[0.06] overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${config.bar}`}
             style={{ width: `${percentage}%` }}

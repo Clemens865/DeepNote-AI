@@ -46,16 +46,16 @@ function DataTableContent({ data, maxHeight }: { data: Record<string, unknown>; 
 
   return (
     <div className="space-y-3">
-      {tableTitle && <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{tableTitle}</h4>}
-      <div className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-700" style={{ maxHeight }}>
+      {tableTitle && <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">{tableTitle}</h4>}
+      <div className="overflow-auto rounded-lg border border-black/[0.06] dark:border-white/[0.06]" style={{ maxHeight }}>
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
-            <tr className="bg-slate-50 dark:bg-slate-800">
+            <tr className="bg-black/[0.02] dark:bg-white/[0.02]">
               {columns.map((col, i) => (
                 <th
                   key={i}
                   onClick={() => handleSort(i)}
-                  className="px-3 py-2 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 cursor-pointer select-none hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  className="px-3 py-2 text-left text-xs font-semibold text-zinc-600 dark:text-zinc-300 border-b border-black/[0.06] dark:border-white/[0.06] cursor-pointer select-none hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
                 >
                   <div className="flex items-center gap-1">
                     {col}
@@ -73,10 +73,10 @@ function DataTableContent({ data, maxHeight }: { data: Record<string, unknown>; 
             {sortedRows.map((row, ri) => (
               <tr
                 key={ri}
-                className="border-b border-slate-200 dark:border-slate-700 last:border-b-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 even:bg-slate-50/50 dark:even:bg-slate-800/30"
+                className="border-b border-black/[0.06] dark:border-white/[0.06] last:border-b-0 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] even:bg-black/[0.02] dark:even:bg-white/[0.02]"
               >
                 {row.map((cell, ci) => (
-                  <td key={ci} className="px-3 py-2 text-slate-700 dark:text-slate-200">
+                  <td key={ci} className="px-3 py-2 text-zinc-700 dark:text-zinc-200">
                     {cell}
                   </td>
                 ))}
@@ -85,7 +85,7 @@ function DataTableContent({ data, maxHeight }: { data: Record<string, unknown>; 
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-slate-400 dark:text-slate-500 text-right">{rows.length} rows</p>
+      <p className="text-xs text-zinc-400 dark:text-zinc-500 text-right">{rows.length} rows</p>
     </div>
   )
 }

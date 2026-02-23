@@ -107,6 +107,8 @@ export interface DeepBrainFileResult {
   chunk: string
   similarity: number
   fileType: string
+  project?: string
+  modified?: string
 }
 
 export interface DeepBrainEmailResult {

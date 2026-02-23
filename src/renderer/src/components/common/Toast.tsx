@@ -14,7 +14,7 @@ export function Toast({ message, type = 'info', onClose, duration = 4000 }: Toas
   }, [onClose, duration])
 
   const colors = {
-    info: 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200',
+    info: 'bg-white dark:bg-zinc-800 border-black/[0.06] dark:border-white/[0.06] text-zinc-800 dark:text-zinc-200',
     error: 'bg-red-500/10 border-red-500/20 text-red-400',
     success: 'bg-green-500/10 border-green-500/20 text-green-400',
   }

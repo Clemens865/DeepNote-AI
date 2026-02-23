@@ -32,8 +32,9 @@ export const CHAT_PROVIDERS: ProviderDef[] = [
     id: 'claude',
     name: 'Claude',
     models: [
-      { id: 'claude-sonnet-4-5-20250929', name: 'Claude 4.5 Sonnet', isDefault: true },
-      { id: 'claude-haiku-4-5-20251001', name: 'Claude 4.5 Haiku' },
+      { id: 'claude-sonnet-4-6', name: 'Claude 4.6 Sonnet', isDefault: true },
+      { id: 'claude-opus-4-6', name: 'Claude 4.6 Opus' },
+      { id: 'claude-haiku-4-5', name: 'Claude 4.5 Haiku' },
     ],
     keyPlaceholder: 'Anthropic API key (sk-ant-...)...',
     keyUrl: 'console.anthropic.com',

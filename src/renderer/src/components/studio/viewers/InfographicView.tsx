@@ -93,12 +93,12 @@ function InfographicContent({ data }: { data: Record<string, unknown> }) {
   const renderMode = (data.renderMode as string | undefined) || 'hybrid'
 
   if (!imagePath) {
-    return <p className="text-sm text-slate-500 dark:text-slate-400">No infographic generated yet.</p>
+    return <p className="text-sm text-zinc-500 dark:text-zinc-400">No infographic generated yet.</p>
   }
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+      <div className="rounded-lg overflow-hidden border border-black/[0.06] dark:border-white/[0.06]">
         {renderMode === 'full-image' ? (
           <img
             src={`local-file://${imagePath}`}
@@ -112,7 +112,7 @@ function InfographicContent({ data }: { data: Record<string, unknown> }) {
       <div className="flex justify-end">
         <button
           onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: 'infographic.png' })}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
         >
           <Download size={12} />
           Download image
@@ -130,7 +130,7 @@ export function InfographicView({ data, isFullscreen, onCloseFullscreen, title }
   const downloadAction = imagePath ? (
     <button
       onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: 'infographic.png' })}
-      className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+      className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
       title="Download image"
     >
       <Download size={16} />
