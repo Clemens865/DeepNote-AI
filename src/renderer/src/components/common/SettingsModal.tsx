@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Settings, Info, Brain, Server, Check } from 'lucide-react'
+import { Settings, Info, Brain, Server, Check, BarChart3, RotateCcw } from 'lucide-react'
 import { Modal } from './Modal'
 import { Button } from './Button'
 import { Spinner } from './Spinner'
 import { CHAT_PROVIDERS } from '@shared/providers'
+import type { TokenUsageSummary } from '@shared/types'
 
 interface SettingsModalProps {
   isOpen: boolean
   onClose: () => void
 }
 
-type Tab = 'settings' | 'integrations' | 'about'
+type Tab = 'settings' | 'integrations' | 'usage' | 'about'
 
 interface DeepBrainStatus {
   available: boolean
@@ -47,6 +48,29 @@ const PROVIDER_KEY_MAP: Record<string, string> = {
   groq: 'groqKey',
 }
 
+function formatTokenCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return n.toLocaleString()
+}
+
+function formatCost(n: number): string {
+  if (n < 0.01) return `$${n.toFixed(4)}`
+  return `$${n.toFixed(2)}`
+}
+
+function timeAgo(timestamp: string): string {
+  const diff = Date.now() - new Date(timestamp).getTime()
+  const seconds = Math.floor(diff / 1000)
+  if (seconds < 60) return `${seconds}s ago`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [tab, setTab] = useState<Tab>('settings')
   const [apiKey, setApiKey] = useState('')
@@ -65,6 +89,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [sbLoading, setSbLoading] = useState(false)
   const [dnApiPort, setDnApiPort] = useState<number | null>(null)
 
+  // Usage state
+  const [usageSummary, setUsageSummary] = useState<TokenUsageSummary | null>(null)
+  const [usageLoading, setUsageLoading] = useState(false)
+
   const loadDeepBrainStatus = useCallback(async () => {
     setSbLoading(true)
     try {
@@ -76,6 +104,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setSbStatus(null)
     } finally {
       setSbLoading(false)
+    }
+  }, [])
+
+  const loadUsageSummary = useCallback(async () => {
+    setUsageLoading(true)
+    try {
+      const summary = await window.api.getTokenUsageSummary() as TokenUsageSummary
+      setUsageSummary(summary)
+    } catch {
+      setUsageSummary(null)
+    } finally {
+      setUsageLoading(false)
     }
   }, [])
 
@@ -101,6 +141,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       loadDeepBrainStatus()
     }
   }, [isOpen, loadDeepBrainStatus])
+
+  useEffect(() => {
+    if (isOpen && tab === 'usage') {
+      loadUsageSummary()
+    }
+  }, [isOpen, tab, loadUsageSummary])
 
   const handleSaveKey = async (providerId: string) => {
     const value = providerKeys[providerId]
@@ -130,41 +176,37 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   }
 
+  const handleResetUsage = async () => {
+    if (!window.confirm('Reset all usage data? This cannot be undone.')) return
+    await window.api.resetTokenUsage()
+    loadUsageSummary()
+  }
+
+  const tabClass = (t: Tab) =>
+    `flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+      tab === t
+        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+        : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
+    }`
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="">
       <div className="min-h-[420px]">
         {/* Tab bar */}
         <div className="flex gap-1 mb-5 border-b border-black/[0.06] dark:border-white/[0.06]">
-          <button
-            onClick={() => setTab('settings')}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === 'settings'
-                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
-            }`}
-          >
+          <button onClick={() => setTab('settings')} className={tabClass('settings')}>
             <Settings size={14} />
             Settings
           </button>
-          <button
-            onClick={() => setTab('integrations')}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === 'integrations'
-                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
-            }`}
-          >
+          <button onClick={() => setTab('integrations')} className={tabClass('integrations')}>
             <Brain size={14} />
             Integrations
           </button>
-          <button
-            onClick={() => setTab('about')}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === 'about'
-                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
-            }`}
-          >
+          <button onClick={() => setTab('usage')} className={tabClass('usage')}>
+            <BarChart3 size={14} />
+            Usage
+          </button>
+          <button onClick={() => setTab('about')} className={tabClass('about')}>
             <Info size={14} />
             About
           </button>
@@ -375,6 +417,113 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 Close
               </Button>
             </div>
+          </div>
+        )}
+
+        {tab === 'usage' && (
+          <div className="space-y-4">
+            {usageLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Spinner size="sm" />
+              </div>
+            ) : usageSummary ? (
+              <>
+                {/* Summary cards */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="px-3 py-2.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
+                    <p className="text-[10px] text-blue-500 dark:text-blue-400 uppercase tracking-wide">Input Tokens</p>
+                    <p className="text-lg font-bold text-blue-700 dark:text-blue-300 font-mono">{formatTokenCount(usageSummary.totalInputTokens)}</p>
+                  </div>
+                  <div className="px-3 py-2.5 rounded-lg bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20">
+                    <p className="text-[10px] text-purple-500 dark:text-purple-400 uppercase tracking-wide">Output Tokens</p>
+                    <p className="text-lg font-bold text-purple-700 dark:text-purple-300 font-mono">{formatTokenCount(usageSummary.totalOutputTokens)}</p>
+                  </div>
+                  <div className="px-3 py-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
+                    <p className="text-[10px] text-emerald-500 dark:text-emerald-400 uppercase tracking-wide">Est. Cost</p>
+                    <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 font-mono">{formatCost(usageSummary.totalEstimatedCost)}</p>
+                  </div>
+                </div>
+
+                {/* Per-provider breakdown */}
+                {Object.keys(usageSummary.byProvider).length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">By Provider</h4>
+                    <div className="rounded-lg border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="bg-black/[0.02] dark:bg-white/[0.02]">
+                            <th className="text-left px-3 py-1.5 font-medium text-zinc-500 dark:text-zinc-400">Provider</th>
+                            <th className="text-right px-3 py-1.5 font-medium text-zinc-500 dark:text-zinc-400">Calls</th>
+                            <th className="text-right px-3 py-1.5 font-medium text-zinc-500 dark:text-zinc-400">Input</th>
+                            <th className="text-right px-3 py-1.5 font-medium text-zinc-500 dark:text-zinc-400">Output</th>
+                            <th className="text-right px-3 py-1.5 font-medium text-zinc-500 dark:text-zinc-400">Cost</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(usageSummary.byProvider).map(([provider, data]) => (
+                            <tr key={provider} className="border-t border-black/[0.04] dark:border-white/[0.04]">
+                              <td className="px-3 py-1.5 font-medium text-zinc-700 dark:text-zinc-200 capitalize">{provider}</td>
+                              <td className="px-3 py-1.5 text-right text-zinc-500 dark:text-zinc-400 font-mono">{data.calls}</td>
+                              <td className="px-3 py-1.5 text-right text-zinc-500 dark:text-zinc-400 font-mono">{formatTokenCount(data.input)}</td>
+                              <td className="px-3 py-1.5 text-right text-zinc-500 dark:text-zinc-400 font-mono">{formatTokenCount(data.output)}</td>
+                              <td className="px-3 py-1.5 text-right text-zinc-600 dark:text-zinc-300 font-mono">{formatCost(data.cost)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recent calls */}
+                {usageSummary.recentCalls.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Recent Calls</h4>
+                    <div className="max-h-44 overflow-y-auto rounded-lg border border-black/[0.06] dark:border-white/[0.06]">
+                      {usageSummary.recentCalls.slice(0, 20).map((call) => (
+                        <div
+                          key={call.id}
+                          className="flex items-center gap-2 px-3 py-1.5 text-[11px] border-b border-black/[0.03] dark:border-white/[0.03] last:border-b-0"
+                        >
+                          <span className="text-zinc-400 dark:text-zinc-500 w-14 shrink-0">{timeAgo(call.timestamp)}</span>
+                          <span className="text-indigo-600 dark:text-indigo-400 truncate w-32 shrink-0">{call.feature}</span>
+                          <span className="text-zinc-400 dark:text-zinc-500 truncate w-28 shrink-0">{call.model}</span>
+                          <span className="text-zinc-500 dark:text-zinc-400 font-mono text-right w-12 shrink-0">{formatTokenCount(call.inputTokens)}</span>
+                          <span className="text-zinc-400 dark:text-zinc-500">/</span>
+                          <span className="text-zinc-500 dark:text-zinc-400 font-mono w-12 shrink-0">{formatTokenCount(call.outputTokens)}</span>
+                          <span className="text-zinc-600 dark:text-zinc-300 font-mono ml-auto">{formatCost(call.estimatedCost)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {usageSummary.recentCalls.length === 0 && (
+                  <p className="text-sm text-zinc-400 dark:text-zinc-500 text-center py-8">
+                    No API calls recorded yet. Start chatting or generating content to see usage data.
+                  </p>
+                )}
+
+                {/* Reset + Close */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={handleResetUsage}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                  >
+                    <RotateCcw size={12} />
+                    Reset Usage Data
+                  </button>
+                  <div className="flex-1" />
+                  <Button variant="ghost" onClick={onClose}>
+                    Close
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-zinc-400 dark:text-zinc-500 text-center py-8">
+                Unable to load usage data.
+              </p>
+            )}
           </div>
         )}
 

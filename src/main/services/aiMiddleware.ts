@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai'
 import { configService } from './config'
+import { trackGeminiResponse } from './tokenTracker'
 
 // --- Types ---
 
@@ -208,6 +209,7 @@ export async function generateWithValidation(
       model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
     })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', `middleware:${type}`)
 
     const raw = response.text ?? '{}'
 

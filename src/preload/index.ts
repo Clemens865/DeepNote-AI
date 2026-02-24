@@ -432,6 +432,10 @@ const api = {
   // DeepNote API
   deepnoteApiStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEEPNOTE_API_STATUS),
 
+  // Token Usage
+  getTokenUsageSummary: () => ipcRenderer.invoke(IPC_CHANNELS.TOKEN_USAGE_GET_SUMMARY),
+  resetTokenUsage: () => ipcRenderer.invoke(IPC_CHANNELS.TOKEN_USAGE_RESET),
+
   // Workspace auto-sync events
   onWorkspaceAutoSync: (
     callback: (data: { notebookId: string; status: string; message: string }) => void

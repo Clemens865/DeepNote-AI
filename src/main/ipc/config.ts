@@ -8,6 +8,7 @@ import { resetAgenticRagClient } from '../services/agenticRag'
 import { resetPipelineClient } from '../services/generationPipeline'
 import { resetMemoryClient } from '../services/memory'
 import { resetMiddlewareClient } from '../services/aiMiddleware'
+import { tokenTracker } from '../services/tokenTracker'
 
 export function registerConfigHandlers() {
   ipcMain.handle(IPC_CHANNELS.CONFIG_GET_API_KEY, async () => {
@@ -87,6 +88,14 @@ export function registerConfigHandlers() {
       configService.setConfig(updates)
     }
   )
+
+  ipcMain.handle(IPC_CHANNELS.TOKEN_USAGE_GET_SUMMARY, () => {
+    return tokenTracker.getSummary()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.TOKEN_USAGE_RESET, () => {
+    tokenTracker.reset()
+  })
 
   ipcMain.handle(
     IPC_CHANNELS.DIALOG_OPEN_FILE,

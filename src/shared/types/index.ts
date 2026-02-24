@@ -152,6 +152,7 @@ export type GeneratedContentType =
   | 'diff'
   | 'citation-graph'
   | 'whitepaper'
+  | 'html-presentation'
 
 // Image Slides types
 export interface SlideStylePreset {
@@ -301,6 +302,8 @@ export interface StudioToolOptions {
   // White Paper
   whitepaperTone?: 'academic' | 'business' | 'technical'
   whitepaperLength?: 'concise' | 'standard' | 'comprehensive'
+  // HTML Presentation
+  htmlModel?: 'flash' | 'pro'
   // Shared
   length?: 'short' | 'default' | 'long'
   description?: string
@@ -340,6 +343,26 @@ export interface StudioGenerationProgress {
   generatedContentId: string
   stage: 'researching' | 'writing' | 'reviewing' | 'revising' | 'complete'
   message: string
+}
+
+// Token Usage Tracking
+export interface TokenLogEntry {
+  id: string
+  timestamp: string
+  provider: 'gemini' | 'claude' | 'openai' | 'groq'
+  model: string
+  feature: string
+  inputTokens: number
+  outputTokens: number
+  estimatedCost: number
+}
+
+export interface TokenUsageSummary {
+  totalInputTokens: number
+  totalOutputTokens: number
+  totalEstimatedCost: number
+  byProvider: Record<string, { input: number; output: number; cost: number; calls: number }>
+  recentCalls: TokenLogEntry[]
 }
 
 export type GeneratedContentStatus = 'pending' | 'generating' | 'completed' | 'failed'

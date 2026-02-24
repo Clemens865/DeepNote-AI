@@ -3,6 +3,7 @@ import { configService } from './config'
 import { generateWithValidation, resetMiddlewareClient } from './aiMiddleware'
 import { shouldUsePipeline, executePipeline } from './generationPipeline'
 import { memoryService } from './memory'
+import { trackGeminiResponse } from './tokenTracker'
 import type { SlideContentPlan, ReportFormatSuggestion, WhitePaperReference } from '../../shared/types'
 
 let client: GoogleGenAI | null = null
@@ -163,6 +164,7 @@ export class AiService {
       config: { systemInstruction: systemPrompt },
       contents,
     })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'chat')
 
     return response.text ?? 'No response generated.'
   }
@@ -190,13 +192,16 @@ export class AiService {
     })
 
     let fullText = ''
+    let lastChunk: unknown
     for await (const chunk of response) {
+      lastChunk = chunk
       const text = chunk.text ?? ''
       if (text) {
         fullText += text
         onChunk?.(text)
       }
     }
+    if (lastChunk) trackGeminiResponse(lastChunk, 'gemini-3-flash-preview', 'chat-stream')
 
     return fullText || 'No response generated.'
   }
@@ -218,6 +223,7 @@ export class AiService {
         },
       ],
     })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'source-guide')
 
     return response.text ?? 'Summary unavailable.'
   }
@@ -604,6 +610,7 @@ Output ONLY valid JSON, no markdown fences.`
       model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'studio:audio')
 
     const responseText = response.text ?? '{}'
     const cleaned = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
@@ -702,6 +709,7 @@ Output the full array with EXACTLY ${slideCount} slides:`
       model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'studio:slides')
 
     const responseText = response.text ?? '[]'
     const cleaned = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
@@ -736,7 +744,7 @@ Output the full array with EXACTLY ${slideCount} slides:`
         ? 'image/webp'
         : 'image/jpeg'
 
-    const response = await ai.models.generateContent({
+    const styleResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [
         {
@@ -792,8 +800,9 @@ Do NOT describe what is depicted. ONLY describe HOW it is rendered and what to a
         },
       ],
     })
+    trackGeminiResponse(styleResponse, 'gemini-3-flash-preview', 'style-analysis')
 
-    return response.text ?? ''
+    return styleResponse.text ?? ''
   }
 
   async generateHtmlPresentation(
@@ -1129,6 +1138,7 @@ CRITICAL INSTRUCTIONS:
       model: htmlModelChoice,
       contents: [{ role: 'user', parts: [{ text: htmlPrompt }] }],
     })
+    trackGeminiResponse(htmlResponse, htmlModelChoice, 'studio:html-presentation')
 
     let htmlOutput = htmlResponse.text ?? ''
     // Strip markdown fences if present
@@ -1172,6 +1182,7 @@ Output ONLY valid JSON, no markdown fences.`,
         },
       ],
     })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'studio:report-suggest')
 
     const responseText = response.text ?? '[]'
     const cleaned = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
@@ -1190,7 +1201,7 @@ Output ONLY valid JSON, no markdown fences.`,
     const ai = getClient()
     const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 60000)
 
-    const response = await ai.models.generateContent({
+    const infographicResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [
         {
@@ -1227,8 +1238,9 @@ Output ONLY valid JSON, no markdown fences.`,
         },
       ],
     })
+    trackGeminiResponse(infographicResponse, 'gemini-3-flash-preview', 'studio:infographic')
 
-    const responseText = response.text ?? '{}'
+    const responseText = infographicResponse.text ?? '{}'
     const cleaned = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     try {
       return JSON.parse(cleaned)
@@ -1314,6 +1326,7 @@ Output ONLY valid JSON, no markdown fences.`
       model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'studio:whitepaper')
 
     const responseText = response.text ?? '{}'
     const cleaned = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
@@ -1354,6 +1367,7 @@ Structure your response with clear headings and sections. Be thorough and detail
       model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: researchPrompt }] }],
     })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'deep-research')
 
     onProgress?.('finalizing', 'Finalizing research report...')
 

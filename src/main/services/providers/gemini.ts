@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai'
 import type { ChatProviderAdapter } from './types'
+import { trackGeminiResponse } from '../tokenTracker'
 
 export class GeminiAdapter implements ChatProviderAdapter {
   private client: GoogleGenAI
@@ -27,13 +28,16 @@ export class GeminiAdapter implements ChatProviderAdapter {
     })
 
     let fullText = ''
+    let lastChunk: unknown
     for await (const chunk of response) {
+      lastChunk = chunk
       const text = chunk.text ?? ''
       if (text) {
         fullText += text
         onChunk(text)
       }
     }
+    if (lastChunk) trackGeminiResponse(lastChunk, this.model, 'provider:gemini-chat')
 
     return fullText || 'No response generated.'
   }

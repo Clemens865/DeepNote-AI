@@ -1,4 +1,4 @@
-import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, DeepBrainEmailResult } from './index'
+import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, DeepBrainEmailResult, TokenUsageSummary } from './index'
 
 export const IPC_CHANNELS = {
   // Notebooks
@@ -133,6 +133,10 @@ export const IPC_CHANNELS = {
 
   // DeepNote API
   DEEPNOTE_API_STATUS: 'deepnote-api:status',
+
+  // Token Usage
+  TOKEN_USAGE_GET_SUMMARY: 'token-usage:get-summary',
+  TOKEN_USAGE_RESET: 'token-usage:reset',
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
@@ -505,6 +509,10 @@ export interface IpcHandlerMap {
       recentClipboard?: string
     } | null
   }
+
+  // Token Usage
+  [IPC_CHANNELS.TOKEN_USAGE_GET_SUMMARY]: { args: []; return: TokenUsageSummary }
+  [IPC_CHANNELS.TOKEN_USAGE_RESET]: { args: []; return: void }
 
   // HTML Presentation
   [IPC_CHANNELS.STUDIO_SAVE_HTML]: {

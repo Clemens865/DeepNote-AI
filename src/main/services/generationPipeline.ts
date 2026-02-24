@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai'
 import { configService } from './config'
 import { generateWithValidation } from './aiMiddleware'
+import { trackGeminiResponse } from './tokenTracker'
 
 let client: GoogleGenAI | null = null
 
@@ -70,6 +71,7 @@ Be thorough but concise. Focus on information that's most relevant for creating 
     model: 'gemini-3-flash-preview',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   })
+  trackGeminiResponse(response, 'gemini-3-flash-preview', 'pipeline:research')
 
   return response.text ?? ''
 }
@@ -129,6 +131,7 @@ Output ONLY valid JSON, no markdown fences.`
     model: 'gemini-3-flash-preview',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   })
+  trackGeminiResponse(response, 'gemini-3-flash-preview', 'pipeline:review')
 
   const raw = (response.text ?? '{}').replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
   try {

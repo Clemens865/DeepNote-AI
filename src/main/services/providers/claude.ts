@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { ChatProviderAdapter } from './types'
+import { tokenTracker } from '../tokenTracker'
 
 export class ClaudeAdapter implements ChatProviderAdapter {
   private client: Anthropic
@@ -33,7 +34,13 @@ export class ClaudeAdapter implements ChatProviderAdapter {
       onChunk(text)
     })
 
-    await stream.finalMessage()
+    const finalMessage = await stream.finalMessage()
+    try {
+      const usage = finalMessage.usage
+      if (usage) {
+        tokenTracker.track('claude', this.model, 'provider:claude-chat', usage.input_tokens, usage.output_tokens)
+      }
+    } catch { /* ignore tracking errors */ }
 
     return fullText || 'No response generated.'
   }

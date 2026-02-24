@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import type { ChatProviderAdapter } from './types'
+import { tokenTracker } from '../tokenTracker'
 
 export class OpenAIAdapter implements ChatProviderAdapter {
   private client: OpenAI
@@ -27,15 +28,23 @@ export class OpenAIAdapter implements ChatProviderAdapter {
       model: this.model,
       messages: formattedMessages,
       stream: true,
+      stream_options: { include_usage: true },
     })
 
     let fullText = ''
+    let usageData: { prompt_tokens?: number; completion_tokens?: number } | null = null
     for await (const chunk of stream) {
       const text = chunk.choices[0]?.delta?.content ?? ''
       if (text) {
         fullText += text
         onChunk(text)
       }
+      if (chunk.usage) {
+        usageData = chunk.usage
+      }
+    }
+    if (usageData) {
+      tokenTracker.track('openai', this.model, 'provider:openai-chat', usageData.prompt_tokens ?? 0, usageData.completion_tokens ?? 0)
     }
 
     return fullText || 'No response generated.'
