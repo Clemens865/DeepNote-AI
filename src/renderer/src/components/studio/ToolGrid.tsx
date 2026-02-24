@@ -6,7 +6,7 @@ import {
   Headphones, BrainCircuit, FileBarChart, Layers,
   HelpCircle, Presentation, Table2, ArrowRight,
   CheckCircle2, Pencil, ImageIcon, LayoutDashboard,
-  BookOpen, Trophy, GitCompare, Network, FileText,
+  BookOpen, Trophy, GitCompare, Network, FileText, Globe,
 } from 'lucide-react'
 
 interface Tool {
@@ -32,6 +32,7 @@ const TOOLS: Tool[] = [
   { id: 'diff', label: 'Document Diff', description: 'Compare two sources clause-by-clause.', Icon: GitCompare, enabled: true },
   { id: 'citation-graph', label: 'Citation Graph', description: 'Visualize relationships between your sources.', Icon: Network, enabled: true },
   { id: 'whitepaper', label: 'White Paper', description: 'Generate a professional white paper with images, citations, and references.', Icon: FileText, enabled: true },
+  { id: 'html-presentation', label: 'Web Presentation', description: 'Generate a stunning animated HTML presentation deck.', Icon: Globe, enabled: true },
 ]
 
 interface ToolGridProps {
@@ -42,9 +43,10 @@ interface ToolGridProps {
   onOpenReportFormat?: () => void
   onStartInfographic?: () => void
   onStartWhitePaper?: () => void
+  onStartHtmlPresentation?: () => void
 }
 
-export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize, onOpenReportFormat, onStartInfographic, onStartWhitePaper }: ToolGridProps) {
+export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize, onOpenReportFormat, onStartInfographic, onStartWhitePaper, onStartHtmlPresentation }: ToolGridProps) {
   const [toast, setToast] = useState<string | null>(null)
   const [generating, setGenerating] = useState<string | null>(null)
   const [hasGeminiKey, setHasGeminiKey] = useState(true) // optimistic default
@@ -90,6 +92,14 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
       return
     }
 
+    // Intercept html-presentation for fire-and-forget generation
+    if (tool.id === 'html-presentation' && onStartHtmlPresentation) {
+      setGenerating(tool.id)
+      onStartHtmlPresentation()
+      setTimeout(() => setGenerating(null), 500)
+      return
+    }
+
     if (!currentNotebook) return
     if (selectedCount === 0) {
       setToast('Please add and select at least one source first.')
@@ -130,6 +140,10 @@ export function ToolGrid({ onGenerated, onOpenImageSlidesWizard, onOpenCustomize
     }
     if (tool.id === 'whitepaper' && onStartWhitePaper) {
       onStartWhitePaper()
+      return
+    }
+    if (tool.id === 'html-presentation' && onStartHtmlPresentation) {
+      onStartHtmlPresentation()
       return
     }
     onOpenCustomize?.(tool.id, tool.label)

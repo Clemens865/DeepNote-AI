@@ -63,7 +63,7 @@ export const generatedContent = sqliteTable('generated_content', {
   id: text('id').primaryKey(),
   notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
   type: text('type', {
-    enum: ['audio', 'video', 'slides', 'image-slides', 'quiz', 'flashcard', 'mindmap', 'infographic', 'datatable', 'report', 'dashboard', 'literature-review', 'competitive-analysis', 'diff', 'citation-graph', 'whitepaper'],
+    enum: ['audio', 'video', 'slides', 'image-slides', 'quiz', 'flashcard', 'mindmap', 'infographic', 'datatable', 'report', 'dashboard', 'literature-review', 'competitive-analysis', 'diff', 'citation-graph', 'whitepaper', 'html-presentation'],
   }).notNull(),
   title: text('title').notNull(),
   data: text('data', { mode: 'json' }).notNull().default('{}'),

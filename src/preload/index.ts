@@ -148,6 +148,45 @@ const api = {
     }
   },
 
+  // HTML Presentation
+  studioSaveHtml: (args: { html: string; defaultName: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.STUDIO_SAVE_HTML, args),
+  studioOpenHtmlTemp: (args: { html: string; filename: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.STUDIO_OPEN_HTML_TEMP, args),
+  htmlPresentationStart: (args: {
+    notebookId: string
+    model: 'flash' | 'pro'
+    stylePresetId: string
+    userInstructions?: string
+    customStyleImagePath?: string
+    customStyleColors?: string[]
+    customStyleDescription?: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_START, args),
+  onHtmlPresentationProgress: (
+    callback: (data: { generatedContentId: string; stage: string; message: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; stage: string; message: string }
+    ) => callback(data)
+    ipcRenderer.on('html-presentation:progress', handler)
+    return () => {
+      ipcRenderer.removeListener('html-presentation:progress', handler)
+    }
+  },
+  onHtmlPresentationComplete: (
+    callback: (data: { generatedContentId: string; success: boolean; error?: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; success: boolean; error?: string }
+    ) => callback(data)
+    ipcRenderer.on('html-presentation:complete', handler)
+    return () => {
+      ipcRenderer.removeListener('html-presentation:complete', handler)
+    }
+  },
+
   // Config
   getApiKey: () => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_GET_API_KEY),
   setApiKey: (key: string) => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_SET_API_KEY, key),

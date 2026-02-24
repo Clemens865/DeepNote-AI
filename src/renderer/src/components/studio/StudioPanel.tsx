@@ -6,6 +6,7 @@ import { StudioCustomizeDialog } from './StudioCustomizeDialog'
 import { ReportFormatDialog } from './ReportFormatDialog'
 import { InfographicWizard } from './InfographicWizard'
 import { WhitePaperWizard } from './WhitePaperWizard'
+import { HtmlPresentationWizard } from './HtmlPresentationWizard'
 import { useNotebookStore } from '../../stores/notebookStore'
 import {
   PanelRightOpen,
@@ -35,6 +36,7 @@ const TYPE_LABELS: Record<string, string> = {
   diff: 'Diff',
   'citation-graph': 'Citation Graph',
   whitepaper: 'White Paper',
+  'html-presentation': 'Web Deck',
 }
 
 interface StudioPanelProps {
@@ -53,6 +55,7 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
   const [reportFormatGenerating, setReportFormatGenerating] = useState(false)
   const [showInfographicWizard, setShowInfographicWizard] = useState(false)
   const [showWhitePaperWizard, setShowWhitePaperWizard] = useState(false)
+  const [showHtmlPresentationWizard, setShowHtmlPresentationWizard] = useState(false)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -182,6 +185,15 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
     }
   }
 
+  const handleHtmlPresentationComplete = async (contentId: string) => {
+    setShowHtmlPresentationWizard(false)
+    const content = (await window.api.studioStatus(contentId)) as GeneratedContent | null
+    if (content) {
+      setGeneratedItems((prev) => [content, ...prev])
+      setViewing(content)
+    }
+  }
+
   const handleCustomizeGenerate = async (options: StudioToolOptions) => {
     if (!currentNotebook || !customizeTool) return
 
@@ -275,6 +287,7 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
               onOpenReportFormat={() => setShowReportFormat(true)}
               onStartInfographic={() => setShowInfographicWizard(true)}
               onStartWhitePaper={() => setShowWhitePaperWizard(true)}
+              onStartHtmlPresentation={() => setShowHtmlPresentationWizard(true)}
             />
 
             {generatedItems.length > 0 && (
@@ -458,6 +471,14 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
           notebookId={currentNotebook.id}
           onComplete={handleWhitePaperComplete}
           onClose={() => setShowWhitePaperWizard(false)}
+        />
+      )}
+
+      {showHtmlPresentationWizard && currentNotebook && (
+        <HtmlPresentationWizard
+          notebookId={currentNotebook.id}
+          onComplete={handleHtmlPresentationComplete}
+          onClose={() => setShowHtmlPresentationWizard(false)}
         />
       )}
 

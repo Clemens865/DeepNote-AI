@@ -526,6 +526,15 @@ Output ONLY valid JSON, no markdown fences.`
         break
       }
 
+      case 'html-presentation': {
+        // Delegate to dedicated method for backward compatibility
+        const model = (options?.htmlModel as string) === 'pro' ? 'pro' : 'flash'
+        return this.generateHtmlPresentation(sourceTexts, {
+          model: model as 'flash' | 'pro',
+          userInstructions: userDescription || undefined,
+        })
+      }
+
       default:
         throw new Error(`Unsupported content type: ${type}`)
     }
@@ -785,6 +794,351 @@ Do NOT describe what is depicted. ONLY describe HOW it is rendered and what to a
     })
 
     return response.text ?? ''
+  }
+
+  async generateHtmlPresentation(
+    sourceTexts: string[],
+    options?: {
+      model?: 'flash' | 'pro'
+      userInstructions?: string
+      cssVariables?: Record<string, string>
+      styleInstructions?: string
+    }
+  ): Promise<{ html: string }> {
+    const ai = getClient()
+    const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 100000)
+    const htmlModelChoice = options?.model === 'pro' ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview'
+    const userDescription = options?.userInstructions ? `\n${options.userInstructions}` : ''
+    const styleHint = options?.styleInstructions ? `\n\nSTYLE DIRECTION: ${options.styleInstructions}` : ''
+
+    // Build :root CSS variables block
+    const cssVars = options?.cssVariables || {}
+    const rootVarsLines = Object.entries(cssVars).map(([k, v]) => `    ${k}: ${v};`)
+    const rootBlock = rootVarsLines.length > 0
+      ? `  :root {\n${rootVarsLines.join('\n')}\n  }\n`
+      : `  :root {
+    --bg-primary: #050510;
+    --bg-secondary: #0a0a1a;
+    --accent-1: #6366f1;
+    --accent-2: #a855f7;
+    --accent-3: #ec4899;
+    --text-primary: rgba(255,255,255,0.95);
+    --text-secondary: rgba(255,255,255,0.85);
+    --text-muted: rgba(255,255,255,0.5);
+    --glass-bg: rgba(255,255,255,0.03);
+    --glass-border: rgba(255,255,255,0.06);
+    --particle-rgb: 99,102,241;
+  }
+`
+
+    const htmlPrompt = `You are a world-class creative developer who builds award-winning animated web experiences (like Awwwards, FWA winners). Create an absolutely STUNNING, cinematic, self-contained HTML presentation from the source material below.${userDescription}${styleHint}
+
+Source material:
+${combinedText}
+
+OUTPUT: Return ONLY raw HTML starting with <!DOCTYPE html>. No markdown fences, no backticks, no explanation text.
+
+You MUST use this exact skeleton and fill in the content sections. Do NOT simplify or remove any visual effects.
+CRITICAL: Use the CSS custom properties (var(--accent-1), var(--bg-primary), etc.) throughout the CSS. Do NOT hardcode color values — always reference the CSS variables from :root.
+
+\`\`\`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+${rootBlock}
+  /* === RESET & BASE === */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; overflow-y: scroll; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    overflow-x: hidden;
+  }
+
+  /* === PARTICLE CANVAS (fixed behind everything) === */
+  #particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  /* === ANIMATED GRADIENT MESH BACKGROUND (fixed, animated) === */
+  .bg-mesh {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 20%, color-mix(in srgb, var(--accent-1) 15%, transparent), transparent),
+      radial-gradient(ellipse 60% 80% at 90% 80%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent),
+      radial-gradient(ellipse 70% 50% at 50% 50%, color-mix(in srgb, var(--accent-3) 8%, transparent), transparent);
+    animation: meshShift 20s ease-in-out infinite alternate;
+  }
+  @keyframes meshShift {
+    0% { background-position: 0% 0%, 100% 100%, 50% 50%; filter: hue-rotate(0deg); }
+    100% { background-position: 100% 100%, 0% 0%, 50% 50%; filter: hue-rotate(30deg); }
+  }
+
+  /* === SECTIONS === */
+  section {
+    min-height: 100vh; scroll-snap-align: start;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+    padding: clamp(2rem, 5vw, 6rem);
+  }
+  .section-inner { max-width: 1100px; width: 100%; }
+
+  /* === PROGRESS BAR (top) === */
+  #progress {
+    position: fixed; top: 0; left: 0; height: 3px; z-index: 100;
+    background: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3));
+    width: 0%; transition: width 0.3s ease;
+  }
+
+  /* === SLIDE COUNTER (bottom-right) === */
+  #counter {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 100;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+    color: var(--text-muted); letter-spacing: 0.1em;
+  }
+
+  /* === GLASSMORPHISM CARD === */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(1.2);
+    -webkit-backdrop-filter: blur(24px) saturate(1.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: clamp(1.5rem, 3vw, 3rem);
+    position: relative; overflow: hidden;
+  }
+  .glass::before {
+    content: ''; position: absolute; inset: 0; border-radius: 24px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  /* === GRADIENT TEXT === */
+  .gradient-text {
+    background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* === HERO === */
+  .hero-title {
+    font-size: clamp(3rem, 8vw, 6rem); font-weight: 900;
+    line-height: 1.05; letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+  }
+  .hero-subtitle {
+    font-size: clamp(1.1rem, 2.5vw, 1.5rem); font-weight: 300;
+    color: var(--text-muted); max-width: 600px;
+    line-height: 1.7;
+  }
+  .hero-line {
+    width: 80px; height: 3px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+    margin: 2rem 0;
+  }
+
+  /* === SECTION HEADINGS === */
+  .section-heading {
+    font-size: clamp(2rem, 4vw, 3rem); font-weight: 700;
+    line-height: 1.2; margin-bottom: 1rem;
+  }
+  .section-tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+    font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--accent-1); margin-bottom: 0.75rem; display: block;
+  }
+
+  /* === CONTENT CARDS GRID === */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+  .card {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 20px; padding: 2rem; position: relative; overflow: hidden;
+    transition: border-color 0.4s ease, transform 0.4s ease;
+  }
+  .card:hover { border-color: color-mix(in srgb, var(--accent-1) 30%, transparent); transform: translateY(-4px); }
+  .card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-1), var(--accent-2), transparent);
+    opacity: 0; transition: opacity 0.4s ease;
+  }
+  .card:hover::after { opacity: 1; }
+  .card-icon {
+    width: 40px; height: 40px; margin-bottom: 1rem; display: flex;
+    align-items: center; justify-content: center; border-radius: 12px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-1) 15%, transparent), color-mix(in srgb, var(--accent-2) 15%, transparent));
+  }
+  .card-icon svg { width: 20px; height: 20px; stroke: var(--accent-1); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .card h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.6rem; color: var(--text-primary); }
+  .card p { font-size: 0.95rem; line-height: 1.7; color: var(--text-muted); }
+
+  /* === BULLET LIST === */
+  .bullet-list { list-style: none; margin-top: 1.5rem; }
+  .bullet-list li {
+    padding: 1rem 1.5rem; margin-bottom: 0.75rem;
+    background: var(--glass-bg); border-left: 3px solid var(--accent-1);
+    border-radius: 0 12px 12px 0; font-size: 1.05rem; line-height: 1.7;
+    color: var(--text-secondary);
+  }
+  .bullet-list li strong { color: var(--text-primary); }
+
+  /* === STAT / KPI BLOCKS === */
+  .stat-row { display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 2rem; }
+  .stat {
+    flex: 1; min-width: 160px; text-align: center;
+    padding: 2rem 1rem; border-radius: 20px;
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+  }
+  .stat-value {
+    font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; line-height: 1;
+  }
+  .stat-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; }
+
+  /* === FINAL SLIDE === */
+  .final-slide { text-align: center; }
+  .final-slide .hero-title { font-size: clamp(2.5rem, 6vw, 4.5rem); }
+
+  /* === FLOATING GLOW ORBS (decorative) === */
+  .orb {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15; pointer-events: none;
+  }
+
+  /* === ANIMATED ELEMENTS start invisible === */
+  .anim { opacity: 0; }
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<canvas id="particles"></canvas>
+<div id="progress"></div>
+<div id="counter">1 / N</div>
+
+<!-- SECTION 1: HERO (dramatic title + subtitle + decorative line) -->
+<section>
+  <div class="section-inner" style="text-align:center;">
+    <div class="orb" style="width:500px;height:500px;background:var(--accent-1);top:-10%;left:-10%;"></div>
+    <div class="orb" style="width:400px;height:400px;background:var(--accent-2);bottom:-10%;right:-10%;"></div>
+    <h1 class="hero-title gradient-text anim">YOUR TITLE HERE</h1>
+    <div class="hero-line anim" style="margin:2rem auto;"></div>
+    <p class="hero-subtitle anim" style="margin:0 auto;">A one-line subtitle summarizing the presentation</p>
+  </div>
+</section>
+
+<!-- SECTIONS 2-N: Use a MIX of these layouts for visual variety:
+     - glass card with bullet-list (bordered left-accent bullets)
+     - card-grid (2-3 cards with SVG icons, h3, p)
+     - stat-row (big gradient numbers + labels)
+     - split layout (heading left, glass card right)
+     Make each section visually DIFFERENT from the previous one.
+     Use .section-tag for a small tag like "01 — TOPIC", then .section-heading.gradient-text for the heading.
+-->
+
+<!-- FINAL SECTION: big centered "Thank You" or "Key Takeaways" with gradient text -->
+
+<script>
+// === PARTICLES (uses --particle-rgb from CSS) ===
+(function(){
+  const c=document.getElementById('particles'),x=c.getContext('2d');
+  const pRgb=getComputedStyle(document.documentElement).getPropertyValue('--particle-rgb').trim()||'99,102,241';
+  let w,h,pts=[];
+  function resize(){w=c.width=innerWidth;h=c.height=innerHeight;}
+  resize(); addEventListener('resize',resize);
+  for(let i=0;i<80;i++) pts.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.5+0.5,dx:(Math.random()-0.5)*0.3,dy:(Math.random()-0.5)*0.3,o:Math.random()*0.3+0.1});
+  function draw(){
+    x.clearRect(0,0,w,h);
+    for(const p of pts){
+      p.x+=p.dx; p.y+=p.dy;
+      if(p.x<0)p.x=w; if(p.x>w)p.x=0; if(p.y<0)p.y=h; if(p.y>h)p.y=0;
+      x.beginPath(); x.arc(p.x,p.y,p.r,0,Math.PI*2);
+      x.fillStyle='rgba('+pRgb+','+p.o+')'; x.fill();
+    }
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
+      if(d<120){ x.beginPath(); x.moveTo(pts[i].x,pts[i].y); x.lineTo(pts[j].x,pts[j].y);
+        x.strokeStyle='rgba('+pRgb+','+(0.06*(1-d/120))+')'; x.stroke(); }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// === GSAP ANIMATIONS ===
+gsap.registerPlugin(ScrollTrigger);
+document.querySelectorAll('.anim').forEach(el=>{
+  gsap.fromTo(el,{opacity:0, y:40, scale:0.95},{
+    opacity:1, y:0, scale:1, duration:0.9, ease:'power3.out',
+    scrollTrigger:{trigger:el, start:'top 85%', toggleActions:'play none none none'}
+  });
+});
+document.querySelectorAll('section').forEach(sec=>{
+  const cards=sec.querySelectorAll('.card, .bullet-list li, .stat');
+  if(cards.length) gsap.fromTo(cards,{opacity:0, y:30},{
+    opacity:1, y:0, duration:0.7, stagger:0.12, ease:'power2.out',
+    scrollTrigger:{trigger:sec, start:'top 70%', toggleActions:'play none none none'}
+  });
+});
+
+// === PROGRESS BAR & COUNTER ===
+const sections=document.querySelectorAll('section');
+const bar=document.getElementById('progress');
+const counter=document.getElementById('counter');
+const total=sections.length;
+let current=0;
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){
+    current=[...sections].indexOf(e.target);
+    bar.style.width=((current+1)/total*100)+'%';
+    counter.textContent=(current+1)+' / '+total;
+  }});
+},{threshold:0.5});
+sections.forEach(s=>obs.observe(s));
+
+// === KEYBOARD NAV ===
+document.addEventListener('keydown',e=>{
+  if(['ArrowDown','ArrowRight'].includes(e.key)&&current<total-1){e.preventDefault();sections[current+1].scrollIntoView({behavior:'smooth'});}
+  if(['ArrowUp','ArrowLeft'].includes(e.key)&&current>0){e.preventDefault();sections[current-1].scrollIntoView({behavior:'smooth'});}
+});
+</script>
+</body>
+</html>
+\`\`\`
+
+CRITICAL INSTRUCTIONS:
+1. Use the EXACT skeleton above — keep ALL CSS, ALL JS (particles, GSAP, progress bar, keyboard nav). Do NOT simplify or remove anything.
+2. Replace "YOUR TITLE HERE" with a compelling title from the source material.
+3. Create 7-9 content sections between the hero and the final slide. Each section MUST use a DIFFERENT layout pattern for visual variety:
+   - At least one section with .card-grid (2-3 cards with inline SVG icons in .card-icon divs — use simple Lucide-style SVG icons like arrows, lightbulbs, charts, gears, shields, etc. Example: <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>)
+   - At least one section with .bullet-list inside a .glass card
+   - At least one section with .stat-row (big numbers)
+   - At least one section with a split layout (flex row: text left, .glass card right)
+4. Every section heading uses: <span class="section-tag anim">0N — TOPIC</span><h2 class="section-heading gradient-text anim">Heading</h2>
+5. Add class="anim" to ALL headings, paragraphs, cards, and content elements so GSAP animates them.
+6. Add decorative .orb divs using var(--accent-1) and var(--accent-2) colors to 2-3 sections for depth.
+7. The final section should be class="final-slide" with a big gradient "Key Takeaways" heading and 3-4 takeaway bullets.
+8. Extract REAL, SPECIFIC content from the sources — not generic placeholder text.
+9. NEVER use emojis anywhere in the HTML. Use inline SVG icons (Lucide-style, 24x24 viewBox, stroke-based) inside .card-icon divs instead. Each card should have a unique, relevant SVG icon.
+10. ALWAYS use CSS custom properties (var(--accent-1), var(--bg-primary), etc.) — never hardcode hex colors for theme-related elements.
+11. Return ONLY the HTML. No markdown fences. No explanation.`
+
+    const htmlResponse = await ai.models.generateContent({
+      model: htmlModelChoice,
+      contents: [{ role: 'user', parts: [{ text: htmlPrompt }] }],
+    })
+
+    let htmlOutput = htmlResponse.text ?? ''
+    // Strip markdown fences if present
+    htmlOutput = htmlOutput.replace(/^```html\n?/i, '').replace(/```\n?$/i, '').trim()
+
+    if (!htmlOutput.includes('<!DOCTYPE') && !htmlOutput.includes('<html')) {
+      throw new Error('AI did not return valid HTML output')
+    }
+
+    return { html: htmlOutput }
   }
 
   async suggestReportFormats(sourceTexts: string[]): Promise<ReportFormatSuggestion[]> {

@@ -54,6 +54,11 @@ export const IPC_CHANNELS = {
   WHITEPAPER_START: 'whitepaper:start',
   WHITEPAPER_EXPORT_PDF: 'whitepaper:exportPdf',
 
+  // Studio (HTML presentation)
+  STUDIO_SAVE_HTML: 'studio:saveHtml',
+  STUDIO_OPEN_HTML_TEMP: 'studio:openHtmlTemp',
+  HTML_PRESENTATION_START: 'html-presentation:start',
+
   // Config
   CONFIG_GET_API_KEY: 'config:getApiKey',
   CONFIG_SET_API_KEY: 'config:setApiKey',
@@ -499,6 +504,30 @@ export interface IpcHandlerMap {
       recentFiles: { path: string; timestamp: number }[]
       recentClipboard?: string
     } | null
+  }
+
+  // HTML Presentation
+  [IPC_CHANNELS.STUDIO_SAVE_HTML]: {
+    args: [{ html: string; defaultName: string }]
+    return: { success: boolean; filePath?: string }
+  }
+  [IPC_CHANNELS.STUDIO_OPEN_HTML_TEMP]: {
+    args: [{ html: string; filename: string }]
+    return: { success: boolean }
+  }
+
+  // HTML Presentation (fire-and-forget)
+  [IPC_CHANNELS.HTML_PRESENTATION_START]: {
+    args: [{
+      notebookId: string
+      model: 'flash' | 'pro'
+      stylePresetId: string
+      userInstructions?: string
+      customStyleImagePath?: string
+      customStyleColors?: string[]
+      customStyleDescription?: string
+    }]
+    return: { generatedContentId: string }
   }
 
   // DeepNote API

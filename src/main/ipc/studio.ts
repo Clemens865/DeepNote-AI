@@ -1,6 +1,7 @@
-import { ipcMain, BrowserWindow, dialog } from 'electron'
+import { ipcMain, BrowserWindow, dialog, shell } from 'electron'
 import { copyFile, readFile, writeFile } from 'fs/promises'
-import { extname } from 'path'
+import { extname, join } from 'path'
+import { tmpdir } from 'os'
 import { randomUUID } from 'crypto'
 import { eq, desc } from 'drizzle-orm'
 import { IPC_CHANNELS } from '../../shared/types/ipc'
@@ -28,7 +29,140 @@ const TYPE_TITLES: Record<string, string> = {
   diff: 'Document Comparison',
   'citation-graph': 'Citation Graph',
   whitepaper: 'White Paper',
+  'html-presentation': 'HTML Presentation',
 }
+
+function hexToRgbTuple(hex: string): string {
+  const clean = hex.replace('#', '')
+  const r = parseInt(clean.substring(0, 2), 16)
+  const g = parseInt(clean.substring(2, 4), 16)
+  const b = parseInt(clean.substring(4, 6), 16)
+  return `${r},${g},${b}`
+}
+
+// HTML Presentation style presets
+const HTML_PRESENTATION_PRESETS = [
+  {
+    id: 'midnight-indigo',
+    name: 'Midnight Indigo',
+    description: 'Deep dark + indigo/purple',
+    colorPalette: ['#050510', '#6366f1', '#a855f7', '#ec4899', '#818cf8'],
+    cssVariables: {
+      '--bg-primary': '#050510',
+      '--bg-secondary': '#0a0a1a',
+      '--accent-1': '#6366f1',
+      '--accent-2': '#a855f7',
+      '--accent-3': '#ec4899',
+      '--text-primary': 'rgba(255,255,255,0.95)',
+      '--text-secondary': 'rgba(255,255,255,0.85)',
+      '--text-muted': 'rgba(255,255,255,0.5)',
+      '--glass-bg': 'rgba(255,255,255,0.03)',
+      '--glass-border': 'rgba(255,255,255,0.06)',
+      '--particle-rgb': '99,102,241',
+    },
+    promptSuffix: 'deep dark background with indigo, purple, and pink accents — modern, futuristic, elegant',
+  },
+  {
+    id: 'sunset-gradient',
+    name: 'Sunset Gradient',
+    description: 'Warm oranges/reds/amber',
+    colorPalette: ['#0f0a05', '#f97316', '#ef4444', '#f59e0b', '#fbbf24'],
+    cssVariables: {
+      '--bg-primary': '#0f0a05',
+      '--bg-secondary': '#1a0f08',
+      '--accent-1': '#f97316',
+      '--accent-2': '#ef4444',
+      '--accent-3': '#f59e0b',
+      '--text-primary': 'rgba(255,248,240,0.95)',
+      '--text-secondary': 'rgba(255,248,240,0.85)',
+      '--text-muted': 'rgba(255,248,240,0.5)',
+      '--glass-bg': 'rgba(255,200,150,0.03)',
+      '--glass-border': 'rgba(255,200,150,0.08)',
+      '--particle-rgb': '249,115,22',
+    },
+    promptSuffix: 'warm sunset tones with oranges, reds, and amber on a dark warm background — energetic and inviting',
+  },
+  {
+    id: 'ocean-depths',
+    name: 'Ocean Depths',
+    description: 'Deep blues/teals',
+    colorPalette: ['#020817', '#0ea5e9', '#06b6d4', '#2563eb', '#38bdf8'],
+    cssVariables: {
+      '--bg-primary': '#020817',
+      '--bg-secondary': '#0a1628',
+      '--accent-1': '#0ea5e9',
+      '--accent-2': '#06b6d4',
+      '--accent-3': '#2563eb',
+      '--text-primary': 'rgba(240,250,255,0.95)',
+      '--text-secondary': 'rgba(240,250,255,0.85)',
+      '--text-muted': 'rgba(240,250,255,0.5)',
+      '--glass-bg': 'rgba(14,165,233,0.04)',
+      '--glass-border': 'rgba(14,165,233,0.08)',
+      '--particle-rgb': '14,165,233',
+    },
+    promptSuffix: 'deep ocean blues and teals on a dark navy background — calm, professional, trustworthy',
+  },
+  {
+    id: 'neon-cyber',
+    name: 'Neon Cyber',
+    description: 'Bright cyan/magenta, cyberpunk',
+    colorPalette: ['#0a0a0a', '#22d3ee', '#d946ef', '#06b6d4', '#e879f9'],
+    cssVariables: {
+      '--bg-primary': '#0a0a0a',
+      '--bg-secondary': '#111111',
+      '--accent-1': '#22d3ee',
+      '--accent-2': '#d946ef',
+      '--accent-3': '#06b6d4',
+      '--text-primary': 'rgba(255,255,255,0.95)',
+      '--text-secondary': 'rgba(255,255,255,0.85)',
+      '--text-muted': 'rgba(255,255,255,0.5)',
+      '--glass-bg': 'rgba(34,211,238,0.03)',
+      '--glass-border': 'rgba(34,211,238,0.08)',
+      '--particle-rgb': '34,211,238',
+    },
+    promptSuffix: 'neon cyberpunk aesthetic with bright cyan and magenta on pure dark — electric, bold, futuristic',
+  },
+  {
+    id: 'forest-canopy',
+    name: 'Forest Canopy',
+    description: 'Deep greens/earth tones',
+    colorPalette: ['#050f0a', '#22c55e', '#16a34a', '#84cc16', '#4ade80'],
+    cssVariables: {
+      '--bg-primary': '#050f0a',
+      '--bg-secondary': '#0a1a10',
+      '--accent-1': '#22c55e',
+      '--accent-2': '#16a34a',
+      '--accent-3': '#84cc16',
+      '--text-primary': 'rgba(240,255,244,0.95)',
+      '--text-secondary': 'rgba(240,255,244,0.85)',
+      '--text-muted': 'rgba(240,255,244,0.5)',
+      '--glass-bg': 'rgba(34,197,94,0.03)',
+      '--glass-border': 'rgba(34,197,94,0.08)',
+      '--particle-rgb': '34,197,94',
+    },
+    promptSuffix: 'deep forest greens and earth tones on a dark background — natural, organic, grounded',
+  },
+  {
+    id: 'arctic-frost',
+    name: 'Arctic Frost',
+    description: 'Icy blues/whites on dark slate',
+    colorPalette: ['#0f1729', '#38bdf8', '#e2e8f0', '#7dd3fc', '#94a3b8'],
+    cssVariables: {
+      '--bg-primary': '#0f1729',
+      '--bg-secondary': '#162033',
+      '--accent-1': '#38bdf8',
+      '--accent-2': '#7dd3fc',
+      '--accent-3': '#e2e8f0',
+      '--text-primary': 'rgba(248,250,252,0.95)',
+      '--text-secondary': 'rgba(248,250,252,0.85)',
+      '--text-muted': 'rgba(248,250,252,0.5)',
+      '--glass-bg': 'rgba(56,189,248,0.04)',
+      '--glass-border': 'rgba(56,189,248,0.08)',
+      '--particle-rgb': '56,189,248',
+    },
+    promptSuffix: 'icy arctic blues and whites on dark slate — clean, crisp, minimalist, crystalline',
+  },
+]
 
 function broadcastToWindows(channel: string, data: unknown): void {
   BrowserWindow.getAllWindows().forEach((win) => {
@@ -200,6 +334,165 @@ export function registerStudioHandlers() {
 
       await copyFile(args.sourcePath, filePath)
       return { success: true, filePath }
+    }
+  )
+
+  // Save HTML file — show save dialog and write HTML string
+  ipcMain.handle(
+    IPC_CHANNELS.STUDIO_SAVE_HTML,
+    async (_event, args: { html: string; defaultName: string }) => {
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        defaultPath: args.defaultName,
+        filters: [{ name: 'HTML', extensions: ['html'] }],
+      })
+
+      if (canceled || !filePath) {
+        return { success: false }
+      }
+
+      await writeFile(filePath, args.html, 'utf-8')
+      return { success: true, filePath }
+    }
+  )
+
+  // Open HTML in browser via temp file
+  ipcMain.handle(
+    IPC_CHANNELS.STUDIO_OPEN_HTML_TEMP,
+    async (_event, args: { html: string; filename: string }) => {
+      const tempPath = join(tmpdir(), args.filename)
+      await writeFile(tempPath, args.html, 'utf-8')
+      await shell.openPath(tempPath)
+      return { success: true }
+    }
+  )
+
+  // HTML Presentation — fire-and-forget pattern
+  ipcMain.handle(
+    IPC_CHANNELS.HTML_PRESENTATION_START,
+    async (_event, args: {
+      notebookId: string
+      model: 'flash' | 'pro'
+      stylePresetId: string
+      userInstructions?: string
+      customStyleImagePath?: string
+      customStyleColors?: string[]
+      customStyleDescription?: string
+    }) => {
+      const db = getDatabase()
+      const now = new Date().toISOString()
+      const generatedContentId = randomUUID()
+
+      const sources = await db
+        .select()
+        .from(schema.sources)
+        .where(eq(schema.sources.notebookId, args.notebookId))
+
+      const selectedSources = sources.filter((s) => s.isSelected)
+      if (selectedSources.length === 0) {
+        throw new Error('No sources selected. Please add and select at least one source.')
+      }
+
+      const sourceIds = selectedSources.map((s) => s.id)
+      const sourceTexts = selectedSources.map((s) => s.content)
+
+      // Resolve style preset
+      let cssVariables: Record<string, string> = {}
+      let styleInstructions = ''
+
+      if (args.stylePresetId === 'custom-builder' && args.customStyleColors && args.customStyleDescription) {
+        const [bg, primary, accent, text] = args.customStyleColors
+        cssVariables = {
+          '--bg-primary': bg,
+          '--bg-secondary': bg,
+          '--accent-1': primary,
+          '--accent-2': accent,
+          '--accent-3': accent,
+          '--text-primary': text,
+          '--text-secondary': text,
+          '--text-muted': `color-mix(in srgb, ${text} 50%, transparent)`,
+          '--glass-bg': `color-mix(in srgb, ${primary} 4%, transparent)`,
+          '--glass-border': `color-mix(in srgb, ${primary} 8%, transparent)`,
+          '--particle-rgb': hexToRgbTuple(primary),
+        }
+        styleInstructions = args.customStyleDescription
+      } else {
+        const preset = HTML_PRESENTATION_PRESETS.find((p) => p.id === args.stylePresetId)
+        if (preset) {
+          cssVariables = preset.cssVariables
+          styleInstructions = preset.promptSuffix
+        }
+      }
+
+      await db.insert(schema.generatedContent).values({
+        id: generatedContentId,
+        notebookId: args.notebookId,
+        type: 'html-presentation' as const,
+        title: `Web Presentation - ${new Date().toLocaleDateString()}`,
+        data: {} as unknown as string,
+        sourceIds: JSON.stringify(sourceIds),
+        status: 'generating' as const,
+        createdAt: now,
+      })
+
+      ;(async () => {
+        try {
+          // If custom style image was provided, extract style description
+          if (args.customStyleImagePath) {
+            broadcastToWindows('html-presentation:progress', {
+              generatedContentId,
+              stage: 'analyzing-style',
+              message: 'Analyzing reference image style...',
+            })
+            styleInstructions = await aiService.describeImageStyle(args.customStyleImagePath)
+          }
+
+          broadcastToWindows('html-presentation:progress', {
+            generatedContentId,
+            stage: 'generating',
+            message: 'Generating animated HTML presentation...',
+          })
+
+          const result = await aiService.generateHtmlPresentation(sourceTexts, {
+            model: args.model,
+            userInstructions: args.userInstructions,
+            cssVariables: Object.keys(cssVariables).length > 0 ? cssVariables : undefined,
+            styleInstructions: styleInstructions || undefined,
+          })
+
+          const currentDb = getDatabase()
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              data: { html: result.html } as unknown as string,
+              status: 'completed',
+            })
+            .where(eq(schema.generatedContent.id, generatedContentId))
+
+          broadcastToWindows('html-presentation:complete', {
+            generatedContentId,
+            success: true,
+          })
+        } catch (err) {
+          const currentDb = getDatabase()
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              data: {
+                error: err instanceof Error ? err.message : 'HTML presentation generation failed',
+              } as unknown as string,
+              status: 'failed',
+            })
+            .where(eq(schema.generatedContent.id, generatedContentId))
+
+          broadcastToWindows('html-presentation:complete', {
+            generatedContentId,
+            success: false,
+            error: err instanceof Error ? err.message : 'HTML presentation generation failed',
+          })
+        }
+      })()
+
+      return { generatedContentId }
     }
   )
 
