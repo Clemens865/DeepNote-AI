@@ -18,6 +18,7 @@ import {
   DiffView,
   CitationGraphView,
   WhitePaperView,
+  HtmlPresentationView,
 } from './viewers'
 
 interface GeneratedContentViewProps {
@@ -42,6 +43,8 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
         const sections = (data.sections as { title: string; content: string }[]) || []
         text = summary + '\n\n' + sections.map((s) => `## ${s.title}\n${s.content}`).join('\n\n')
       }
+    } else if (content.type === 'html-presentation') {
+      text = (data.html as string) || ''
     } else if (content.type === 'whitepaper') {
       const wpTitle = (data.title as string) || ''
       const abstract = (data.abstract as string) || ''
@@ -60,8 +63,8 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // image-slides has its own fullscreen — skip the Maximize button
-  const showFullscreenButton = content.type !== 'image-slides'
+  // image-slides and html-presentation have their own fullscreen — skip the Maximize button
+  const showFullscreenButton = content.type !== 'image-slides' && content.type !== 'html-presentation'
 
   const viewerProps = {
     data,
@@ -109,6 +112,7 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
       {content.type === 'diff' && <DiffView {...viewerProps} />}
       {content.type === 'citation-graph' && <CitationGraphView {...viewerProps} />}
       {content.type === 'whitepaper' && <WhitePaperView {...viewerProps} />}
+      {content.type === 'html-presentation' && <HtmlPresentationView {...viewerProps} />}
 
       {data.raw != null && (
         <pre className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap bg-black/[0.02] dark:bg-white/[0.02] rounded-lg p-4 border border-black/[0.06] dark:border-white/[0.06]">
