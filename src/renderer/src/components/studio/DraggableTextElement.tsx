@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import DOMPurify from 'dompurify'
 import { useEditor, EditorContent } from '@tiptap/react'
 import { Extension } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
@@ -175,7 +176,7 @@ export function DraggableTextElement({
           textAlign: element.style.align || 'left',
           fontWeight: element.type === 'title' ? 700 : 400,
         }}
-        dangerouslySetInnerHTML={{ __html: element.content }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(element.content) }}
       />
     )
   }

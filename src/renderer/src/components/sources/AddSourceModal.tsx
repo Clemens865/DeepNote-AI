@@ -250,12 +250,12 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
     <Modal isOpen={isOpen} onClose={onClose} title="Add source">
       <div className="space-y-4">
         {/* Tab bar */}
-        <div className="flex gap-1 p-1 bg-black/[0.03] dark:bg-white/[0.03] rounded-xl">
+        <div className="flex gap-1 p-1 bg-black/[0.03] dark:bg-white/[0.03] rounded-xl overflow-x-auto">
           {tabs.map((t) => (
             <button
               key={t.id}
               onClick={() => { setTab(t.id); setError(null) }}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`flex shrink-0 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                 tab === t.id
                   ? 'bg-indigo-600 dark:bg-indigo-500 text-white font-medium shadow-sm'
                   : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'

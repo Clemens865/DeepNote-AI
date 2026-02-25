@@ -1,5 +1,6 @@
 import { useState, Component } from 'react'
 import type { ReactNode, ErrorInfo } from 'react'
+import DOMPurify from 'dompurify'
 import { BookmarkPlus, Copy, Check, FileText, FolderPlus, Sparkles, AlertTriangle } from 'lucide-react'
 import type { ChatMessage as ChatMessageType } from '@shared/types'
 import { parseArtifacts } from '../../utils/artifactParser'
@@ -241,7 +242,7 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
               return (
                 <div
                   key={i}
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(seg.content) }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(seg.content)) }}
                 />
               )
             })}

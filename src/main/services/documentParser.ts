@@ -23,6 +23,10 @@ const IMAGE_MIME_MAP: Record<string, string> = {
 }
 
 export class DocumentParserService {
+  // NOTE: xlsx@0.18.5 has known CVEs (GHSA-4r6h-8v6p-xvw6, GHSA-5pgg-2g8v-p4x9)
+  // for Prototype Pollution and ReDoS. No fix is available from the package.
+  // Risk is limited: only processes user-selected local files, not untrusted network input.
+  // Consider migrating to exceljs if a fix is not released upstream.
   async parseExcel(filePath: string): Promise<{ text: string; title: string; sheetNames: string[] }> {
     const XLSX = await import('xlsx')
     const buffer = await readFile(filePath)
