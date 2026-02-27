@@ -37,6 +37,15 @@ const api = {
   updateNote: (id: string, data: Record<string, unknown>) =>
     ipcRenderer.invoke(IPC_CHANNELS.NOTES_UPDATE, id, data),
   deleteNote: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.NOTES_DELETE, id),
+  notesTags: (notebookId: string) => ipcRenderer.invoke(IPC_CHANNELS.NOTES_TAGS, notebookId),
+  notesBacklinks: (args: { notebookId: string; noteTitle: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTES_BACKLINKS, args),
+  notesResolveLink: (args: { notebookId: string; linkTitle: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTES_RESOLVE_LINK, args),
+
+  // Canvas
+  canvasSave: (args: { id: string; data: Record<string, unknown> }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CANVAS_SAVE, args),
 
   // Chat
   chatMessages: (notebookId: string) =>
@@ -74,6 +83,7 @@ const api = {
     customStyleImagePath?: string
     customStyleColors?: string[]
     customStyleDescription?: string
+    imageModel?: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.INFOGRAPHIC_START, args),
   onInfographicProgress: (
     callback: (data: { generatedContentId: string; stage: string; message: string }) => void
@@ -110,6 +120,7 @@ const api = {
     customStyleImagePath?: string
     customStyleColors?: string[]
     customStyleDescription?: string
+    imageModel?: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.WHITEPAPER_START, args),
   onWhitepaperProgress: (
     callback: (data: { generatedContentId: string; stage: string; currentSection?: number; totalSections?: number; message: string }) => void
@@ -234,6 +245,7 @@ const api = {
     renderMode?: 'full-image' | 'hybrid'
     customStyleColors?: string[]
     customStyleDescription?: string
+    imageModel?: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.IMAGE_SLIDES_START, args),
   imageSlidesUpdateText: (args: {
     generatedContentId: string

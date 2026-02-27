@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Upload, Loader2, Palette, FileText } from 'lucide-react'
+import { IMAGE_MODELS, type ImageModelId } from '../../../../shared/types'
 
 interface StyleOption {
   id: string
@@ -60,6 +61,7 @@ export function WhitePaperWizard({ notebookId, onComplete, onClose }: WhitePaper
   const [selectedStyle, setSelectedStyle] = useState('glass-morph')
   const [customStylePath, setCustomStylePath] = useState<string | null>(null)
   const [userInstructions, setUserInstructions] = useState('')
+  const [imageModel, setImageModel] = useState<ImageModelId>('nano-banana-pro')
 
   // Custom style builder state
   const [customColors, setCustomColors] = useState(['#0f172a', '#6366f1', '#38bdf8', '#e2e8f0'])
@@ -130,6 +132,7 @@ export function WhitePaperWizard({ notebookId, onComplete, onClose }: WhitePaper
         stylePresetId: selectedStyle === 'custom' ? 'glass-morph' : selectedStyle,
         userInstructions: userInstructions.trim() || undefined,
         customStyleImagePath: customStylePath ?? undefined,
+        imageModel,
         ...(selectedStyle === 'custom-builder' ? {
           customStyleColors: customColors,
           customStyleDescription: customStyleDesc.trim() || 'clean, modern, professional design with subtle gradients',
@@ -319,6 +322,29 @@ export function WhitePaperWizard({ notebookId, onComplete, onClose }: WhitePaper
                 {customStylePath ? 'Reference image selected' : 'Upload style reference image'}
               </span>
             </button>
+          </div>
+
+          {/* Image Model */}
+          <div>
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
+              Image Model
+            </label>
+            <div className="flex rounded-lg border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
+              {IMAGE_MODELS.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setImageModel(m.id)}
+                  className={`flex-1 py-2 text-center transition-colors ${
+                    imageModel === m.id
+                      ? 'bg-black/[0.04] dark:bg-white/[0.04] text-zinc-800 dark:text-zinc-100'
+                      : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
+                  }`}
+                >
+                  <span className="text-[11px] font-medium block">{m.label}</span>
+                  <span className="text-[9px] text-zinc-400 dark:text-zinc-500 block mt-0.5">{m.description}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Custom instructions */}

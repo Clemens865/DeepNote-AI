@@ -44,6 +44,7 @@ export const notes = sqliteTable('notes', {
   sourceId: text('source_id').references(() => sources.id, { onDelete: 'set null' }),
   title: text('title').notNull().default('Untitled note'),
   content: text('content').notNull().default(''),
+  tags: text('tags', { mode: 'json' }).notNull().default('[]'),
   isConvertedToSource: integer('is_converted_to_source', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
@@ -63,7 +64,7 @@ export const generatedContent = sqliteTable('generated_content', {
   id: text('id').primaryKey(),
   notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
   type: text('type', {
-    enum: ['audio', 'video', 'slides', 'image-slides', 'quiz', 'flashcard', 'mindmap', 'infographic', 'datatable', 'report', 'dashboard', 'literature-review', 'competitive-analysis', 'diff', 'citation-graph', 'whitepaper', 'html-presentation'],
+    enum: ['audio', 'video', 'slides', 'image-slides', 'quiz', 'flashcard', 'mindmap', 'infographic', 'datatable', 'report', 'dashboard', 'literature-review', 'competitive-analysis', 'diff', 'citation-graph', 'whitepaper', 'html-presentation', 'canvas'],
   }).notNull(),
   title: text('title').notNull(),
   data: text('data', { mode: 'json' }).notNull().default('{}'),

@@ -133,6 +133,12 @@ function initializeDatabase() {
     sqlite.exec('ALTER TABLE chat_messages ADD COLUMN metadata TEXT')
   }
 
+  // Migration: add tags column to notes
+  const noteCols = sqlite.pragma('table_info(notes)') as { name: string }[]
+  if (!noteCols.some((c) => c.name === 'tags')) {
+    sqlite.exec("ALTER TABLE notes ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
+  }
+
   // Indexes for frequently queried foreign keys
   sqlite.exec(`
     CREATE INDEX IF NOT EXISTS idx_sources_notebook_id ON sources(notebook_id);

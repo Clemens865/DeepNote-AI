@@ -20,6 +20,7 @@ import {
   WhitePaperView,
   HtmlPresentationView,
 } from './viewers'
+import { CanvasView } from './viewers/CanvasView'
 
 interface GeneratedContentViewProps {
   content: GeneratedContent
@@ -63,8 +64,8 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // image-slides and html-presentation have their own fullscreen — skip the Maximize button
-  const showFullscreenButton = content.type !== 'image-slides' && content.type !== 'html-presentation'
+  // image-slides, html-presentation, and canvas have their own fullscreen — skip the Maximize button
+  const showFullscreenButton = content.type !== 'image-slides' && content.type !== 'html-presentation' && content.type !== 'canvas'
 
   const viewerProps = {
     data,
@@ -113,6 +114,7 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
       {content.type === 'citation-graph' && <CitationGraphView {...viewerProps} />}
       {content.type === 'whitepaper' && <WhitePaperView {...viewerProps} />}
       {content.type === 'html-presentation' && <HtmlPresentationView {...viewerProps} />}
+      {content.type === 'canvas' && <CanvasView {...viewerProps} contentId={content.id} />}
 
       {data.raw != null && (
         <pre className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap bg-black/[0.02] dark:bg-white/[0.02] rounded-lg p-4 border border-black/[0.06] dark:border-white/[0.06]">

@@ -3,7 +3,8 @@ import { join } from 'path'
 import { mkdirSync, existsSync, writeFileSync, readFileSync } from 'fs'
 import { GoogleGenAI } from '@google/genai'
 import { configService } from './config'
-import type { SlideStylePreset } from '../../shared/types'
+import type { SlideStylePreset, ImageModelId } from '../../shared/types'
+import { IMAGE_MODELS } from '../../shared/types'
 
 function getMimeType(filePath: string): string {
   const lower = filePath.toLowerCase()
@@ -195,6 +196,8 @@ export class ImagenService {
       styleHint?: string
       /** When provided, text will be rendered on the image even in reference-image mode (full-image slides) */
       slideTextContent?: string
+      /** Which image model to use. Defaults to 'nano-banana-pro' (gemini-3-pro-image-preview). */
+      imageModel?: ImageModelId
     }
   ): Promise<string> {
     const apiKey = configService.getApiKey()
@@ -268,8 +271,9 @@ ${config.slideTextContent}`
           contents = currentPrompt
         }
 
+        const modelEntry = IMAGE_MODELS.find((m) => m.id === config.imageModel) ?? IMAGE_MODELS[0]
         const response = await ai.models.generateContent({
-          model: 'gemini-3-pro-image-preview',
+          model: modelEntry.geminiModel,
           contents,
           config: {
             responseModalities: ['IMAGE'],

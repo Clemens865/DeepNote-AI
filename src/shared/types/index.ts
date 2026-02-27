@@ -80,6 +80,7 @@ export interface Note {
   sourceId: string | null
   title: string
   content: string
+  tags: string[]
   isConvertedToSource: boolean
   createdAt: string
   updatedAt: string
@@ -153,6 +154,33 @@ export type GeneratedContentType =
   | 'citation-graph'
   | 'whitepaper'
   | 'html-presentation'
+  | 'canvas'
+
+// Canvas types
+export interface CanvasNodeData {
+  id: string
+  type: 'note' | 'source' | 'text'
+  label: string
+  content?: string
+  noteId?: string
+  sourceId?: string
+  position: { x: number; y: number }
+  width?: number
+  height?: number
+  color?: string
+}
+
+export interface CanvasEdgeData {
+  id: string
+  source: string
+  target: string
+  label?: string
+}
+
+export interface CanvasData {
+  nodes: CanvasNodeData[]
+  edges: CanvasEdgeData[]
+}
 
 // Image Slides types
 export interface SlideStylePreset {
@@ -194,6 +222,30 @@ export interface ImageSlideData {
 }
 
 export type SlideRenderMode = 'full-image' | 'hybrid'
+
+// Image generation model options ("Nano Banana" family)
+export type ImageModelId = 'nano-banana' | 'nano-banana-2' | 'nano-banana-pro'
+
+export const IMAGE_MODELS: { id: ImageModelId; label: string; geminiModel: string; description: string }[] = [
+  {
+    id: 'nano-banana-pro',
+    label: 'Nano Banana Pro',
+    geminiModel: 'gemini-3-pro-image-preview',
+    description: 'Highest fidelity, advanced reasoning',
+  },
+  {
+    id: 'nano-banana-2',
+    label: 'Nano Banana 2',
+    geminiModel: 'gemini-3.1-flash-image-preview',
+    description: 'Fast & efficient, high-volume',
+  },
+  {
+    id: 'nano-banana',
+    label: 'Nano Banana',
+    geminiModel: 'gemini-2.5-flash-image',
+    description: 'Speed optimized, low-latency',
+  },
+]
 
 export interface SlideTextElement {
   id: string

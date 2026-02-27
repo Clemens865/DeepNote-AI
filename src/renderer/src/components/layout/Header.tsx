@@ -5,6 +5,8 @@ import { useAppStore } from '../../stores/appStore'
 import { SettingsModal } from '../common/SettingsModal'
 import { GlobalSearchDialog } from '../search/GlobalSearchDialog'
 import { ManualDialog } from '../help/ManualDialog'
+import { CommandPalette } from '../common/CommandPalette'
+import { QuickSwitcher } from '../common/QuickSwitcher'
 import { ArrowLeft, Download, Settings, Sun, Moon, Search, BookOpen } from 'lucide-react'
 
 export function Header() {
@@ -19,9 +21,11 @@ export function Header() {
   const [showSearch, setShowSearch] = useState(false)
   const [searchInitialFilter, setSearchInitialFilter] = useState<'all' | 'notebooks' | 'files' | 'memories' | 'emails'>('all')
   const [showManual, setShowManual] = useState(false)
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
+  const [showQuickSwitcher, setShowQuickSwitcher] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
 
-  // Cmd+K keyboard shortcut for global search, Cmd+Shift+F for files filter
+  // Cmd+K for search, Cmd+Shift+F for files, Cmd+P for command palette, Cmd+O for quick switcher
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -33,6 +37,14 @@ export function Header() {
         e.preventDefault()
         setSearchInitialFilter('files')
         setShowSearch(true)
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+        e.preventDefault()
+        setShowCommandPalette(true)
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
+        e.preventDefault()
+        setShowQuickSwitcher(true)
       }
     }
     document.addEventListener('keydown', handler)
@@ -159,6 +171,13 @@ export function Header() {
         }}
       />
       <ManualDialog isOpen={showManual} onClose={() => setShowManual(false)} />
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        onOpenSearch={() => { setSearchInitialFilter('all'); setShowSearch(true) }}
+        onOpenSettings={() => setShowSettings(true)}
+      />
+      <QuickSwitcher isOpen={showQuickSwitcher} onClose={() => setShowQuickSwitcher(false)} />
     </header>
   )
 }

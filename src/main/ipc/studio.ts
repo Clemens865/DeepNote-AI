@@ -30,6 +30,7 @@ const TYPE_TITLES: Record<string, string> = {
   'citation-graph': 'Citation Graph',
   whitepaper: 'White Paper',
   'html-presentation': 'HTML Presentation',
+  canvas: 'Canvas',
 }
 
 function hexToRgbTuple(hex: string): string {
@@ -185,6 +186,37 @@ export function registerStudioHandlers() {
       .select()
       .from(schema.sources)
       .where(eq(schema.sources.notebookId, args.notebookId))
+
+    // Canvas: no AI generation, create empty canvas immediately
+    if (args.type === 'canvas') {
+      const notebooks = await db
+        .select()
+        .from(schema.notebooks)
+        .where(eq(schema.notebooks.id, args.notebookId))
+      const notebookTitle = notebooks[0]?.title || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      const canvasData = { nodes: [], edges: [] }
+      const record = {
+        id,
+        notebookId: args.notebookId,
+        type: 'canvas' as const,
+        title: `Canvas — ${notebookTitle}`,
+        data: JSON.stringify(canvasData),
+        sourceIds: JSON.stringify([]),
+        status: 'completed' as const,
+        createdAt: now,
+      }
+      await db.insert(schema.generatedContent).values(record)
+      return {
+        id,
+        notebookId: args.notebookId,
+        type: 'canvas',
+        title: record.title,
+        data: canvasData,
+        sourceIds: [],
+        status: 'completed',
+        createdAt: now,
+      }
+    }
 
     const selectedSources = sources.filter((s) => s.isSelected)
     if (selectedSources.length === 0) {
@@ -496,6 +528,15 @@ export function registerStudioHandlers() {
     }
   )
 
+  // Canvas save — update generated_content data by ID
+  ipcMain.handle(IPC_CHANNELS.CANVAS_SAVE, async (_event, args: { id: string; data: Record<string, unknown> }) => {
+    const db = getDatabase()
+    await db
+      .update(schema.generatedContent)
+      .set({ data: args.data as unknown as string })
+      .where(eq(schema.generatedContent.id, args.id))
+  })
+
   // Suggest report formats based on sources
   ipcMain.handle(IPC_CHANNELS.STUDIO_SUGGEST_FORMATS, async (_event, notebookId: string) => {
     const db = getDatabase()
@@ -523,6 +564,7 @@ export function registerStudioHandlers() {
       customStyleImagePath?: string
       customStyleColors?: string[]
       customStyleDescription?: string
+      imageModel?: import('../../shared/types').ImageModelId
     }) => {
       const db = getDatabase()
       const now = new Date().toISOString()
@@ -650,6 +692,7 @@ CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the
               : `atmospheric background about ${plan.title}: ${visualElements.slice(0, 200)}`,
             styleHint: args.customStyleImagePath ? styleDescription : undefined,
             slideTextContent: renderMode === 'full-image' ? slideTextContent : undefined,
+            imageModel: args.imageModel,
           })
 
           const currentDb = getDatabase()
@@ -701,6 +744,7 @@ CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the
       customStyleImagePath?: string
       customStyleColors?: string[]
       customStyleDescription?: string
+      imageModel?: import('../../shared/types').ImageModelId
     }) => {
       const db = getDatabase()
       const now = new Date().toISOString()
@@ -782,6 +826,7 @@ CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the
               referenceImagePath: args.customStyleImagePath,
               shortSubject: `abstract cover for ${plan.title}`,
               styleHint: args.customStyleImagePath ? styleDescription : undefined,
+              imageModel: args.imageModel,
             })
           } catch (err) {
             console.warn('Cover image generation failed, continuing without:', err)
@@ -810,6 +855,7 @@ CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the
                 referenceImagePath: args.customStyleImagePath,
                 shortSubject: section.imageDescription.slice(0, 100),
                 styleHint: args.customStyleImagePath ? styleDescription : undefined,
+                imageModel: args.imageModel,
               })
             } catch (err) {
               console.warn(`Section ${i + 1} image failed, continuing without:`, err)
@@ -888,6 +934,7 @@ CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the
       renderMode?: 'full-image' | 'hybrid'
       customStyleColors?: string[]
       customStyleDescription?: string
+      imageModel?: import('../../shared/types').ImageModelId
     }) => {
       const renderMode = args.renderMode || 'full-image'
       const db = getDatabase()
@@ -1029,6 +1076,7 @@ CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the
                 shortSubject: plan.visualCue || plan.title,
                 styleHint: isCustomStyle ? styleDescription : undefined,
                 slideTextContent: needsTextOnImage ? slideContent : undefined,
+                imageModel: args.imageModel,
               })
 
               if (renderMode === 'hybrid') {

@@ -1,4 +1,4 @@
-import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, DeepBrainEmailResult, TokenUsageSummary } from './index'
+import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, DeepBrainEmailResult, TokenUsageSummary, ImageModelId } from './index'
 
 export const IPC_CHANNELS = {
   // Notebooks
@@ -20,6 +20,12 @@ export const IPC_CHANNELS = {
   NOTES_CREATE: 'notes:create',
   NOTES_UPDATE: 'notes:update',
   NOTES_DELETE: 'notes:delete',
+  NOTES_TAGS: 'notes:tags',
+  NOTES_BACKLINKS: 'notes:backlinks',
+  NOTES_RESOLVE_LINK: 'notes:resolveLink',
+
+  // Canvas
+  CANVAS_SAVE: 'canvas:save',
 
   // Notebooks (extra)
   NOTEBOOKS_EXPORT: 'notebooks:export',
@@ -176,6 +182,21 @@ export interface IpcHandlerMap {
     return: Note
   }
   [IPC_CHANNELS.NOTES_DELETE]: { args: [string]; return: void }
+  [IPC_CHANNELS.NOTES_TAGS]: { args: [string]; return: { tag: string; count: number }[] }
+  [IPC_CHANNELS.NOTES_BACKLINKS]: {
+    args: [{ notebookId: string; noteTitle: string }]
+    return: { id: string; title: string; snippet: string }[]
+  }
+  [IPC_CHANNELS.NOTES_RESOLVE_LINK]: {
+    args: [{ notebookId: string; linkTitle: string }]
+    return: { id: string; title: string } | null
+  }
+
+  // Canvas
+  [IPC_CHANNELS.CANVAS_SAVE]: {
+    args: [{ id: string; data: Record<string, unknown> }]
+    return: void
+  }
 
   // Chat
   [IPC_CHANNELS.CHAT_MESSAGES]: { args: [string]; return: ChatMessage[] }
@@ -211,6 +232,7 @@ export interface IpcHandlerMap {
       customStyleImagePath?: string
       customStyleColors?: string[]
       customStyleDescription?: string
+      imageModel?: ImageModelId
     }]
     return: { generatedContentId: string }
   }
@@ -226,6 +248,7 @@ export interface IpcHandlerMap {
       customStyleImagePath?: string
       customStyleColors?: string[]
       customStyleDescription?: string
+      imageModel?: ImageModelId
     }]
     return: { generatedContentId: string }
   }
@@ -270,6 +293,7 @@ export interface IpcHandlerMap {
       renderMode?: SlideRenderMode
       customStyleColors?: string[]
       customStyleDescription?: string
+      imageModel?: ImageModelId
     }]
     return: { generatedContentId: string }
   }
