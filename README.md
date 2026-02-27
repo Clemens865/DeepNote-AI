@@ -61,9 +61,9 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | **AI Chat** | Streaming responses, source-grounded citations, conversation history, suggested prompts, 6 interactive artifact types (Table, Chart, Mermaid, Kanban, KPI, Timeline), one-click artifact shortcut chips, voice Q&A |
 | **Deep Research** | Multi-step AI analysis with real-time progress updates |
 | **Audio Overview** | Multi-speaker AI podcast with 4 format styles (Deep Dive, Brief, Critical Analysis, Debate) |
-| **Image Slides** | AI-generated slide decks with 6 visual styles + custom style builder, 2 render modes (full-image / hybrid editable), fullscreen presenter, rich text drag-and-drop editor, Save button with feedback, PDF export with text overlays |
-| **White Paper** | AI-generated multi-section white papers with cover image, section illustrations, table of contents, references, and A4 PDF export |
-| **Infographic** | AI-generated single-page infographics in full-image or hybrid mode with custom color palettes |
+| **Image Slides** | AI-generated slide decks with 6 visual styles + custom style builder, 3 image models (Nano Banana Pro / 2 / Classic), 2 render modes (full-image / hybrid editable), fullscreen presenter, rich text drag-and-drop editor, Save button with feedback, PDF export with text overlays |
+| **White Paper** | AI-generated multi-section white papers with cover image, section illustrations, table of contents, references, 3 image models, and A4 PDF export |
+| **Infographic** | AI-generated single-page infographics in full-image or hybrid mode with custom color palettes and 3 image model options |
 | **Study Tools** | Flashcards, Quizzes (multiple choice), Reports, Mind Maps, Data Tables, Dashboards, Literature Reviews, Competitive Analyses, Document Comparisons, Citation Graphs — search/filter/sort for all generated content |
 | **Notes** | Create, edit, auto-save notes; convert notes to sources for AI context |
 | **Workspace** | Link local folders, file tree browser, text editor with AI rewrite, .gitignore support |
@@ -87,6 +87,7 @@ This beta includes 15+ major features transforming DeepNote AI from a notebook t
 | **Infographic Generator** | Full-image or hybrid infographics with 6 style presets + custom style builder with reference image analysis |
 | **Hybrid Slide Editor** | Drag-and-drop text overlays on AI backgrounds, Save button with visual feedback, arrow key navigation respects text editing, PDF export includes text overlays |
 | **Custom Style Builder** | Upload a reference image — the AI extracts and replicates its visual style for slides, infographics, and whitepapers |
+| **Image Model Picker** | Choose between 3 Gemini image models per creation: Nano Banana Pro (highest fidelity), Nano Banana 2 (fast & efficient), Nano Banana (speed optimized) |
 | **Glass Morphism UI** | Polished dark/light theme with frosted glass effects, refined modals, and fullscreen dialogs |
 | **Agentic RAG** | Multi-query retrieval: AI generates 2-3 targeted sub-queries, deduplicates results, checks sufficiency |
 | **Multi-Agent Pipeline** | Complex content goes through Research → Write → Review pipeline with automatic revision if quality < 6/10 |
@@ -124,7 +125,7 @@ This beta includes 15+ major features transforming DeepNote AI from a notebook t
 - `gpt-4o` / `gpt-4o-mini` — OpenAI chat providers
 - `llama-3.3-70b-versatile` — Groq chat provider
 - `gemini-2.5-flash-preview-tts` — Multi-speaker text-to-speech (Kore & Puck voices)
-- `gemini-3-pro-image-preview` — AI image generation for slides, infographics, whitepapers
+- `gemini-3-pro-image-preview` (Nano Banana Pro) / `gemini-3.1-flash-image-preview` (Nano Banana 2) / `gemini-2.5-flash-image` (Nano Banana) — AI image generation for slides, infographics, whitepapers — selectable per creation
 - `text-embedding-004` — Text embeddings for RAG (Gemini cloud tier)
 - `all-MiniLM-L6-v2` — Local ONNX embeddings (offline tier, 384-dim)
 
@@ -372,6 +373,16 @@ The most advanced studio feature. Generates complete slide presentations with AI
 | **Dark Luxe** | Black | Gold & White | Premium luxury, elegant lines |
 
 **Custom Style** - Upload a reference image and the AI will extract and replicate its visual style.
+
+**Image Model Selection:**
+
+Each generation lets you choose between three Gemini image models:
+
+| Model | Gemini ID | Best For |
+|-------|-----------|----------|
+| **Nano Banana Pro** | `gemini-3-pro-image-preview` | Highest fidelity, advanced reasoning for complex prompts |
+| **Nano Banana 2** | `gemini-3.1-flash-image-preview` | Fast & efficient, great for high-volume use |
+| **Nano Banana** | `gemini-2.5-flash-image` | Speed optimized, lowest latency |
 
 **Presentation Formats:**
 - **Presentation** - Educational / informational slides
