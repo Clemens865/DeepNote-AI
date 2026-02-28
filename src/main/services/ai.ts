@@ -1233,9 +1233,9 @@ Output a JSON object with this structure:
   "heroStat": { "value": "47%", "label": "of developers", "context": "prefer TypeScript" } | null,
   "sections": [
     {
-      "heading": "2-4 words",
-      "annotation": "Max 12 words — a data callout, not a paragraph",
-      "body": "Optional 1-2 sentence explanation for tooltip (20-40 words)",
+      "heading": "2-4 word label (e.g., 'Signal Retrieval', 'Memory Buffer')",
+      "annotation": "2-6 word bullet point (e.g., '5 weighted scoring signals', '3× faster than RAG')",
+      "body": "Optional 1-2 sentence explanation for tooltip only — never shown on the infographic itself (20-40 words)",
       "stat": { "value": "125ms", "label": "boot time" } | null,
       "visualDescription": "Visual metaphor or scene element for the image model"
     }
@@ -1248,7 +1248,7 @@ Rules:
 - DISTILL, don't reproduce. Extract the most striking numbers, comparisons, and insights — never copy sentences from the source.
 - heroStat: pick the single most impactful number/percentage/metric from the sources. Set null if nothing quantitative stands out.
 - Include 4-6 sections covering the key insights.
-- Each "annotation" must be ≤12 words: a punchy data callout like "3× faster cold starts than Docker" — NOT a paragraph.
+- Each "annotation" must be ≤6 words: a terse bullet point like "5 weighted scoring signals" or "Episodic + Semantic stores". Think Post-It note, NOT sentence.
 - Each "stat" should be a concrete number with a label. Set null if no data point fits that section.
 - "body" is optional supplementary detail shown only on hover — keep it factual, 20-40 words max.
 - "visualNarrative" should describe a coherent visual scene or metaphor that ties all sections together (e.g., "A futuristic control room with holographic dashboards showing performance metrics").

@@ -648,18 +648,18 @@ export function registerStudioHandlers() {
           let slideTextContent: string | undefined
 
           if (renderMode === 'full-image') {
-            // Full-image mode: data-visualization-first design
-            const sectionLabels = planSections.map((s, i) => {
-              const stat = 'stat' in s && s.stat ? ` [${s.stat.value}]` : ''
-              const label = 'annotation' in s ? (s as { annotation: string }).annotation : (s as { body: string }).body
-              return `${i + 1}. ${s.heading}${stat}: ${label}`
+            // Full-image mode: visual-first, bullet-point labels only
+            const sectionLabels = planSections.map((s) => {
+              const stat = 'stat' in s && s.stat ? ` → ${s.stat.value} ${s.stat.label}` : ''
+              const annotation = 'annotation' in s ? (s as { annotation: string }).annotation : ''
+              return `• ${s.heading}${stat}${annotation ? ` — ${annotation}` : ''}`
             }).join('\n')
 
-            const heroLine = heroStat ? `\nHERO DATA POINT (render BIG, prominently): ${heroStat.value} ${heroStat.label} — ${heroStat.context}` : ''
+            const heroLine = heroStat ? `\nHERO NUMBER: ${heroStat.value} ${heroStat.label} (${heroStat.context})` : ''
 
             const textContent = [
               `TITLE: ${plan.title}`,
-              plan.subtitle ? `SUBTITLE: ${plan.subtitle}` : '',
+              plan.subtitle ? `TAGLINE: ${plan.subtitle}` : '',
               heroLine,
               '',
               sectionLabels,
@@ -667,24 +667,25 @@ export function registerStudioHandlers() {
 
             slideTextContent = textContent
 
-            imagePrompt = `Generate a VISUAL-FIRST, DATA-DRIVEN infographic about "${plan.title}".
+            imagePrompt = `Generate a VISUAL-FIRST infographic about "${plan.title}".
 ${visualNarrative ? `\nVISUAL NARRATIVE: ${visualNarrative}` : ''}
 
 VISUAL STYLE: ${styleDescription}
 
-DATA & LABELS TO RENDER:
+TEXT LABELS (render these as SHORT bullet points — no paragraphs, no sentences):
 ${textContent}
 
 Visual scene elements: ${visualElements}
 
-DESIGN PHILOSOPHY — numbers big, paragraphs forbidden:
-- The image should TELL THE STORY visually — icons, charts, diagrams, illustrations
-- Render the TITLE at the top in bold decorative font
-- ${heroStat ? `Render "${heroStat.value}" as the LARGEST text element — it's the hero data point` : 'Use large icons and visual metaphors as focal points'}
-- Each section: short heading + stat number + small annotation. NO long paragraphs.
-- Use data-viz elements: progress bars, pie slices, comparison arrows, metric badges
-- Professional design — clean, modern, with ample whitespace between sections
-- ALL text must be clearly readable${userInstr}`
+CRITICAL DESIGN RULES:
+- 80% VISUALS, 20% TEXT. The image tells the story through icons, diagrams, illustrations, arrows, and data-viz elements.
+- Each section gets: a SHORT heading (2-4 words) + an optional number/stat + a tiny bullet-point label (2-6 words max).
+- ABSOLUTELY NO paragraphs, sentences, or body text. If it's longer than 6 words, DON'T render it.
+- ${heroStat ? `Render "${heroStat.value}" as the LARGEST, most prominent text element` : 'Use large icons and visual metaphors as focal points'}
+- Use data-viz elements: progress bars, pie charts, comparison arrows, metric badges, flow diagrams
+- Title at the top in bold decorative font
+- Clean, modern layout with generous whitespace between sections
+- Think: conference poster or dashboard, NOT a text document${userInstr}`
           } else {
             // Hybrid mode: atmospheric background, text overlaid as HTML
             imagePrompt = `Generate a rich, atmospheric, cinematic background image for an infographic about "${plan.title}".
