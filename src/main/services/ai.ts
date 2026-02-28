@@ -1197,7 +1197,20 @@ Output ONLY valid JSON, no markdown fences.`,
 
   async planInfographic(
     sourceTexts: string[]
-  ): Promise<{ title: string; subtitle: string; keyPoints: { heading: string; body: string; visualDescription: string }[]; colorScheme: string }> {
+  ): Promise<{
+    title: string
+    subtitle: string
+    heroStat: { value: string; label: string; context: string } | null
+    sections: {
+      heading: string
+      annotation: string
+      body?: string
+      stat: { value: string; label: string } | null
+      visualDescription: string
+    }[]
+    visualNarrative: string
+    colorScheme: string
+  }> {
     const ai = getClient()
     const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 60000)
 
@@ -1208,30 +1221,38 @@ Output ONLY valid JSON, no markdown fences.`,
           role: 'user',
           parts: [
             {
-              text: `Analyze the following source material and plan an infographic that communicates the key insights clearly.
+              text: `You are a data-visualization designer. Analyze the source material and plan a VISUAL-FIRST infographic. The image should tell the story — text is only a thin annotation layer on top.
 
 Source material:
 ${combinedText}
 
 Output a JSON object with this structure:
 {
-  "title": "Infographic Title",
-  "subtitle": "Brief subtitle or tagline (one sentence)",
-  "keyPoints": [
+  "title": "3-6 word title",
+  "subtitle": "One-line tagline",
+  "heroStat": { "value": "47%", "label": "of developers", "context": "prefer TypeScript" } | null,
+  "sections": [
     {
-      "heading": "Section heading (2-4 words)",
-      "body": "A concise explanation of this point in 1-2 sentences (20-40 words). Include specific data, facts, or takeaways from the source material — not just a label.",
-      "visualDescription": "Description of a visual metaphor, icon, or diagram element that represents this section"
+      "heading": "2-4 words",
+      "annotation": "Max 12 words — a data callout, not a paragraph",
+      "body": "Optional 1-2 sentence explanation for tooltip (20-40 words)",
+      "stat": { "value": "125ms", "label": "boot time" } | null,
+      "visualDescription": "Visual metaphor or scene element for the image model"
     }
   ],
+  "visualNarrative": "One sentence describing the overall visual story/scene the image should depict",
   "colorScheme": "Description of recommended color scheme (e.g., 'warm earth tones with teal accents')"
 }
 
 Rules:
-- Include 4-6 key points covering the most important insights from the sources.
-- Each "body" must be a real explanation, not just a keyword. The reader should learn something from it.
-- Example good body: "RVF files boot in under 125ms by embedding a compressed Linux unikernel directly in the artifact."
-- Example bad body: "Fast boot times" (too vague, no substance).
+- DISTILL, don't reproduce. Extract the most striking numbers, comparisons, and insights — never copy sentences from the source.
+- heroStat: pick the single most impactful number/percentage/metric from the sources. Set null if nothing quantitative stands out.
+- Include 4-6 sections covering the key insights.
+- Each "annotation" must be ≤12 words: a punchy data callout like "3× faster cold starts than Docker" — NOT a paragraph.
+- Each "stat" should be a concrete number with a label. Set null if no data point fits that section.
+- "body" is optional supplementary detail shown only on hover — keep it factual, 20-40 words max.
+- "visualNarrative" should describe a coherent visual scene or metaphor that ties all sections together (e.g., "A futuristic control room with holographic dashboards showing performance metrics").
+- "visualDescription" per section should describe a specific element within that narrative.
 Output ONLY valid JSON, no markdown fences.`,
             },
           ],

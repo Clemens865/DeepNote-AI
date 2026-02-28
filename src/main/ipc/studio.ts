@@ -630,8 +630,15 @@ export function registerStudioHandlers() {
             message: 'Generating infographic image...',
           })
 
-          const visualElements = plan.keyPoints
-            .map((kp) => kp.visualDescription)
+          // Support both new (sections) and legacy (keyPoints) plan shapes
+          const sections = (plan as Record<string, unknown>).sections as { heading: string; annotation: string; stat?: { value: string; label: string } | null; visualDescription: string }[] | undefined
+          const keyPoints = (plan as Record<string, unknown>).keyPoints as { heading: string; body: string; visualDescription: string }[] | undefined
+          const planSections = sections || keyPoints || []
+          const heroStat = (plan as Record<string, unknown>).heroStat as { value: string; label: string; context: string } | null | undefined
+          const visualNarrative = (plan as Record<string, unknown>).visualNarrative as string | undefined
+
+          const visualElements = planSections
+            .map((s) => s.visualDescription)
             .join(', ')
 
           const userInstr = args.userInstructions ? `\nUser instructions: ${args.userInstructions}` : ''
@@ -641,45 +648,59 @@ export function registerStudioHandlers() {
           let slideTextContent: string | undefined
 
           if (renderMode === 'full-image') {
-            // Full-image mode: AI renders text + visuals together in one image
+            // Full-image mode: data-visualization-first design
+            const sectionLabels = planSections.map((s, i) => {
+              const stat = 'stat' in s && s.stat ? ` [${s.stat.value}]` : ''
+              const label = 'annotation' in s ? (s as { annotation: string }).annotation : (s as { body: string }).body
+              return `${i + 1}. ${s.heading}${stat}: ${label}`
+            }).join('\n')
+
+            const heroLine = heroStat ? `\nHERO DATA POINT (render BIG, prominently): ${heroStat.value} ${heroStat.label} — ${heroStat.context}` : ''
+
             const textContent = [
               `TITLE: ${plan.title}`,
               plan.subtitle ? `SUBTITLE: ${plan.subtitle}` : '',
+              heroLine,
               '',
-              ...plan.keyPoints.map((kp, i) => `${i + 1}. ${kp.heading}: ${kp.body}`),
+              sectionLabels,
             ].filter(Boolean).join('\n')
 
             slideTextContent = textContent
 
-            imagePrompt = `Generate a COMPLETE, PROFESSIONAL infographic image about "${plan.title}".
-
-This is a SINGLE self-contained infographic — all text, data, icons, and visual elements must be rendered INSIDE the image.
+            imagePrompt = `Generate a VISUAL-FIRST, DATA-DRIVEN infographic about "${plan.title}".
+${visualNarrative ? `\nVISUAL NARRATIVE: ${visualNarrative}` : ''}
 
 VISUAL STYLE: ${styleDescription}
 
-CONTENT TO INCLUDE (render ALL of this as part of the infographic design):
+DATA & LABELS TO RENDER:
 ${textContent}
 
-Visual elements to incorporate as icons, illustrations, or diagrams: ${visualElements}
+Visual scene elements: ${visualElements}
 
-INFOGRAPHIC DESIGN RULES:
-- Render the TITLE prominently at the top in a bold, decorative font
-- ${plan.subtitle ? `Render the SUBTITLE below the title in a lighter font` : ''}
-- Arrange the numbered key points as visually distinct sections with icons/illustrations
-- Use visual hierarchy: larger headings, smaller body text
-- Include decorative elements, dividers, icons, and visual metaphors
-- The infographic should look professionally designed — like something from Canva or Venngage
-- ALL text must be clearly readable and part of the image design
-- Use the specified color palette consistently${userInstr}`
+DESIGN PHILOSOPHY — numbers big, paragraphs forbidden:
+- The image should TELL THE STORY visually — icons, charts, diagrams, illustrations
+- Render the TITLE at the top in bold decorative font
+- ${heroStat ? `Render "${heroStat.value}" as the LARGEST text element — it's the hero data point` : 'Use large icons and visual metaphors as focal points'}
+- Each section: short heading + stat number + small annotation. NO long paragraphs.
+- Use data-viz elements: progress bars, pie slices, comparison arrows, metric badges
+- Professional design — clean, modern, with ample whitespace between sections
+- ALL text must be clearly readable${userInstr}`
           } else {
-            // Hybrid mode: background-only image, text overlaid as HTML
-            imagePrompt = `Generate a rich, atmospheric, cinematic background image for an infographic about "${plan.title}". The image should evoke the theme through visual metaphors and mood — NOT through text or layout.
+            // Hybrid mode: atmospheric background, text overlaid as HTML
+            imagePrompt = `Generate a rich, atmospheric, cinematic background image for an infographic about "${plan.title}".
+${visualNarrative ? `\nVISUAL STORY: ${visualNarrative}` : ''}
 
-Visual elements to incorporate subtly: ${visualElements}
+The image should tell the story through visual metaphors, mood, and scene — NOT through text.
+
+Visual scene elements to incorporate: ${visualElements}
 
 Visual style: ${styleDescription}
 
-CRITICAL: Do NOT include ANY text, words, letters, numbers, or typography in the image. This is a pure visual background — structured text will be overlaid separately. Make it rich, immersive, and visually striking with depth, lighting, and atmosphere.${userInstr}`
+CRITICAL RULES:
+- Do NOT include ANY text, words, letters, numbers, or typography in the image
+- This is a pure visual background — structured annotations will float on top as HTML
+- Leave slight breathing room at the top and bottom edges (subtle gradient-friendly areas)
+- Make it rich, immersive, and visually striking with depth, lighting, and atmosphere${userInstr}`
           }
 
           const imagePath = await imagenService.generateSlideImage(imagePrompt, {
