@@ -12,6 +12,10 @@ import { imagenService, STYLE_PRESETS, buildSlidePrompt, buildHybridSlidePrompt 
 import { shouldUsePipeline } from '../services/generationPipeline'
 import { deepbrainService } from '../services/deepbrain'
 import { configService } from '../services/config'
+import { renderSlidesToHtml } from '../services/htmlRenderer'
+import { renderSlidesToPptx } from '../services/pptxRenderer'
+import { parsePptxTemplate } from '../services/pptxTemplateParser'
+import type { StructuredSlide, PresentationTheme } from '../../shared/types'
 
 const TYPE_TITLES: Record<string, string> = {
   report: 'Report',

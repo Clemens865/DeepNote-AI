@@ -1,4 +1,4 @@
-import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, DeepBrainEmailResult, TokenUsageSummary, ImageModelId } from './index'
+import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, DeepBrainEmailResult, TokenUsageSummary, ImageModelId, StructuredSlide, PresentationTheme } from './index'
 
 export const IPC_CHANNELS = {
   // Notebooks
@@ -64,6 +64,11 @@ export const IPC_CHANNELS = {
   STUDIO_SAVE_HTML: 'studio:saveHtml',
   STUDIO_OPEN_HTML_TEMP: 'studio:openHtmlTemp',
   HTML_PRESENTATION_START: 'html-presentation:start',
+  HTML_PRESENTATION_UPDATE_SLIDE: 'html-presentation:update-slide',
+  HTML_PRESENTATION_REGEN_SLIDE: 'html-presentation:regen-slide',
+  HTML_PRESENTATION_REORDER_SLIDES: 'html-presentation:reorder-slides',
+  HTML_PRESENTATION_EXPORT_PPTX: 'html-presentation:export-pptx',
+  HTML_PRESENTATION_PARSE_TEMPLATE: 'html-presentation:parse-template',
 
   // Config
   CONFIG_GET_API_KEY: 'config:getApiKey',
@@ -161,6 +166,9 @@ export const IPC_CHANNELS = {
   DEEPBRAIN_EXPORT_KNOWLEDGE: 'deepbrain:exportKnowledge',
   DEEPBRAIN_KNOWLEDGE_TOPICS: 'deepbrain:knowledgeTopics',
   DEEPBRAIN_KNOWLEDGE_TOPIC: 'deepbrain:knowledgeTopic',
+
+  // DeepBrain Daemon
+  DEEPBRAIN_DAEMON_STATUS: 'deepbrain:daemonStatus',
 
   // DeepNote API
   DEEPNOTE_API_STATUS: 'deepnote-api:status',
@@ -647,6 +655,16 @@ export interface IpcHandlerMap {
     return: { slug: string; content: string } | null
   }
 
+  // DeepBrain Daemon
+  [IPC_CHANNELS.DEEPBRAIN_DAEMON_STATUS]: {
+    args: []
+    return: {
+      state: 'stopped' | 'starting' | 'running' | 'external' | 'error'
+      pid: number | null
+      error: string | null
+    }
+  }
+
   // Token Usage
   [IPC_CHANNELS.TOKEN_USAGE_GET_SUMMARY]: { args: []; return: TokenUsageSummary }
   [IPC_CHANNELS.TOKEN_USAGE_RESET]: { args: []; return: void }
@@ -667,12 +685,48 @@ export interface IpcHandlerMap {
       notebookId: string
       model: 'flash' | 'pro'
       stylePresetId: string
+      outputMode?: 'html' | 'pptx'
+      pptxTemplatePath?: string
       userInstructions?: string
       customStyleImagePath?: string
       customStyleColors?: string[]
       customStyleDescription?: string
     }]
     return: { generatedContentId: string }
+  }
+  [IPC_CHANNELS.HTML_PRESENTATION_UPDATE_SLIDE]: {
+    args: [{
+      generatedContentId: string
+      slide: StructuredSlide
+    }]
+    return: void
+  }
+  [IPC_CHANNELS.HTML_PRESENTATION_REGEN_SLIDE]: {
+    args: [{
+      generatedContentId: string
+      slideId: string
+      instruction?: string
+    }]
+    return: { slide: StructuredSlide }
+  }
+  [IPC_CHANNELS.HTML_PRESENTATION_REORDER_SLIDES]: {
+    args: [{
+      generatedContentId: string
+      slideIds: string[]
+    }]
+    return: void
+  }
+  [IPC_CHANNELS.HTML_PRESENTATION_EXPORT_PPTX]: {
+    args: [{
+      generatedContentId: string
+    }]
+    return: { success: boolean; filePath?: string }
+  }
+  [IPC_CHANNELS.HTML_PRESENTATION_PARSE_TEMPLATE]: {
+    args: [{
+      filePath: string
+    }]
+    return: PresentationTheme
   }
 
   // DeepNote API

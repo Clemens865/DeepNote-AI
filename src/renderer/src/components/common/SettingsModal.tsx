@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Settings, Info, Brain, Server, Check, BarChart3, RotateCcw } from 'lucide-react'
+import { Settings, Info, Brain, Server, Check, BarChart3, RotateCcw, Monitor } from 'lucide-react'
 import { Modal } from './Modal'
 import { Button } from './Button'
 import { Spinner } from './Spinner'
@@ -22,6 +22,12 @@ interface DeepBrainStatus {
   embeddingProvider: string
   learningTrend: string
   indexedFiles: number
+}
+
+interface DaemonStatus {
+  state: 'stopped' | 'starting' | 'running' | 'external' | 'error'
+  pid: number | null
+  error: string | null
 }
 
 const FEATURES = [
@@ -88,6 +94,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [sbStatus, setSbStatus] = useState<DeepBrainStatus | null>(null)
   const [sbLoading, setSbLoading] = useState(false)
   const [dnApiPort, setDnApiPort] = useState<number | null>(null)
+  const [daemonStatus, setDaemonStatus] = useState<DaemonStatus | null>(null)
 
   // Usage state
   const [usageSummary, setUsageSummary] = useState<TokenUsageSummary | null>(null)
@@ -100,6 +107,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setSbStatus(status)
       const apiStatus = await window.api.deepnoteApiStatus() as { port: number }
       setDnApiPort(apiStatus.port)
+      const daemon = await window.api.deepbrainDaemonStatus() as DaemonStatus
+      setDaemonStatus(daemon)
     } catch {
       setSbStatus(null)
     } finally {
@@ -304,15 +313,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div className="space-y-5">
             {/* DeepBrain */}
             {sbStatus?.available ? (
-              /* Full integration UI when DeepBrain is connected (for testing) */
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Brain size={16} className={sbStatus?.enabled !== false ? 'text-purple-500' : 'text-zinc-400'} />
                     <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">DeepBrain</h4>
+                    {daemonStatus && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                        daemonStatus.state === 'running'
+                          ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+                          : daemonStatus.state === 'external'
+                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'
+                            : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
+                      }`}>
+                        {daemonStatus.state === 'running' ? 'Managed' : daemonStatus.state === 'external' ? 'External' : daemonStatus.state}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {/* Enable/Disable toggle */}
                     <button
                       onClick={async () => {
                         const newEnabled = !(sbStatus?.enabled !== false)
@@ -371,16 +389,22 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
               </div>
             ) : (
-              /* "Coming Soon" teaser when DeepBrain is not available */
               <div className="px-4 py-4 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05]">
                 <div className="flex items-center gap-2 mb-2">
                   <Brain size={16} className="text-purple-400 dark:text-purple-500" />
                   <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">DeepBrain</h4>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-500/15 dark:text-purple-400 font-medium">Coming Soon</span>
+                  {daemonStatus?.state === 'starting' ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 font-medium">Starting...</span>
+                  ) : daemonStatus?.state === 'error' ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400 font-medium">Error</span>
+                  ) : (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 font-medium">Offline</span>
+                  )}
                 </div>
                 <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed">
-                  System-wide memory, file indexing, email search, clipboard history, and cross-app AI context.
-                  DeepBrain will connect your operating system to your notebooks for a seamless AI experience.
+                  {daemonStatus?.error
+                    ? `Error: ${daemonStatus.error}`
+                    : 'System-wide memory, file indexing, email search, clipboard history, and cross-app AI context. The brain engine will start automatically.'}
                 </p>
               </div>
             )}

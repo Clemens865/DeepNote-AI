@@ -3,6 +3,7 @@ import { existsSync } from 'fs'
 import { resolve } from 'path'
 import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { deepbrainService } from '../services/deepbrain'
+import { deepbrainDaemon } from '../services/deepbrainDaemon'
 import { configService } from '../services/config'
 
 export function registerDeepBrainHandlers() {
@@ -178,6 +179,11 @@ export function registerDeepBrainHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPIC, async (_event, args: { slug: string }) => {
     return deepbrainService.knowledgeTopic(args.slug)
+  })
+
+  // DeepBrain Daemon status
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_DAEMON_STATUS, async () => {
+    return deepbrainDaemon.getState()
   })
 
   ipcMain.handle(IPC_CHANNELS.DEEPNOTE_API_STATUS, async () => {

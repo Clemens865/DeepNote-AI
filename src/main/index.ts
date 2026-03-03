@@ -21,6 +21,7 @@ import { registerDeepBrainHandlers } from './ipc/deepbrain'
 import { trayService } from './services/tray'
 import { fileWatcherService } from './services/fileWatcher'
 import { deepnoteApiServer } from './services/deepnoteApi'
+import { deepbrainDaemon } from './services/deepbrainDaemon'
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -102,6 +103,17 @@ app.whenReady().then(() => {
   // Start DeepNote REST API server for bidirectional integration
   deepnoteApiServer.start()
 
+  // Launch bundled DeepBrain.app (or connect to existing instance)
+  deepbrainDaemon.ensureRunning().then((running) => {
+    if (running) {
+      console.log('[Main] DeepBrain is available')
+    } else {
+      console.warn('[Main] DeepBrain not available — cognitive features disabled')
+    }
+  }).catch((err) => {
+    console.error('[Main] DeepBrain daemon error:', err)
+  })
+
   const appWindow = createWindow()
 
   // Initialize tray after window is created
@@ -118,7 +130,9 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.on('before-quit', () => {
+app.on('before-quit', async () => {
+  // Stop managed DeepBrain first (graceful flush)
+  await deepbrainDaemon.stop()
   deepnoteApiServer.stop()
   trayService.destroy()
   fileWatcherService.stopAll()

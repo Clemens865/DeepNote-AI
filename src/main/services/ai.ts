@@ -4,7 +4,8 @@ import { generateWithValidation, resetMiddlewareClient } from './aiMiddleware'
 import { shouldUsePipeline, executePipeline } from './generationPipeline'
 import { memoryService } from './memory'
 import { trackGeminiResponse } from './tokenTracker'
-import type { SlideContentPlan, ReportFormatSuggestion, WhitePaperReference } from '../../shared/types'
+import type { SlideContentPlan, ReportFormatSuggestion, WhitePaperReference, StructuredSlide, PresentationTheme } from '../../shared/types'
+import { randomUUID } from 'crypto'
 
 let client: GoogleGenAI | null = null
 
@@ -1149,6 +1150,122 @@ CRITICAL INSTRUCTIONS:
     }
 
     return { html: htmlOutput }
+  }
+
+  async planPresentationSlides(
+    sourceTexts: string[],
+    options: {
+      theme: PresentationTheme
+      userInstructions?: string
+      model?: 'flash' | 'pro'
+    }
+  ): Promise<StructuredSlide[]> {
+    const ai = getClient()
+    const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 100000)
+    const modelChoice = options.model === 'pro' ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview'
+    const userDesc = options.userInstructions ? `\nUser instructions: ${options.userInstructions}` : ''
+
+    const prompt = `You are a presentation design expert. Analyze the source material and create a structured slide deck as JSON.${userDesc}
+
+Theme: "${options.theme.name}" with colors: accent1=${options.theme.colors.accent1}, accent2=${options.theme.colors.accent2}, accent3=${options.theme.colors.accent3}
+
+Source material:
+${combinedText}
+
+Create 8-12 slides as a JSON array. Each slide has this structure:
+{
+  "slideNumber": 1,
+  "layout": "title-slide",
+  "title": "Presentation Title",
+  "subtitle": "Optional subtitle",
+  "bodyContent": [
+    { "type": "text", "text": "Some text" },
+    { "type": "bullets", "bullets": ["Point 1", "Point 2"] },
+    { "type": "stat", "statValue": "95%", "statLabel": "Accuracy" },
+    { "type": "quote", "text": "A notable quote" }
+  ],
+  "notes": "Speaker notes for this slide"
+}
+
+Available layouts (use a MIX — never use the same layout consecutively):
+- "title-slide": Hero slide with big title + subtitle. Use for slide 1.
+- "section-header": Section divider with title. Use to introduce major sections.
+- "content": Standard content slide with title + body content (text, bullets).
+- "two-column": Title + two side-by-side content areas. Put 2+ bodyContent items.
+- "card-grid": Title + 2-3 card items. Each bodyContent item becomes a card.
+- "stat-row": Title + stat items with big numbers. Use "stat" type bodyContent.
+- "quote": Centered quote slide. Use "quote" type bodyContent.
+- "closing": Final "Key Takeaways" slide with bullet summary.
+
+Rules:
+1. Slide 1 MUST be layout "title-slide". Last slide MUST be layout "closing".
+2. Never repeat the same layout consecutively.
+3. Include at least 1 stat-row and 1 card-grid slide.
+4. Extract REAL, SPECIFIC content from the sources. No placeholder text.
+5. Each bodyContent item needs an "id" field (short unique string like "bc1", "bc2").
+6. Speaker notes should summarize talking points.
+7. Output ONLY valid JSON array. No markdown fences. No explanation.`
+
+    const response = await ai.models.generateContent({
+      model: modelChoice,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    })
+    trackGeminiResponse(response, modelChoice, 'studio:plan-presentation-slides')
+
+    let text = response.text ?? '[]'
+    text = text.replace(/^```json\n?/i, '').replace(/```\n?$/i, '').trim()
+
+    const slides: StructuredSlide[] = JSON.parse(text)
+    // Ensure each slide has a proper id
+    for (const slide of slides) {
+      if (!slide.id) slide.id = randomUUID()
+      for (const bc of slide.bodyContent) {
+        if (!bc.id) bc.id = randomUUID()
+      }
+    }
+    return slides
+  }
+
+  async regenerateSingleSlide(
+    currentSlide: StructuredSlide,
+    context: { prevSlideTitle?: string; nextSlideTitle?: string; sourceExcerpt: string },
+    instruction?: string
+  ): Promise<StructuredSlide> {
+    const ai = getClient()
+    const userInstruction = instruction ? `\nUser instruction: ${instruction}` : ''
+
+    const prompt = `You are a presentation design expert. Regenerate this single slide with improved content.${userInstruction}
+
+Current slide:
+${JSON.stringify(currentSlide, null, 2)}
+
+Context:
+- Previous slide title: ${context.prevSlideTitle || '(first slide)'}
+- Next slide title: ${context.nextSlideTitle || '(last slide)'}
+- Source excerpt: ${context.sourceExcerpt.slice(0, 20000)}
+
+Rules:
+1. Keep the same layout type ("${currentSlide.layout}") unless the user instruction requests a change.
+2. Keep the same slideNumber (${currentSlide.slideNumber}).
+3. Improve the content — make it more specific, impactful, and engaging.
+4. Each bodyContent item needs an "id" field.
+5. Output ONLY a single JSON object (not an array). No markdown fences. No explanation.`
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'studio:regen-single-slide')
+
+    let text = response.text ?? '{}'
+    text = text.replace(/^```json\n?/i, '').replace(/```\n?$/i, '').trim()
+
+    const slide: StructuredSlide = JSON.parse(text)
+    slide.id = currentSlide.id // preserve original ID
+    for (const bc of slide.bodyContent) {
+      if (!bc.id) bc.id = randomUUID()
+    }
+    return slide
   }
 
   async suggestReportFormats(sourceTexts: string[]): Promise<ReportFormatSuggestion[]> {

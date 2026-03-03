@@ -6,11 +6,14 @@ import { getDatabase, schema } from '../db'
 
 const MAX_HISTORY = 10
 const CLIP_PREVIEW_LENGTH = 60
+const BRAIN_STATUS_POLL_MS = 15_000
 
 class TrayService {
   private tray: Tray | null = null
   private clipboardHistory: string[] = []
   private mainWindow: BrowserWindow | null = null
+  private brainStatusLine: string = 'Brain: Connecting...'
+  private brainStatusTimer: ReturnType<typeof setInterval> | null = null
 
   init(mainWindow: BrowserWindow): void {
     this.mainWindow = mainWindow
@@ -29,6 +32,10 @@ class TrayService {
     this.tray = new Tray(trayIcon)
     this.tray.setToolTip('DeepNote AI')
     this.updateMenu()
+
+    // Start polling DeepBrain status for tray display
+    this.pollBrainStatus()
+    this.brainStatusTimer = setInterval(() => this.pollBrainStatus(), BRAIN_STATUS_POLL_MS)
 
     // Register global shortcut: Cmd+Shift+N (Mac) / Ctrl+Shift+N (Windows/Linux)
     const accelerator = process.platform === 'darwin' ? 'CommandOrControl+Shift+N' : 'Control+Shift+N'
@@ -123,6 +130,7 @@ class TrayService {
 
     const template: Electron.MenuItemConstructorOptions[] = [
       { label: 'DeepNote AI', enabled: false },
+      { label: this.brainStatusLine, enabled: false },
       { type: 'separator' },
       {
         label: 'Capture Clipboard (⌘⇧N)',
@@ -152,11 +160,16 @@ class TrayService {
       },
       { type: 'separator' },
       {
-        label: 'Show Window',
+        label: 'Show DeepNote',
         click: () => {
           this.mainWindow?.show()
           this.mainWindow?.focus()
         },
+      },
+      {
+        label: 'Quick Search (⌘⇧Space)',
+        sublabel: 'Opens DeepBrain overlay',
+        enabled: false, // Informational — shortcut handled by DeepBrain
       },
       {
         label: 'Quit',
@@ -172,7 +185,28 @@ class TrayService {
     return [...this.clipboardHistory]
   }
 
+  private async pollBrainStatus(): Promise<void> {
+    try {
+      const status = await deepbrainService.getStatus()
+      if (status?.available) {
+        const memCount = (status.memoryCount || 0).toLocaleString()
+        this.brainStatusLine = `Brain: Idle \u2014 ${memCount} memories`
+        this.tray?.setToolTip(`DeepNote AI \u2014 Brain: ${memCount} memories`)
+      } else {
+        this.brainStatusLine = 'Brain: Not connected'
+        this.tray?.setToolTip('DeepNote AI \u2014 Brain offline')
+      }
+    } catch {
+      this.brainStatusLine = 'Brain: Not connected'
+    }
+    this.updateMenu()
+  }
+
   destroy(): void {
+    if (this.brainStatusTimer) {
+      clearInterval(this.brainStatusTimer)
+      this.brainStatusTimer = null
+    }
     globalShortcut.unregisterAll()
     if (this.tray) {
       this.tray.destroy()

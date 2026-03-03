@@ -429,3 +429,14 @@ export interface GeneratedContent {
   status: GeneratedContentStatus
   createdAt: string
 }
+
+// Presentation types (structured slide system)
+export type {
+  PresentationSlideLayout,
+  SlideBodyContent,
+  StructuredSlide,
+  PresentationThemeColors,
+  PresentationTheme,
+  PptxTemplateData,
+  HtmlPresentationData,
+} from './presentation'

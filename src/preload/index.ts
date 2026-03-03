@@ -168,11 +168,32 @@ const api = {
     notebookId: string
     model: 'flash' | 'pro'
     stylePresetId: string
+    outputMode?: 'html' | 'pptx'
+    pptxTemplatePath?: string
     userInstructions?: string
     customStyleImagePath?: string
     customStyleColors?: string[]
     customStyleDescription?: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_START, args),
+  htmlPresentationUpdateSlide: (args: {
+    generatedContentId: string
+    slide: { id: string; slideNumber: number; layout: string; title: string; subtitle?: string; bodyContent: unknown[]; notes?: string }
+  }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_UPDATE_SLIDE, args),
+  htmlPresentationRegenSlide: (args: {
+    generatedContentId: string
+    slideId: string
+    instruction?: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_REGEN_SLIDE, args),
+  htmlPresentationReorderSlides: (args: {
+    generatedContentId: string
+    slideIds: string[]
+  }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_REORDER_SLIDES, args),
+  htmlPresentationExportPptx: (args: {
+    generatedContentId: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_EXPORT_PPTX, args),
+  htmlPresentationParseTemplate: (args: {
+    filePath: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_PARSE_TEMPLATE, args),
   onHtmlPresentationProgress: (
     callback: (data: { generatedContentId: string; stage: string; message: string }) => void
   ) => {
@@ -486,6 +507,9 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPICS),
   deepbrainKnowledgeTopic: (args: { slug: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPIC, args),
+
+  // DeepBrain Daemon
+  deepbrainDaemonStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_DAEMON_STATUS),
 
   // DeepNote API
   deepnoteApiStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEEPNOTE_API_STATUS),

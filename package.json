@@ -49,6 +49,7 @@
     "openai": "^6.22.0",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^2.4.5",
+    "pptxgenjs": "^4.0.1",
     "react-draggable": "^4.5.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.0.0",
