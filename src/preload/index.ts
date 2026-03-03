@@ -441,6 +441,52 @@ const api = {
   deepbrainActivityCurrent: () =>
     ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_ACTIVITY_CURRENT),
 
+  // DeepBrain Control Center
+  deepbrainConnectors: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_CONNECTORS),
+  deepbrainConnectorConfig: (args: { id: string; enabled?: boolean; pathOverride?: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_CONNECTOR_CONFIG, args),
+  deepbrainBootstrap: (args: { sources: string[] }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BOOTSTRAP, args),
+  deepbrainGraphStats: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_GRAPH_STATS),
+  deepbrainGraphNeighbors: (args: { nodeId: string; hops?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_GRAPH_NEIGHBORS, args),
+  deepbrainSonaStats: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_SONA_STATS),
+  deepbrainNervousStats: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_NERVOUS_STATS),
+  deepbrainStorageHealth: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_STORAGE_HEALTH),
+  deepbrainCompressionStats: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_COMPRESSION_STATS),
+  deepbrainLlmStatus: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_LLM_STATUS),
+  deepbrainMemories: (args: { type?: string; offset?: number; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_MEMORIES, args),
+  deepbrainMemoryDelete: (args: { id: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_MEMORY_DELETE, args),
+  deepbrainBrainCycle: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAIN_CYCLE),
+  deepbrainBrainEvolve: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAIN_EVOLVE),
+  deepbrainBrainFlush: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAIN_FLUSH),
+  deepbrainBrainwireConsolidate: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_CONSOLIDATE),
+  deepbrainBrainwireStatus: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_STATUS),
+  deepbrainBrainwireWorkingMemory: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_WORKING_MEMORY),
+
+  // DeepBrain Knowledge Export
+  deepbrainExportKnowledge: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_EXPORT_KNOWLEDGE),
+  deepbrainKnowledgeTopics: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPICS),
+  deepbrainKnowledgeTopic: (args: { slug: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPIC, args),
+
   // DeepNote API
   deepnoteApiStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEEPNOTE_API_STATUS),
 

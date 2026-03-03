@@ -75,6 +75,111 @@ export function registerDeepBrainHandlers() {
     return deepbrainService.getActivityCurrent()
   })
 
+  // --- Control Center handlers ---
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_CONNECTORS, async () => {
+    return deepbrainService.listConnectors()
+  })
+
+  ipcMain.handle(
+    IPC_CHANNELS.DEEPBRAIN_CONNECTOR_CONFIG,
+    async (_event, args: { id: string; enabled?: boolean; pathOverride?: string }) => {
+      return deepbrainService.updateConnectorConfig(args.id, {
+        enabled: args.enabled,
+        pathOverride: args.pathOverride,
+      })
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.DEEPBRAIN_BOOTSTRAP,
+    async (_event, args: { sources: string[] }) => {
+      return deepbrainService.runBootstrap(args.sources)
+    }
+  )
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_GRAPH_STATS, async () => {
+    return deepbrainService.getGraphStats()
+  })
+
+  ipcMain.handle(
+    IPC_CHANNELS.DEEPBRAIN_GRAPH_NEIGHBORS,
+    async (_event, args: { nodeId: string; hops?: number }) => {
+      return deepbrainService.getGraphNeighbors(args.nodeId, args.hops)
+    }
+  )
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_SONA_STATS, async () => {
+    return deepbrainService.getSonaStats()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_NERVOUS_STATS, async () => {
+    return deepbrainService.getNervousStats()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_STORAGE_HEALTH, async () => {
+    return deepbrainService.getStorageHealth()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_COMPRESSION_STATS, async () => {
+    return deepbrainService.getCompressionStats()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_LLM_STATUS, async () => {
+    return deepbrainService.getLlmStatus()
+  })
+
+  ipcMain.handle(
+    IPC_CHANNELS.DEEPBRAIN_MEMORIES,
+    async (_event, args: { type?: string; offset?: number; limit?: number }) => {
+      return deepbrainService.listMemories(args.type, args.offset, args.limit)
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.DEEPBRAIN_MEMORY_DELETE,
+    async (_event, args: { id: string }) => {
+      return deepbrainService.deleteMemory(args.id)
+    }
+  )
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_BRAIN_CYCLE, async () => {
+    return deepbrainService.brainCycle()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_BRAIN_EVOLVE, async () => {
+    return deepbrainService.brainEvolve()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_BRAIN_FLUSH, async () => {
+    return deepbrainService.brainFlush()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_CONSOLIDATE, async () => {
+    return deepbrainService.brainwireConsolidate()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_STATUS, async () => {
+    return deepbrainService.brainwireStatus()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_WORKING_MEMORY, async () => {
+    return deepbrainService.brainwireWorkingMemory()
+  })
+
+  // Knowledge Export
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_EXPORT_KNOWLEDGE, async () => {
+    return deepbrainService.exportKnowledge()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPICS, async () => {
+    return deepbrainService.knowledgeTopics()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPIC, async (_event, args: { slug: string }) => {
+    return deepbrainService.knowledgeTopic(args.slug)
+  })
+
   ipcMain.handle(IPC_CHANNELS.DEEPNOTE_API_STATUS, async () => {
     const { deepnoteApiServer } = await import('../services/deepnoteApi')
     return {

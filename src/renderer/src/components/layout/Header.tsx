@@ -7,7 +7,7 @@ import { GlobalSearchDialog } from '../search/GlobalSearchDialog'
 import { ManualDialog } from '../help/ManualDialog'
 import { CommandPalette } from '../common/CommandPalette'
 import { QuickSwitcher } from '../common/QuickSwitcher'
-import { ArrowLeft, Download, Settings, Sun, Moon, Search, BookOpen } from 'lucide-react'
+import { ArrowLeft, Download, Settings, Sun, Moon, Search, BookOpen, Brain } from 'lucide-react'
 
 export function Header() {
   const location = useLocation()
@@ -23,7 +23,23 @@ export function Header() {
   const [showManual, setShowManual] = useState(false)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false)
+  const [deepbrainAvailable, setDeepbrainAvailable] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
+
+  // Poll DeepBrain availability
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const status = await window.api.deepbrainStatus()
+        setDeepbrainAvailable(status?.available === true)
+      } catch {
+        setDeepbrainAvailable(false)
+      }
+    }
+    check()
+    const interval = setInterval(check, 15_000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Cmd+K for search, Cmd+Shift+F for files, Cmd+P for command palette, Cmd+O for quick switcher
   useEffect(() => {
@@ -75,6 +91,7 @@ export function Header() {
   const viewTitle = activeView === 'chat' ? 'Notebook Chat' : 'Notes'
 
   return (
+    <>
     <header className="titlebar-drag flex items-center h-12 px-5 bg-white/80 dark:bg-black/40 backdrop-blur-xl border-b border-black/[0.06] dark:border-white/[0.06] shrink-0">
       <div className="w-[70px] shrink-0" />
 
@@ -129,6 +146,15 @@ export function Header() {
       )}
 
       <button
+        onClick={() => navigate('/deepbrain')}
+        className="titlebar-no-drag relative w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors mr-1"
+        title="DeepBrain Control Center"
+      >
+        <Brain className="w-4 h-4" />
+        <span className={`absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full ${deepbrainAvailable ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}`} />
+      </button>
+
+      <button
         onClick={() => { setSearchInitialFilter('all'); setShowSearch(true) }}
         className="titlebar-no-drag w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors mr-1"
         title="Search all notebooks (Cmd+K)"
@@ -160,6 +186,7 @@ export function Header() {
         <Settings className="w-4 h-4" />
       </button>
 
+    </header>
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
       <GlobalSearchDialog
         isOpen={showSearch}
@@ -178,6 +205,6 @@ export function Header() {
         onOpenSettings={() => setShowSettings(true)}
       />
       <QuickSwitcher isOpen={showQuickSwitcher} onClose={() => setShowQuickSwitcher(false)} />
-    </header>
+    </>
   )
 }

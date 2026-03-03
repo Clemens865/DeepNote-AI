@@ -137,6 +137,31 @@ export const IPC_CHANNELS = {
   DEEPBRAIN_SEARCH_EMAILS: 'deepbrain:searchEmails',
   DEEPBRAIN_ACTIVITY_CURRENT: 'deepbrain:activityCurrent',
 
+  // DeepBrain Control Center
+  DEEPBRAIN_CONNECTORS: 'deepbrain:connectors',
+  DEEPBRAIN_CONNECTOR_CONFIG: 'deepbrain:connectorConfig',
+  DEEPBRAIN_BOOTSTRAP: 'deepbrain:bootstrap',
+  DEEPBRAIN_GRAPH_STATS: 'deepbrain:graphStats',
+  DEEPBRAIN_GRAPH_NEIGHBORS: 'deepbrain:graphNeighbors',
+  DEEPBRAIN_SONA_STATS: 'deepbrain:sonaStats',
+  DEEPBRAIN_NERVOUS_STATS: 'deepbrain:nervousStats',
+  DEEPBRAIN_STORAGE_HEALTH: 'deepbrain:storageHealth',
+  DEEPBRAIN_COMPRESSION_STATS: 'deepbrain:compressionStats',
+  DEEPBRAIN_LLM_STATUS: 'deepbrain:llmStatus',
+  DEEPBRAIN_MEMORIES: 'deepbrain:memories',
+  DEEPBRAIN_MEMORY_DELETE: 'deepbrain:memoryDelete',
+  DEEPBRAIN_BRAIN_CYCLE: 'deepbrain:brainCycle',
+  DEEPBRAIN_BRAIN_EVOLVE: 'deepbrain:brainEvolve',
+  DEEPBRAIN_BRAIN_FLUSH: 'deepbrain:brainFlush',
+  DEEPBRAIN_BRAINWIRE_CONSOLIDATE: 'deepbrain:brainwireConsolidate',
+  DEEPBRAIN_BRAINWIRE_STATUS: 'deepbrain:brainwireStatus',
+  DEEPBRAIN_BRAINWIRE_WORKING_MEMORY: 'deepbrain:brainwireWorkingMemory',
+
+  // DeepBrain Knowledge Export
+  DEEPBRAIN_EXPORT_KNOWLEDGE: 'deepbrain:exportKnowledge',
+  DEEPBRAIN_KNOWLEDGE_TOPICS: 'deepbrain:knowledgeTopics',
+  DEEPBRAIN_KNOWLEDGE_TOPIC: 'deepbrain:knowledgeTopic',
+
   // DeepNote API
   DEEPNOTE_API_STATUS: 'deepnote-api:status',
 
@@ -532,6 +557,94 @@ export interface IpcHandlerMap {
       recentFiles: { path: string; timestamp: number }[]
       recentClipboard?: string
     } | null
+  }
+
+  // DeepBrain Control Center
+  [IPC_CHANNELS.DEEPBRAIN_CONNECTORS]: {
+    args: []
+    return: { id: string; name: string; description: string; enabled: boolean; detected: boolean; detectionDetails?: string; iconHint?: string; configurable?: boolean; pathOverride?: string }[]
+  }
+  [IPC_CHANNELS.DEEPBRAIN_CONNECTOR_CONFIG]: {
+    args: [{ id: string; enabled?: boolean; pathOverride?: string }]
+    return: boolean
+  }
+  [IPC_CHANNELS.DEEPBRAIN_BOOTSTRAP]: {
+    args: [{ sources: string[] }]
+    return: { totalCreated: number; totalSkipped: number; totalErrors: number; sources: { source: string; created: number; skipped: number; errors: number }[] } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_GRAPH_STATS]: {
+    args: []
+    return: { nodeCount: number; edgeCount: number; avgDegree: number; components: number } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_GRAPH_NEIGHBORS]: {
+    args: [{ nodeId: string; hops?: number }]
+    return: { nodes: { id: string; label: string; memoryType: string; importance: number; content?: string }[]; edges: { source: string; target: string; weight: number; edgeType?: string }[] } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_SONA_STATS]: {
+    args: []
+    return: { loopA: { active: boolean; gradientNorm: number; microLoraCount: number }; loopB: { active: boolean; clusterCount: number; lastRun?: string }; loopC: { active: boolean; ewcPenalty: number; lastRun?: string } } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_NERVOUS_STATS]: {
+    args: []
+    return: { routerSync: number; hopfieldEnergy: number; oscillatorPhase: number; predictiveCodingError: number } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_STORAGE_HEALTH]: {
+    args: []
+    return: { hotTierSize: number; warmTierSize: number; coldTierSize: number; totalSize: number; fragmentationRatio: number } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_COMPRESSION_STATS]: {
+    args: []
+    return: { hotTierSize: number; warmTierSize: number; coldTierSize: number; compressionRatio: number; totalRecords: number } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_LLM_STATUS]: {
+    args: []
+    return: { loaded: boolean; backend: string; modelName: string; memoryUsageMb: number; tokensProcessed: number } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_MEMORIES]: {
+    args: [{ type?: string; offset?: number; limit?: number }]
+    return: { items: { id: string; content: string; memoryType: string; importance: number; createdAt?: string }[]; total: number; offset: number; limit: number }
+  }
+  [IPC_CHANNELS.DEEPBRAIN_MEMORY_DELETE]: {
+    args: [{ id: string }]
+    return: boolean
+  }
+  [IPC_CHANNELS.DEEPBRAIN_BRAIN_CYCLE]: {
+    args: []
+    return: { cycleNumber: number; trainingInsights: string[]; memoriesPruned: number } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_BRAIN_EVOLVE]: {
+    args: []
+    return: { adaptations: string[]; improvements: string[]; thoughtId?: string } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_BRAIN_FLUSH]: {
+    args: []
+    return: boolean
+  }
+  [IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_CONSOLIDATE]: {
+    args: []
+    return: { memoriesProcessed: number; clustersFound: number; memoriesConsolidated: number; newAbstractions: number; memoriesDecayed: number } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_STATUS]: {
+    args: []
+    return: { totalMemories: number; activeMemories: number; dormantMemories: number; stmEntries: number; consolidationCycles: number; avgSalience: number; workingMemoryItems: number; conceptCount: number } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_WORKING_MEMORY]: {
+    args: []
+    return: { memoryId: string; gist: string; concepts: string[]; activatedAt: string; relevance: number }[]
+  }
+
+  // DeepBrain Knowledge Export
+  [IPC_CHANNELS.DEEPBRAIN_EXPORT_KNOWLEDGE]: {
+    args: []
+    return: { topicsWritten: number; memoriesExported: number; outputPath: string } | null
+  }
+  [IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPICS]: {
+    args: []
+    return: { topics: { slug: string; name: string; sizeBytes: number; modifiedTs: number; memoryCount: number }[]; stats: { topicsWritten: number; memoriesExported: number; consolidationCycles: number; avgSalience: number } | null; lastExported: number | null }
+  }
+  [IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPIC]: {
+    args: [{ slug: string }]
+    return: { slug: string; content: string } | null
   }
 
   // Token Usage
