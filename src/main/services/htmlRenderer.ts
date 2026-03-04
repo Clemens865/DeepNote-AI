@@ -1,7 +1,7 @@
-import type { StructuredSlide, PresentationTheme, SlideBodyContent } from '../../shared/types'
+import type { StructuredSlide, PresentationTheme } from '../../shared/types'
 
-function escapeHtml(text: string): string {
-  return text
+function escapeHtml(str: string): string {
+  return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -9,182 +9,195 @@ function escapeHtml(text: string): string {
 }
 
 function hexToRgbTuple(hex: string): string {
-  const clean = hex.replace('#', '')
-  const r = parseInt(clean.substring(0, 2), 16)
-  const g = parseInt(clean.substring(2, 4), 16)
-  const b = parseInt(clean.substring(4, 6), 16)
-  return `${r},${g},${b}`
+  const h = hex.replace('#', '')
+  const r = parseInt(h.substring(0, 2), 16)
+  const g = parseInt(h.substring(2, 4), 16)
+  const b = parseInt(h.substring(4, 6), 16)
+  return `${r}, ${g}, ${b}`
 }
 
-function renderBodyContent(item: SlideBodyContent): string {
-  switch (item.type) {
-    case 'text':
-      return `<p class="anim" style="font-size:1.05rem;line-height:1.7;color:var(--text-secondary);margin-top:1rem;">${escapeHtml(item.text || '')}</p>`
-    case 'bullets':
-      return `<ul class="bullet-list">${(item.bullets || []).map(b => `<li class="anim">${escapeHtml(b)}</li>`).join('')}</ul>`
-    case 'stat':
-      return `<div class="stat anim"><div class="stat-value gradient-text">${escapeHtml(item.statValue || '')}</div><div class="stat-label">${escapeHtml(item.statLabel || '')}</div></div>`
-    case 'quote':
-      return `<blockquote class="anim" style="font-size:1.4rem;font-style:italic;line-height:1.6;color:var(--text-secondary);border-left:3px solid var(--accent-1);padding-left:1.5rem;margin:2rem 0;">${escapeHtml(item.text || '')}</blockquote>`
-    case 'image-placeholder':
-      return `<div class="anim glass" style="width:100%;height:200px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.9rem;">Image Placeholder</div>`
-    default:
-      return ''
-  }
+function renderBodyContent(items: StructuredSlide['bodyContent'], imageDataMap?: Map<string, string>): string {
+  return items
+    .map((item) => {
+      switch (item.type) {
+        case 'text':
+          return `<p class="body-text">${escapeHtml(item.text || '')}</p>`
+        case 'bullets':
+          return `<ul class="body-bullets">${(item.bullets || []).map((b) => `<li>${escapeHtml(b)}</li>`).join('')}</ul>`
+        case 'stat':
+          return `<div class="stat-item"><span class="stat-value">${escapeHtml(item.statValue || '')}</span><span class="stat-label">${escapeHtml(item.statLabel || '')}</span></div>`
+        case 'quote':
+          return `<blockquote class="body-quote">${escapeHtml(item.text || '')}</blockquote>`
+        case 'image-placeholder': {
+          const imgData = imageDataMap?.get(item.id)
+          if (imgData) {
+            return `<img src="${imgData}" class="slide-image" alt="${escapeHtml(item.imagePrompt || item.text || 'Generated image')}" />`
+          }
+          return `<div class="image-placeholder">${escapeHtml(item.text || 'Image')}</div>`
+        }
+        default:
+          return ''
+      }
+    })
+    .join('\n')
 }
 
-function renderTitleSlide(slide: StructuredSlide): string {
-  return `<section>
-  <div class="section-inner" style="text-align:center;">
-    <div class="orb" style="width:500px;height:500px;background:var(--accent-1);top:-10%;left:-10%;"></div>
-    <div class="orb" style="width:400px;height:400px;background:var(--accent-2);bottom:-10%;right:-10%;"></div>
-    <h1 class="hero-title gradient-text anim">${escapeHtml(slide.title)}</h1>
-    <div class="hero-line anim" style="margin:2rem auto;"></div>
-    ${slide.subtitle ? `<p class="hero-subtitle anim" style="margin:0 auto;">${escapeHtml(slide.subtitle)}</p>` : ''}
-    ${slide.bodyContent.map(renderBodyContent).join('\n    ')}
-  </div>
-</section>`
-}
-
-function renderSectionHeader(slide: StructuredSlide, idx: number): string {
-  return `<section>
-  <div class="section-inner">
-    <span class="section-tag anim">${String(idx).padStart(2, '0')} &mdash; SECTION</span>
-    <h2 class="section-heading gradient-text anim">${escapeHtml(slide.title)}</h2>
-    ${slide.subtitle ? `<p class="anim" style="font-size:1.1rem;color:var(--text-muted);margin-top:0.5rem;">${escapeHtml(slide.subtitle)}</p>` : ''}
-    ${slide.bodyContent.map(renderBodyContent).join('\n    ')}
-  </div>
-</section>`
-}
-
-function renderContentSlide(slide: StructuredSlide, idx: number): string {
-  return `<section>
-  <div class="section-inner">
-    <span class="section-tag anim">${String(idx).padStart(2, '0')} &mdash; ${escapeHtml(slide.title.toUpperCase().slice(0, 30))}</span>
-    <h2 class="section-heading gradient-text anim">${escapeHtml(slide.title)}</h2>
-    <div class="glass" style="margin-top:2rem;">
-      ${slide.bodyContent.map(renderBodyContent).join('\n      ')}
-    </div>
-  </div>
-</section>`
-}
-
-function renderTwoColumn(slide: StructuredSlide, idx: number): string {
-  const left = slide.bodyContent.slice(0, Math.ceil(slide.bodyContent.length / 2))
-  const right = slide.bodyContent.slice(Math.ceil(slide.bodyContent.length / 2))
-  return `<section>
-  <div class="section-inner">
-    <span class="section-tag anim">${String(idx).padStart(2, '0')} &mdash; ${escapeHtml(slide.title.toUpperCase().slice(0, 30))}</span>
-    <h2 class="section-heading gradient-text anim">${escapeHtml(slide.title)}</h2>
-    <div style="display:flex;gap:2rem;margin-top:2rem;flex-wrap:wrap;">
-      <div style="flex:1;min-width:280px;">
-        ${left.map(renderBodyContent).join('\n        ')}
+function renderTitleSlide(slide: StructuredSlide, imageDataMap?: Map<string, string>): string {
+  return `
+    <section class="slide title-slide">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="slide-inner">
+        <h1 class="gradient-text">${escapeHtml(slide.title)}</h1>
+        ${slide.subtitle ? `<p class="subtitle">${escapeHtml(slide.subtitle)}</p>` : ''}
+        ${renderBodyContent(slide.bodyContent, imageDataMap)}
       </div>
-      <div class="glass" style="flex:1;min-width:280px;">
-        ${right.map(renderBodyContent).join('\n        ')}
+    </section>`
+}
+
+function renderSectionHeader(slide: StructuredSlide, imageDataMap?: Map<string, string>): string {
+  return `
+    <section class="slide section-header">
+      <div class="slide-inner">
+        <span class="section-tag">Section</span>
+        <h2 class="section-title">${escapeHtml(slide.title)}</h2>
+        ${slide.subtitle ? `<p class="section-subtitle">${escapeHtml(slide.subtitle)}</p>` : ''}
+        ${renderBodyContent(slide.bodyContent, imageDataMap)}
       </div>
-    </div>
-  </div>
-</section>`
+    </section>`
 }
 
-function renderCardGrid(slide: StructuredSlide, idx: number): string {
-  const cards = slide.bodyContent.map((item, ci) => {
-    const icons = [
-      '<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
-      '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
-      '<svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
-      '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>',
-    ]
-    const title = item.type === 'stat' ? (item.statLabel || '') : (item.text?.split('.')[0] || `Card ${ci + 1}`)
-    const body = item.type === 'stat' ? item.statValue || '' : (item.text || item.bullets?.join(', ') || '')
-    return `<div class="card anim">
-        <div class="card-icon">${icons[ci % icons.length]}</div>
-        <h3>${escapeHtml(title)}</h3>
-        <p>${escapeHtml(body)}</p>
-      </div>`
-  })
-  return `<section>
-  <div class="section-inner">
-    <span class="section-tag anim">${String(idx).padStart(2, '0')} &mdash; ${escapeHtml(slide.title.toUpperCase().slice(0, 30))}</span>
-    <h2 class="section-heading gradient-text anim">${escapeHtml(slide.title)}</h2>
-    <div class="card-grid">
-      ${cards.join('\n      ')}
-    </div>
-  </div>
-</section>`
+function renderContentSlide(slide: StructuredSlide, imageDataMap?: Map<string, string>): string {
+  return `
+    <section class="slide content-slide">
+      <div class="slide-inner">
+        <h2>${escapeHtml(slide.title)}</h2>
+        <div class="glass-card">
+          ${renderBodyContent(slide.bodyContent, imageDataMap)}
+        </div>
+      </div>
+    </section>`
 }
 
-function renderStatRow(slide: StructuredSlide, idx: number): string {
+function renderTwoColumn(slide: StructuredSlide, imageDataMap?: Map<string, string>): string {
+  const half = Math.ceil(slide.bodyContent.length / 2)
+  const left = slide.bodyContent.slice(0, half)
+  const right = slide.bodyContent.slice(half)
+  return `
+    <section class="slide two-column-slide">
+      <div class="slide-inner">
+        <h2>${escapeHtml(slide.title)}</h2>
+        <div class="two-col">
+          <div class="col">${renderBodyContent(left, imageDataMap)}</div>
+          <div class="col glass-card">${renderBodyContent(right, imageDataMap)}</div>
+        </div>
+      </div>
+    </section>`
+}
+
+function renderCardGrid(slide: StructuredSlide): string {
+  const cards = slide.bodyContent
+    .map(
+      (item) => `
+    <div class="glass-card grid-card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div>
+      ${item.type === 'bullets' ? `<ul class="body-bullets">${(item.bullets || []).map((b) => `<li>${escapeHtml(b)}</li>`).join('')}</ul>` : `<p class="body-text">${escapeHtml(item.text || item.statLabel || '')}</p>`}
+    </div>`
+    )
+    .join('')
+  return `
+    <section class="slide card-grid-slide">
+      <div class="slide-inner">
+        <h2>${escapeHtml(slide.title)}</h2>
+        <div class="card-grid">${cards}</div>
+      </div>
+    </section>`
+}
+
+function renderStatRow(slide: StructuredSlide): string {
   const stats = slide.bodyContent
-    .filter(b => b.type === 'stat')
-    .map(b => renderBodyContent(b))
-  const nonStats = slide.bodyContent.filter(b => b.type !== 'stat')
-  return `<section>
-  <div class="section-inner">
-    <span class="section-tag anim">${String(idx).padStart(2, '0')} &mdash; ${escapeHtml(slide.title.toUpperCase().slice(0, 30))}</span>
-    <h2 class="section-heading gradient-text anim">${escapeHtml(slide.title)}</h2>
-    <div class="stat-row">
-      ${stats.join('\n      ')}
-    </div>
-    ${nonStats.map(renderBodyContent).join('\n    ')}
-  </div>
-</section>`
+    .filter((c) => c.type === 'stat')
+    .map(
+      (c) => `
+    <div class="stat-block">
+      <span class="stat-value">${escapeHtml(c.statValue || '')}</span>
+      <span class="stat-label">${escapeHtml(c.statLabel || '')}</span>
+    </div>`
+    )
+    .join('')
+  return `
+    <section class="slide stat-row-slide">
+      <div class="slide-inner">
+        <h2>${escapeHtml(slide.title)}</h2>
+        <div class="stat-row">${stats}</div>
+      </div>
+    </section>`
 }
 
 function renderQuoteSlide(slide: StructuredSlide): string {
-  return `<section>
-  <div class="section-inner" style="text-align:center;max-width:800px;margin:0 auto;">
-    <div class="orb" style="width:300px;height:300px;background:var(--accent-2);top:10%;right:-5%;"></div>
-    ${slide.bodyContent.map(renderBodyContent).join('\n    ')}
-    ${slide.subtitle ? `<p class="anim" style="font-size:0.9rem;color:var(--text-muted);margin-top:1rem;">&mdash; ${escapeHtml(slide.subtitle)}</p>` : ''}
-  </div>
-</section>`
+  const quoteItem = slide.bodyContent.find((c) => c.type === 'quote')
+  return `
+    <section class="slide quote-slide">
+      <div class="orb orb-1"></div>
+      <div class="slide-inner">
+        <blockquote class="featured-quote">${escapeHtml(quoteItem?.text || slide.title)}</blockquote>
+        ${slide.subtitle ? `<p class="quote-attribution">— ${escapeHtml(slide.subtitle)}</p>` : ''}
+      </div>
+    </section>`
 }
 
-function renderClosingSlide(slide: StructuredSlide): string {
-  return `<section>
-  <div class="section-inner final-slide">
-    <h2 class="hero-title gradient-text anim" style="font-size:clamp(2.5rem,6vw,4.5rem);">${escapeHtml(slide.title)}</h2>
-    <div class="hero-line anim" style="margin:2rem auto;"></div>
-    ${slide.bodyContent.map(renderBodyContent).join('\n    ')}
-  </div>
-</section>`
+function renderClosingSlide(slide: StructuredSlide, imageDataMap?: Map<string, string>): string {
+  return `
+    <section class="slide final-slide">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="slide-inner">
+        <h2 class="gradient-text">${escapeHtml(slide.title)}</h2>
+        ${renderBodyContent(slide.bodyContent, imageDataMap)}
+      </div>
+    </section>`
 }
 
-function renderSlide(slide: StructuredSlide, idx: number): string {
+function renderSlide(slide: StructuredSlide, imageDataMap?: Map<string, string>): string {
   switch (slide.layout) {
-    case 'title-slide': return renderTitleSlide(slide)
-    case 'section-header': return renderSectionHeader(slide, idx)
-    case 'content': return renderContentSlide(slide, idx)
-    case 'two-column': return renderTwoColumn(slide, idx)
-    case 'card-grid': return renderCardGrid(slide, idx)
-    case 'stat-row': return renderStatRow(slide, idx)
-    case 'quote': return renderQuoteSlide(slide)
-    case 'closing': return renderClosingSlide(slide)
-    default: return renderContentSlide(slide, idx)
+    case 'title-slide':
+      return renderTitleSlide(slide, imageDataMap)
+    case 'section-header':
+      return renderSectionHeader(slide, imageDataMap)
+    case 'content':
+      return renderContentSlide(slide, imageDataMap)
+    case 'two-column':
+      return renderTwoColumn(slide, imageDataMap)
+    case 'card-grid':
+      return renderCardGrid(slide)
+    case 'stat-row':
+      return renderStatRow(slide)
+    case 'quote':
+      return renderQuoteSlide(slide)
+    case 'closing':
+      return renderClosingSlide(slide, imageDataMap)
+    default:
+      return renderContentSlide(slide, imageDataMap)
   }
 }
 
-export function renderSlidesToHtml(slides: StructuredSlide[], theme: PresentationTheme): string {
-  const cssVars = theme.cssVariables || {}
-  const rootVarsLines = Object.entries(cssVars).map(([k, v]) => `    ${k}: ${v};`)
-  const rootBlock = rootVarsLines.length > 0
-    ? rootVarsLines.join('\n')
-    : `    --bg-primary: ${theme.colors.background};
-    --bg-secondary: ${theme.colors.backgroundSecondary};
-    --accent-1: ${theme.colors.accent1};
-    --accent-2: ${theme.colors.accent2};
-    --accent-3: ${theme.colors.accent3};
-    --text-primary: ${theme.colors.textPrimary};
-    --text-secondary: ${theme.colors.textSecondary};
-    --text-muted: ${theme.colors.textMuted};
-    --glass-bg: rgba(255,255,255,0.03);
-    --glass-border: rgba(255,255,255,0.06);
-    --particle-rgb: ${hexToRgbTuple(theme.colors.accent1)}`
-
+export function renderSlidesToHtml(slides: StructuredSlide[], theme: PresentationTheme, imageDataMap?: Map<string, string>): string {
+  const c = theme.colors
+  const f = theme.fonts
+  const slidesHtml = slides.map(s => renderSlide(s, imageDataMap)).join('\n')
   const totalSlides = slides.length
-  const slidesHtml = slides.map((s, i) => renderSlide(s, i + 1)).join('\n\n')
+
+  // Template assets
+  const tmpl = theme.pptxTemplate
+  const bgImage = tmpl?.backgroundImageBase64
+  const logoAsset = tmpl?.assets?.find((a) => a.role === 'logo')
+
+  const bgStyle = bgImage
+    ? `background: url('${bgImage}') center/cover no-repeat, var(--bg-primary);`
+    : 'background: var(--bg-primary);'
+  const logoHtml = logoAsset
+    ? `<img src="${logoAsset.base64}" class="template-logo" alt="Logo" />`
+    : ''
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -193,200 +206,114 @@ export function renderSlidesToHtml(slides: StructuredSlide[], theme: Presentatio
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Presentation</title>
 <script src="https://cdn.tailwindcss.com"><\/script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\/script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"><\/script>
+<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(f.heading)}:wght@400;600;700;900&family=${encodeURIComponent(f.body)}:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-${rootBlock}
-  }
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; overflow-y: scroll; }
-  body {
-    font-family: '${theme.fonts.heading}', 'Inter', -apple-system, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-secondary);
-    overflow-x: hidden;
-  }
-  #particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-  .bg-mesh {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background:
-      radial-gradient(ellipse 80% 60% at 10% 20%, color-mix(in srgb, var(--accent-1) 15%, transparent), transparent),
-      radial-gradient(ellipse 60% 80% at 90% 80%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent),
-      radial-gradient(ellipse 70% 50% at 50% 50%, color-mix(in srgb, var(--accent-3) 8%, transparent), transparent);
-    animation: meshShift 20s ease-in-out infinite alternate;
-  }
-  @keyframes meshShift {
-    0% { background-position: 0% 0%, 100% 100%, 50% 50%; filter: hue-rotate(0deg); }
-    100% { background-position: 100% 100%, 0% 0%, 50% 50%; filter: hue-rotate(30deg); }
-  }
-  section {
-    min-height: 100vh; scroll-snap-align: start;
-    display: flex; align-items: center; justify-content: center;
-    position: relative; z-index: 1;
-    padding: clamp(2rem, 5vw, 6rem);
-  }
-  .section-inner { max-width: 1100px; width: 100%; }
-  #progress {
-    position: fixed; top: 0; left: 0; height: 3px; z-index: 100;
-    background: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3));
-    width: 0%; transition: width 0.3s ease;
-  }
-  #counter {
-    position: fixed; bottom: 2rem; right: 2rem; z-index: 100;
-    font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
-    color: var(--text-muted); letter-spacing: 0.1em;
-  }
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(24px) saturate(1.2);
-    -webkit-backdrop-filter: blur(24px) saturate(1.2);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: clamp(1.5rem, 3vw, 3rem);
-    position: relative; overflow: hidden;
-  }
-  .glass::before {
-    content: ''; position: absolute; inset: 0; border-radius: 24px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%);
-    pointer-events: none;
-  }
-  .gradient-text {
-    background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .hero-title {
-    font-size: clamp(3rem, 8vw, 6rem); font-weight: 900;
-    line-height: 1.05; letter-spacing: -0.03em;
-    margin-bottom: 1.5rem;
-  }
-  .hero-subtitle {
-    font-size: clamp(1.1rem, 2.5vw, 1.5rem); font-weight: 300;
-    color: var(--text-muted); max-width: 600px; line-height: 1.7;
-  }
-  .hero-line {
-    width: 80px; height: 3px; border-radius: 3px;
-    background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
-    margin: 2rem 0;
-  }
-  .section-heading {
-    font-size: clamp(2rem, 4vw, 3rem); font-weight: 700;
-    line-height: 1.2; margin-bottom: 1rem;
-  }
-  .section-tag {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
-    font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
-    color: var(--accent-1); margin-bottom: 0.75rem; display: block;
-  }
-  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
-  .card {
-    background: var(--glass-bg); border: 1px solid var(--glass-border);
-    border-radius: 20px; padding: 2rem; position: relative; overflow: hidden;
-    transition: border-color 0.4s ease, transform 0.4s ease;
-  }
-  .card:hover { border-color: color-mix(in srgb, var(--accent-1) 30%, transparent); transform: translateY(-4px); }
-  .card::after {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent-1), var(--accent-2), transparent);
-    opacity: 0; transition: opacity 0.4s ease;
-  }
-  .card:hover::after { opacity: 1; }
-  .card-icon {
-    width: 40px; height: 40px; margin-bottom: 1rem; display: flex;
-    align-items: center; justify-content: center; border-radius: 12px;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-1) 15%, transparent), color-mix(in srgb, var(--accent-2) 15%, transparent));
-  }
-  .card-icon svg { width: 20px; height: 20px; stroke: var(--accent-1); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-  .card h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.6rem; color: var(--text-primary); }
-  .card p { font-size: 0.95rem; line-height: 1.7; color: var(--text-muted); }
-  .bullet-list { list-style: none; margin-top: 1.5rem; }
-  .bullet-list li {
-    padding: 1rem 1.5rem; margin-bottom: 0.75rem;
-    background: var(--glass-bg); border-left: 3px solid var(--accent-1);
-    border-radius: 0 12px 12px 0; font-size: 1.05rem; line-height: 1.7;
-    color: var(--text-secondary);
-  }
-  .bullet-list li strong { color: var(--text-primary); }
-  .stat-row { display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 2rem; }
-  .stat {
-    flex: 1; min-width: 160px; text-align: center;
-    padding: 2rem 1rem; border-radius: 20px;
-    background: var(--glass-bg); border: 1px solid var(--glass-border);
-  }
-  .stat-value { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; line-height: 1; }
-  .stat-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; }
-  .final-slide { text-align: center; }
-  .final-slide .hero-title { font-size: clamp(2.5rem, 6vw, 4.5rem); }
-  .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15; pointer-events: none; }
-  .anim { opacity: 0; }
+:root {
+  --bg-primary: ${c.background};
+  --bg-secondary: ${c.backgroundSecondary};
+  --accent-1: ${c.accent1};
+  --accent-2: ${c.accent2};
+  --accent-3: ${c.accent3};
+  --text-primary: ${c.textPrimary};
+  --text-secondary: ${c.textSecondary};
+  --text-muted: ${c.textMuted};
+  --font-heading: '${f.heading}', system-ui, sans-serif;
+  --font-body: '${f.body}', system-ui, sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; ${bgStyle} color:var(--text-primary); font-family:var(--font-body); }
+.template-logo { position:fixed; top:1rem; left:1.2rem; max-height:2rem; width:auto; z-index:50; opacity:0.85; pointer-events:none; }
+canvas#particles { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+.slides-container { position:relative; z-index:1; width:100%; height:100%; scroll-snap-type:y mandatory; overflow-y:scroll; scroll-behavior:smooth; }
+.slide { width:100%; height:100vh; scroll-snap-align:start; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:3rem; }
+.slide-inner { max-width:1100px; width:100%; text-align:center; }
+h1 { font-family:var(--font-heading); font-size:clamp(2.5rem,5vw,4.5rem); font-weight:900; line-height:1.1; margin-bottom:1rem; }
+h2 { font-family:var(--font-heading); font-size:clamp(1.8rem,3.5vw,3rem); font-weight:700; margin-bottom:1.5rem; }
+.gradient-text { background:linear-gradient(135deg, var(--accent-1), var(--accent-2), var(--accent-3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.subtitle { font-size:1.3rem; color:var(--text-secondary); max-width:700px; margin:0 auto 2rem; }
+.section-tag { display:inline-block; padding:.3rem .8rem; border-radius:999px; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; background:rgba(${hexToRgbTuple(c.accent1)}, 0.15); color:var(--accent-1); margin-bottom:1rem; }
+.section-title { font-size:clamp(2rem,4vw,3.5rem); }
+.section-subtitle { color:var(--text-secondary); font-size:1.1rem; }
+.glass-card { background:rgba(${hexToRgbTuple(c.backgroundSecondary)}, 0.6); backdrop-filter:blur(16px); border:1px solid rgba(${hexToRgbTuple(c.textMuted)}, 0.12); border-radius:1rem; padding:2rem; text-align:left; }
+.body-text { color:var(--text-secondary); font-size:1.05rem; line-height:1.7; margin-bottom:1rem; }
+.body-bullets { list-style:none; padding:0; }
+.body-bullets li { position:relative; padding-left:1.5rem; color:var(--text-secondary); font-size:1rem; line-height:1.7; margin-bottom:.6rem; }
+.body-bullets li::before { content:''; position:absolute; left:0; top:.6em; width:8px; height:8px; border-radius:50%; background:var(--accent-1); }
+.body-quote { font-style:italic; font-size:1.1rem; color:var(--text-secondary); border-left:3px solid var(--accent-1); padding-left:1.2rem; margin:1rem 0; }
+.two-col { display:flex; gap:2rem; text-align:left; }
+.two-col .col { flex:1; }
+.card-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1.5rem; text-align:left; }
+.grid-card { display:flex; flex-direction:column; gap:.8rem; }
+.card-icon { color:var(--accent-1); }
+.stat-row { display:flex; gap:2rem; justify-content:center; flex-wrap:wrap; }
+.stat-block { text-align:center; min-width:160px; }
+.stat-value { display:block; font-family:var(--font-heading); font-size:clamp(2rem,4vw,3.5rem); font-weight:900; background:linear-gradient(135deg, var(--accent-1), var(--accent-2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.stat-label { display:block; color:var(--text-muted); font-size:.9rem; margin-top:.3rem; }
+.stat-item { display:inline-flex; flex-direction:column; align-items:center; margin:0 1.5rem 1rem; }
+.stat-item .stat-value { font-size:2rem; }
+.featured-quote { font-family:var(--font-heading); font-size:clamp(1.5rem,3vw,2.5rem); font-weight:600; max-width:800px; margin:0 auto; line-height:1.4; border:none; padding:0; font-style:italic; color:var(--text-primary); }
+.quote-attribution { color:var(--text-muted); margin-top:1.5rem; font-size:1rem; }
+.image-placeholder { width:100%; padding:3rem; border:2px dashed rgba(${hexToRgbTuple(c.textMuted)}, 0.3); border-radius:.75rem; color:var(--text-muted); text-align:center; }
+.slide-image { width:100%; max-height:60vh; object-fit:contain; border-radius:.75rem; }
+.orb { position:absolute; border-radius:50%; filter:blur(80px); opacity:0.15; pointer-events:none; }
+.orb-1 { width:400px; height:400px; background:var(--accent-1); top:-100px; right:-100px; }
+.orb-2 { width:300px; height:300px; background:var(--accent-2); bottom:-80px; left:-80px; }
+.progress-bar { position:fixed; top:0; left:0; height:3px; background:linear-gradient(90deg, var(--accent-1), var(--accent-2)); z-index:100; transition:width .3s; }
+.slide-counter { position:fixed; bottom:1.5rem; right:1.5rem; font-size:.75rem; color:var(--text-muted); z-index:100; font-family:var(--font-body); }
+@media (max-width:768px) {
+  .two-col { flex-direction:column; }
+  .stat-row { flex-direction:column; align-items:center; }
+  .slide { padding:1.5rem; }
+}
 </style>
 </head>
 <body>
-<div class="bg-mesh"></div>
 <canvas id="particles"></canvas>
-<div id="progress"></div>
-<div id="counter">1 / ${totalSlides}</div>
-
+${logoHtml}
+<div class="progress-bar" id="progressBar"></div>
+<div class="slide-counter" id="slideCounter">1 / ${totalSlides}</div>
+<div class="slides-container" id="slidesContainer">
 ${slidesHtml}
-
+</div>
 <script>
 (function(){
-  const c=document.getElementById('particles'),x=c.getContext('2d');
-  const pRgb=getComputedStyle(document.documentElement).getPropertyValue('--particle-rgb').trim()||'99,102,241';
-  let w,h,pts=[];
-  function resize(){w=c.width=innerWidth;h=c.height=innerHeight;}
-  resize(); addEventListener('resize',resize);
-  for(let i=0;i<80;i++) pts.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.5+0.5,dx:(Math.random()-0.5)*0.3,dy:(Math.random()-0.5)*0.3,o:Math.random()*0.3+0.1});
+  const container = document.getElementById('slidesContainer');
+  const bar = document.getElementById('progressBar');
+  const counter = document.getElementById('slideCounter');
+  const total = ${totalSlides};
+  container.addEventListener('scroll', () => {
+    const pct = container.scrollTop / (container.scrollHeight - container.clientHeight);
+    bar.style.width = (pct * 100) + '%';
+    const idx = Math.round(pct * (total - 1)) + 1;
+    counter.textContent = idx + ' / ' + total;
+  });
+  document.addEventListener('keydown', (e) => {
+    const h = container.clientHeight;
+    if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); container.scrollBy({top:h,behavior:'smooth'}); }
+    if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); container.scrollBy({top:-h,behavior:'smooth'}); }
+    if (e.key === 'Home') { e.preventDefault(); container.scrollTo({top:0,behavior:'smooth'}); }
+    if (e.key === 'End') { e.preventDefault(); container.scrollTo({top:container.scrollHeight,behavior:'smooth'}); }
+  });
+  // Particles
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const dots = Array.from({length:60}, () => ({x:Math.random()*W, y:Math.random()*H, r:Math.random()*2+0.5, dx:(Math.random()-0.5)*0.3, dy:(Math.random()-0.5)*0.3}));
   function draw(){
-    x.clearRect(0,0,w,h);
-    for(const p of pts){
-      p.x+=p.dx; p.y+=p.dy;
-      if(p.x<0)p.x=w; if(p.x>w)p.x=0; if(p.y<0)p.y=h; if(p.y>h)p.y=0;
-      x.beginPath(); x.arc(p.x,p.y,p.r,0,Math.PI*2);
-      x.fillStyle='rgba('+pRgb+','+p.o+')'; x.fill();
-    }
-    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
-      const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
-      if(d<120){ x.beginPath(); x.moveTo(pts[i].x,pts[i].y); x.lineTo(pts[j].x,pts[j].y);
-        x.strokeStyle='rgba('+pRgb+','+(0.06*(1-d/120))+')'; x.stroke(); }
-    }
+    ctx.clearRect(0,0,W,H);
+    dots.forEach(d => {
+      d.x += d.dx; d.y += d.dy;
+      if(d.x<0||d.x>W) d.dx*=-1;
+      if(d.y<0||d.y>H) d.dy*=-1;
+      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(${hexToRgbTuple(c.accent1)},0.25)'; ctx.fill();
+    });
     requestAnimationFrame(draw);
   }
   draw();
 })();
-gsap.registerPlugin(ScrollTrigger);
-document.querySelectorAll('.anim').forEach(el=>{
-  gsap.fromTo(el,{opacity:0, y:40, scale:0.95},{
-    opacity:1, y:0, scale:1, duration:0.9, ease:'power3.out',
-    scrollTrigger:{trigger:el, start:'top 85%', toggleActions:'play none none none'}
-  });
-});
-document.querySelectorAll('section').forEach(sec=>{
-  const cards=sec.querySelectorAll('.card, .bullet-list li, .stat');
-  if(cards.length) gsap.fromTo(cards,{opacity:0, y:30},{
-    opacity:1, y:0, duration:0.7, stagger:0.12, ease:'power2.out',
-    scrollTrigger:{trigger:sec, start:'top 70%', toggleActions:'play none none none'}
-  });
-});
-const sections=document.querySelectorAll('section');
-const bar=document.getElementById('progress');
-const counter=document.getElementById('counter');
-const total=sections.length;
-let current=0;
-const obs=new IntersectionObserver(entries=>{
-  entries.forEach(e=>{if(e.isIntersecting){
-    current=[...sections].indexOf(e.target);
-    bar.style.width=((current+1)/total*100)+'%';
-    counter.textContent=(current+1)+' / '+total;
-  }});
-},{threshold:0.5});
-sections.forEach(s=>obs.observe(s));
-document.addEventListener('keydown',e=>{
-  if(['ArrowDown','ArrowRight'].includes(e.key)&&current<total-1){e.preventDefault();sections[current+1].scrollIntoView({behavior:'smooth'});}
-  if(['ArrowUp','ArrowLeft'].includes(e.key)&&current>0){e.preventDefault();sections[current-1].scrollIntoView({behavior:'smooth'});}
-});
 <\/script>
 </body>
 </html>`

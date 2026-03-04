@@ -95,35 +95,12 @@ export interface Citation {
   pageNumber?: number
 }
 
-export interface DeepBrainRecallItem {
+export interface KnowledgeSearchResult {
   id: string
   content: string
+  type: string
   similarity: number
-  memoryType: string
-}
-
-export interface DeepBrainFileResult {
-  path: string
-  name: string
-  chunk: string
-  similarity: number
-  fileType: string
-  project?: string
-  modified?: string
-}
-
-export interface DeepBrainEmailResult {
-  subject: string
-  sender: string
-  date: string
-  chunk: string
-  similarity: number
-}
-
-export interface DeepBrainResults {
-  memories: DeepBrainRecallItem[]
-  files: DeepBrainFileResult[]
-  emails: DeepBrainEmailResult[]
+  sourceTitle: string | null
 }
 
 export interface ChatMessage {
@@ -132,7 +109,7 @@ export interface ChatMessage {
   role: ChatRole
   content: string
   citations: Citation[]
-  deepbrainResults?: DeepBrainResults
+  knowledgeResults?: KnowledgeSearchResult[]
   createdAt: string
 }
 
@@ -154,33 +131,6 @@ export type GeneratedContentType =
   | 'citation-graph'
   | 'whitepaper'
   | 'html-presentation'
-  | 'canvas'
-
-// Canvas types
-export interface CanvasNodeData {
-  id: string
-  type: 'note' | 'source' | 'text'
-  label: string
-  content?: string
-  noteId?: string
-  sourceId?: string
-  position: { x: number; y: number }
-  width?: number
-  height?: number
-  color?: string
-}
-
-export interface CanvasEdgeData {
-  id: string
-  source: string
-  target: string
-  label?: string
-}
-
-export interface CanvasData {
-  nodes: CanvasNodeData[]
-  edges: CanvasEdgeData[]
-}
 
 // Image Slides types
 export interface SlideStylePreset {
@@ -437,6 +387,7 @@ export type {
   StructuredSlide,
   PresentationThemeColors,
   PresentationTheme,
+  PptxTemplateAsset,
   PptxTemplateData,
   HtmlPresentationData,
 } from './presentation'

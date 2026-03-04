@@ -3,7 +3,7 @@ import { IPC_CHANNELS } from '../../shared/types/ipc'
 import { getDatabase, schema } from '../db'
 import { embeddingsService } from '../services/embeddings'
 import { vectorStoreService } from '../services/vectorStore'
-import { deepbrainService } from '../services/deepbrain'
+import { knowledgeStoreService } from '../services/knowledgeStore'
 import { configService } from '../services/config'
 import { spotlightSearch } from '../services/spotlight'
 
@@ -25,13 +25,11 @@ export function registerSearchHandlers() {
         return { results: [], systemResults: { memories: [], files: [], emails: [], spotlight: [] } }
       }
 
-      // Search notebook vectors, DeepBrain, and Spotlight in parallel
-      const sbEnabled = configService.getAll().deepbrainEnabled !== false
-      const [queryVector, sbMemories, sbFiles, sbEmails, spotlightResults] = await Promise.all([
+      // Search notebook vectors, Knowledge store, and Spotlight in parallel
+      const knowledgeEnabled = configService.getAll().knowledgeEnabled !== false
+      const [queryVector, knowledgeResults, spotlightResults] = await Promise.all([
         embeddingsService.embedQuery(args.query),
-        sbEnabled ? deepbrainService.recall(args.query, 5).catch(() => []) : Promise.resolve([]),
-        sbEnabled ? deepbrainService.searchFiles(args.query, 5).catch(() => []) : Promise.resolve([]),
-        sbEnabled ? deepbrainService.searchEmails(args.query, 5).catch(() => []) : Promise.resolve([]),
+        knowledgeEnabled ? knowledgeStoreService.search(args.query, 5).catch(() => []) : Promise.resolve([]),
         spotlightSearch(args.query, 8),
       ])
 
@@ -58,27 +56,13 @@ export function registerSearchHandlers() {
       return {
         results,
         systemResults: {
-          memories: sbMemories.map((m) => ({
+          memories: knowledgeResults.map((m) => ({
             content: m.content,
-            memoryType: m.memoryType,
+            memoryType: m.type,
             similarity: m.similarity,
           })),
-          files: sbFiles.map((f) => ({
-            path: f.path,
-            name: f.name,
-            chunk: f.chunk.slice(0, 300),
-            similarity: f.similarity,
-            fileType: f.fileType,
-            project: f.project,
-            modified: f.modified,
-          })),
-          emails: sbEmails.map((e) => ({
-            subject: e.subject,
-            sender: e.sender,
-            date: e.date,
-            chunk: e.chunk.slice(0, 300),
-            similarity: e.similarity,
-          })),
+          files: [],
+          emails: [],
           spotlight: spotlightResults,
         },
       }

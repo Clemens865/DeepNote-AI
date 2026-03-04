@@ -3,7 +3,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom'
 import { AppLayout } from './components/layout/AppLayout'
 import { Dashboard } from './components/dashboard/Dashboard'
 import { WorkspaceLayout } from './components/workspace/WorkspaceLayout'
-import { DeepBrainPage } from './components/deepbrain/DeepBrainPage'
+import { KnowledgeHubPage } from './components/knowledge/KnowledgeHubPage'
 import { SetupWizard } from './components/onboarding/SetupWizard'
 
 function App(): React.JSX.Element {
@@ -33,7 +33,7 @@ function App(): React.JSX.Element {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/notebook/:id" element={<WorkspaceLayout />} />
-          <Route path="/deepbrain" element={<DeepBrainPage />} />
+          <Route path="/knowledge" element={<KnowledgeHubPage />} />
         </Route>
       </Routes>
     </HashRouter>

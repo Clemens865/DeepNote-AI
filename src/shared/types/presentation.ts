@@ -15,6 +15,8 @@ export interface SlideBodyContent {
   bullets?: string[]
   statValue?: string
   statLabel?: string
+  imagePath?: string
+  imagePrompt?: string
 }
 
 export interface StructuredSlide {
@@ -38,12 +40,15 @@ export interface PresentationThemeColors {
   textMuted: string
 }
 
-export interface PresentationTheme {
+export interface PptxTemplateAsset {
   name: string
-  colors: PresentationThemeColors
-  fonts: { heading: string; body: string; mono?: string }
-  cssVariables?: Record<string, string>
-  pptxTemplate?: PptxTemplateData
+  base64: string
+  mimeType: string
+  width?: number   // inches
+  height?: number  // inches
+  x?: number       // inches
+  y?: number       // inches
+  role: 'logo' | 'background' | 'decoration'
 }
 
 export interface PptxTemplateData {
@@ -54,6 +59,17 @@ export interface PptxTemplateData {
     placeholders: { type: string; x: number; y: number; w: number; h: number }[]
   }[]
   logoBase64?: string
+  backgroundImageBase64?: string
+  assets: PptxTemplateAsset[]
+  mediaFileCount?: number
+}
+
+export interface PresentationTheme {
+  name: string
+  colors: PresentationThemeColors
+  fonts: { heading: string; body: string; mono?: string }
+  cssVariables?: Record<string, string>
+  pptxTemplate?: PptxTemplateData
 }
 
 export interface HtmlPresentationData {

@@ -17,11 +17,10 @@ import { registerSearchHandlers } from './ipc/search'
 import { registerMemoryHandlers } from './ipc/memory'
 import { registerClipboardHandlers } from './ipc/clipboard'
 import { registerVoiceHandlers } from './ipc/voice'
-import { registerDeepBrainHandlers } from './ipc/deepbrain'
+import { registerKnowledgeHandlers } from './ipc/knowledge'
 import { trayService } from './services/tray'
 import { fileWatcherService } from './services/fileWatcher'
 import { deepnoteApiServer } from './services/deepnoteApi'
-import { deepbrainDaemon } from './services/deepbrainDaemon'
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -98,21 +97,12 @@ app.whenReady().then(() => {
   registerMemoryHandlers()
   registerClipboardHandlers()
   registerVoiceHandlers()
-  registerDeepBrainHandlers()
+  registerKnowledgeHandlers()
 
   // Start DeepNote REST API server for bidirectional integration
   deepnoteApiServer.start()
 
-  // Launch bundled DeepBrain.app (or connect to existing instance)
-  deepbrainDaemon.ensureRunning().then((running) => {
-    if (running) {
-      console.log('[Main] DeepBrain is available')
-    } else {
-      console.warn('[Main] DeepBrain not available — cognitive features disabled')
-    }
-  }).catch((err) => {
-    console.error('[Main] DeepBrain daemon error:', err)
-  })
+  console.log('[Main] Knowledge store initialized')
 
   const appWindow = createWindow()
 
@@ -131,8 +121,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', async () => {
-  // Stop managed DeepBrain first (graceful flush)
-  await deepbrainDaemon.stop()
   deepnoteApiServer.stop()
   trayService.destroy()
   fileWatcherService.stopAll()

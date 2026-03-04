@@ -20,7 +20,6 @@ import {
   WhitePaperView,
   HtmlPresentationView,
 } from './viewers'
-import { CanvasView } from './viewers/CanvasView'
 
 interface GeneratedContentViewProps {
   content: GeneratedContent
@@ -45,7 +44,8 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
         text = summary + '\n\n' + sections.map((s) => `## ${s.title}\n${s.content}`).join('\n\n')
       }
     } else if (content.type === 'html-presentation') {
-      text = (data.html as string) || ''
+      // Prefer HTML if available, otherwise export slide JSON
+      text = (data.html as string) || JSON.stringify(data.slides || data, null, 2)
     } else if (content.type === 'whitepaper') {
       const wpTitle = (data.title as string) || ''
       const abstract = (data.abstract as string) || ''
@@ -65,7 +65,7 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
   }
 
   // image-slides, html-presentation, and canvas have their own fullscreen — skip the Maximize button
-  const showFullscreenButton = content.type !== 'image-slides' && content.type !== 'html-presentation' && content.type !== 'canvas'
+  const showFullscreenButton = content.type !== 'image-slides' && content.type !== 'html-presentation'
 
   const viewerProps = {
     data,
@@ -113,9 +113,7 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
       {content.type === 'diff' && <DiffView {...viewerProps} />}
       {content.type === 'citation-graph' && <CitationGraphView {...viewerProps} />}
       {content.type === 'whitepaper' && <WhitePaperView {...viewerProps} />}
-      {content.type === 'html-presentation' && <HtmlPresentationView {...viewerProps} />}
-      {content.type === 'canvas' && <CanvasView {...viewerProps} contentId={content.id} />}
-
+      {content.type === 'html-presentation' && <HtmlPresentationView {...viewerProps} contentId={content.id} />}
       {data.raw != null && (
         <pre className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap bg-black/[0.02] dark:bg-white/[0.02] rounded-lg p-4 border border-black/[0.06] dark:border-white/[0.06]">
           {String(data.raw)}

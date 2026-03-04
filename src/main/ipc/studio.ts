@@ -10,7 +10,7 @@ import { aiService } from '../services/ai'
 import { ttsService } from '../services/tts'
 import { imagenService, STYLE_PRESETS, buildSlidePrompt, buildHybridSlidePrompt } from '../services/imagen'
 import { shouldUsePipeline } from '../services/generationPipeline'
-import { deepbrainService } from '../services/deepbrain'
+import { knowledgeStoreService } from '../services/knowledgeStore'
 import { configService } from '../services/config'
 import { renderSlidesToHtml } from '../services/htmlRenderer'
 import { renderSlidesToPptx } from '../services/pptxRenderer'
@@ -34,7 +34,6 @@ const TYPE_TITLES: Record<string, string> = {
   'citation-graph': 'Citation Graph',
   whitepaper: 'White Paper',
   'html-presentation': 'HTML Presentation',
-  canvas: 'Canvas',
 }
 
 function hexToRgbTuple(hex: string): string {
@@ -43,6 +42,24 @@ function hexToRgbTuple(hex: string): string {
   const g = parseInt(clean.substring(2, 4), 16)
   const b = parseInt(clean.substring(4, 6), 16)
   return `${r},${g},${b}`
+}
+
+/** Build a Map of bodyContentId → base64 data URL for all slides with imagePath set */
+async function resolveSlideImages(slides: StructuredSlide[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  for (const slide of slides) {
+    for (const item of slide.bodyContent) {
+      if (item.type === 'image-placeholder' && item.imagePath) {
+        try {
+          const buf = await readFile(item.imagePath)
+          map.set(item.id, `data:image/png;base64,${buf.toString('base64')}`)
+        } catch {
+          // Image file missing — skip
+        }
+      }
+    }
+  }
+  return map
 }
 
 // HTML Presentation style presets
@@ -167,6 +184,126 @@ const HTML_PRESENTATION_PRESETS = [
     },
     promptSuffix: 'icy arctic blues and whites on dark slate — clean, crisp, minimalist, crystalline',
   },
+  {
+    id: 'corporate-clean',
+    name: 'Corporate Clean',
+    description: 'Professional navy/slate/blue',
+    colorPalette: ['#0f172a', '#3b82f6', '#64748b', '#1e40af', '#f1f5f9'],
+    cssVariables: {
+      '--bg-primary': '#0f172a',
+      '--bg-secondary': '#1e293b',
+      '--accent-1': '#3b82f6',
+      '--accent-2': '#1e40af',
+      '--accent-3': '#64748b',
+      '--text-primary': 'rgba(241,245,249,0.95)',
+      '--text-secondary': 'rgba(241,245,249,0.85)',
+      '--text-muted': 'rgba(241,245,249,0.5)',
+      '--glass-bg': 'rgba(59,130,246,0.04)',
+      '--glass-border': 'rgba(59,130,246,0.08)',
+      '--particle-rgb': '59,130,246',
+    },
+    promptSuffix: 'corporate professional with navy and blue on dark slate — trustworthy, clean, enterprise',
+  },
+  {
+    id: 'startup-fresh',
+    name: 'Startup Fresh',
+    description: 'Vibrant lime/teal/yellow',
+    colorPalette: ['#0a0f0a', '#84cc16', '#14b8a6', '#facc15', '#a3e635'],
+    cssVariables: {
+      '--bg-primary': '#0a0f0a',
+      '--bg-secondary': '#111a11',
+      '--accent-1': '#84cc16',
+      '--accent-2': '#14b8a6',
+      '--accent-3': '#facc15',
+      '--text-primary': 'rgba(245,255,240,0.95)',
+      '--text-secondary': 'rgba(245,255,240,0.85)',
+      '--text-muted': 'rgba(245,255,240,0.5)',
+      '--glass-bg': 'rgba(132,204,22,0.04)',
+      '--glass-border': 'rgba(132,204,22,0.08)',
+      '--particle-rgb': '132,204,22',
+    },
+    promptSuffix: 'vibrant startup energy with lime green, teal, and yellow on dark — fresh, innovative, dynamic',
+  },
+  {
+    id: 'academic-classic',
+    name: 'Academic Classic',
+    description: 'Warm ivory/burgundy/gold',
+    colorPalette: ['#1a1410', '#b45309', '#991b1b', '#d97706', '#fef3c7'],
+    cssVariables: {
+      '--bg-primary': '#1a1410',
+      '--bg-secondary': '#211a14',
+      '--accent-1': '#d97706',
+      '--accent-2': '#991b1b',
+      '--accent-3': '#b45309',
+      '--text-primary': 'rgba(254,243,199,0.95)',
+      '--text-secondary': 'rgba(254,243,199,0.85)',
+      '--text-muted': 'rgba(254,243,199,0.5)',
+      '--glass-bg': 'rgba(217,119,6,0.04)',
+      '--glass-border': 'rgba(217,119,6,0.08)',
+      '--particle-rgb': '217,119,6',
+    },
+    promptSuffix: 'academic classic with warm gold, burgundy on dark brown — scholarly, authoritative, refined',
+  },
+  {
+    id: 'tech-dark',
+    name: 'Tech Dark',
+    description: 'Matrix green/terminal black',
+    colorPalette: ['#030712', '#10b981', '#059669', '#34d399', '#6ee7b7'],
+    cssVariables: {
+      '--bg-primary': '#030712',
+      '--bg-secondary': '#0a1120',
+      '--accent-1': '#10b981',
+      '--accent-2': '#059669',
+      '--accent-3': '#34d399',
+      '--text-primary': 'rgba(209,250,229,0.95)',
+      '--text-secondary': 'rgba(209,250,229,0.85)',
+      '--text-muted': 'rgba(209,250,229,0.5)',
+      '--glass-bg': 'rgba(16,185,129,0.04)',
+      '--glass-border': 'rgba(16,185,129,0.08)',
+      '--particle-rgb': '16,185,129',
+    },
+    promptSuffix: 'tech terminal aesthetic with emerald green on black — code, hacker, developer',
+  },
+  {
+    id: 'warm-earth',
+    name: 'Warm Earth',
+    description: 'Terracotta/amber/sand',
+    colorPalette: ['#1c1210', '#c2410c', '#ea580c', '#d97706', '#fde68a'],
+    cssVariables: {
+      '--bg-primary': '#1c1210',
+      '--bg-secondary': '#231815',
+      '--accent-1': '#ea580c',
+      '--accent-2': '#c2410c',
+      '--accent-3': '#d97706',
+      '--text-primary': 'rgba(253,230,138,0.95)',
+      '--text-secondary': 'rgba(253,230,138,0.85)',
+      '--text-muted': 'rgba(253,230,138,0.5)',
+      '--glass-bg': 'rgba(234,88,12,0.04)',
+      '--glass-border': 'rgba(234,88,12,0.08)',
+      '--particle-rgb': '234,88,12',
+    },
+    promptSuffix: 'warm earthy terracotta and amber on dark brown — organic, grounded, warm',
+  },
+  {
+    id: 'pastel-dream',
+    name: 'Pastel Dream',
+    description: 'Soft pastels on deep slate',
+    colorPalette: ['#0f0d1a', '#c084fc', '#f9a8d4', '#93c5fd', '#fde68a'],
+    cssVariables: {
+      '--bg-primary': '#0f0d1a',
+      '--bg-secondary': '#1a1528',
+      '--accent-1': '#c084fc',
+      '--accent-2': '#f9a8d4',
+      '--accent-3': '#93c5fd',
+      '--text-primary': 'rgba(253,230,138,0.95)',
+      '--text-secondary': 'rgba(250,245,255,0.85)',
+      '--text-muted': 'rgba(250,245,255,0.5)',
+      '--glass-bg': 'rgba(192,132,252,0.04)',
+      '--glass-border': 'rgba(192,132,252,0.08)',
+      '--particle-rgb': '192,132,252',
+    },
+    promptSuffix: 'soft dreamy pastels — lavender, pink, sky blue on deep slate — gentle, creative, whimsical',
+  },
 ]
 
 function broadcastToWindows(channel: string, data: unknown): void {
@@ -190,37 +327,6 @@ export function registerStudioHandlers() {
       .select()
       .from(schema.sources)
       .where(eq(schema.sources.notebookId, args.notebookId))
-
-    // Canvas: no AI generation, create empty canvas immediately
-    if (args.type === 'canvas') {
-      const notebooks = await db
-        .select()
-        .from(schema.notebooks)
-        .where(eq(schema.notebooks.id, args.notebookId))
-      const notebookTitle = notebooks[0]?.title || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      const canvasData = { nodes: [], edges: [] }
-      const record = {
-        id,
-        notebookId: args.notebookId,
-        type: 'canvas' as const,
-        title: `Canvas — ${notebookTitle}`,
-        data: JSON.stringify(canvasData),
-        sourceIds: JSON.stringify([]),
-        status: 'completed' as const,
-        createdAt: now,
-      }
-      await db.insert(schema.generatedContent).values(record)
-      return {
-        id,
-        notebookId: args.notebookId,
-        type: 'canvas',
-        title: record.title,
-        data: canvasData,
-        sourceIds: [],
-        status: 'completed',
-        createdAt: now,
-      }
-    }
 
     const selectedSources = sources.filter((s) => s.isSelected)
     if (selectedSources.length === 0) {
@@ -286,13 +392,12 @@ export function registerStudioHandlers() {
         })
         .where(eq(schema.generatedContent.id, id))
 
-      // Fire-and-forget: store generation event in DeepBrain (if enabled)
-      if (configService.getAll().deepbrainEnabled !== false) {
-        deepbrainService.remember(
+      // Fire-and-forget: store generation event in knowledge store (if enabled)
+      if (configService.getAll().knowledgeEnabled !== false) {
+        knowledgeStoreService.add(
           `[DeepNote Studio] Generated ${args.type}: "${record.title}" in notebook ${args.notebookId} from ${sourceIds.length} sources`,
-          'semantic',
-          0.5
-        ).catch((err) => console.warn('[Studio] DeepBrain remember failed:', err))
+          { type: 'chat', importance: 0.5 }
+        ).catch((err) => console.warn('[Studio] Knowledge store failed:', err))
       }
 
       return {
@@ -402,13 +507,15 @@ export function registerStudioHandlers() {
     }
   )
 
-  // HTML Presentation — fire-and-forget pattern
+  // HTML Presentation — fire-and-forget, two-phase generation
   ipcMain.handle(
     IPC_CHANNELS.HTML_PRESENTATION_START,
     async (_event, args: {
       notebookId: string
       model: 'flash' | 'pro'
       stylePresetId: string
+      outputMode?: 'html' | 'pptx'
+      pptxTemplatePath?: string
       userInstructions?: string
       customStyleImagePath?: string
       customStyleColors?: string[]
@@ -417,6 +524,7 @@ export function registerStudioHandlers() {
       const db = getDatabase()
       const now = new Date().toISOString()
       const generatedContentId = randomUUID()
+      const outputMode = args.outputMode || 'html'
 
       const sources = await db
         .select()
@@ -431,39 +539,67 @@ export function registerStudioHandlers() {
       const sourceIds = selectedSources.map((s) => s.id)
       const sourceTexts = selectedSources.map((s) => s.content)
 
-      // Resolve style preset
-      let cssVariables: Record<string, string> = {}
+      // Resolve style preset → PresentationTheme
+      let theme: PresentationTheme
       let styleInstructions = ''
 
-      if (args.stylePresetId === 'custom-builder' && args.customStyleColors && args.customStyleDescription) {
+      if (args.pptxTemplatePath) {
+        theme = await parsePptxTemplate(args.pptxTemplatePath)
+      } else if (args.stylePresetId === 'custom-builder' && args.customStyleColors && args.customStyleDescription) {
         const [bg, primary, accent, text] = args.customStyleColors
-        cssVariables = {
-          '--bg-primary': bg,
-          '--bg-secondary': bg,
-          '--accent-1': primary,
-          '--accent-2': accent,
-          '--accent-3': accent,
-          '--text-primary': text,
-          '--text-secondary': text,
-          '--text-muted': `color-mix(in srgb, ${text} 50%, transparent)`,
-          '--glass-bg': `color-mix(in srgb, ${primary} 4%, transparent)`,
-          '--glass-border': `color-mix(in srgb, ${primary} 8%, transparent)`,
-          '--particle-rgb': hexToRgbTuple(primary),
+        theme = {
+          name: 'Custom',
+          colors: {
+            background: bg,
+            backgroundSecondary: bg,
+            accent1: primary,
+            accent2: accent,
+            accent3: accent,
+            textPrimary: text,
+            textSecondary: text,
+            textMuted: `color-mix(in srgb, ${text} 50%, transparent)`,
+          },
+          fonts: { heading: 'Inter', body: 'Inter' },
+          cssVariables: {
+            '--bg-primary': bg,
+            '--bg-secondary': bg,
+            '--accent-1': primary,
+            '--accent-2': accent,
+            '--accent-3': accent,
+            '--text-primary': text,
+            '--text-secondary': text,
+            '--text-muted': `color-mix(in srgb, ${text} 50%, transparent)`,
+            '--glass-bg': `color-mix(in srgb, ${primary} 4%, transparent)`,
+            '--glass-border': `color-mix(in srgb, ${primary} 8%, transparent)`,
+            '--particle-rgb': hexToRgbTuple(primary),
+          },
         }
         styleInstructions = args.customStyleDescription
       } else {
-        const preset = HTML_PRESENTATION_PRESETS.find((p) => p.id === args.stylePresetId)
-        if (preset) {
-          cssVariables = preset.cssVariables
-          styleInstructions = preset.promptSuffix
+        const preset = HTML_PRESENTATION_PRESETS.find((p) => p.id === args.stylePresetId) || HTML_PRESENTATION_PRESETS[0]
+        theme = {
+          name: preset.name,
+          colors: {
+            background: preset.colorPalette[0],
+            backgroundSecondary: preset.cssVariables['--bg-secondary'],
+            accent1: preset.cssVariables['--accent-1'],
+            accent2: preset.cssVariables['--accent-2'],
+            accent3: preset.cssVariables['--accent-3'],
+            textPrimary: preset.cssVariables['--text-primary'],
+            textSecondary: preset.cssVariables['--text-secondary'],
+            textMuted: preset.cssVariables['--text-muted'],
+          },
+          fonts: { heading: 'Inter', body: 'Inter' },
+          cssVariables: preset.cssVariables,
         }
+        styleInstructions = preset.promptSuffix
       }
 
       await db.insert(schema.generatedContent).values({
         id: generatedContentId,
         notebookId: args.notebookId,
         type: 'html-presentation' as const,
-        title: `Web Presentation - ${new Date().toLocaleDateString()}`,
+        title: `${outputMode === 'pptx' ? 'PowerPoint' : 'Web'} Presentation - ${new Date().toLocaleDateString()}`,
         data: {} as unknown as string,
         sourceIds: JSON.stringify(sourceIds),
         status: 'generating' as const,
@@ -472,7 +608,6 @@ export function registerStudioHandlers() {
 
       ;(async () => {
         try {
-          // If custom style image was provided, extract style description
           if (args.customStyleImagePath) {
             broadcastToWindows('html-presentation:progress', {
               generatedContentId,
@@ -484,22 +619,40 @@ export function registerStudioHandlers() {
 
           broadcastToWindows('html-presentation:progress', {
             generatedContentId,
-            stage: 'generating',
-            message: 'Generating animated HTML presentation...',
+            stage: 'planning',
+            message: 'Planning slide content and layouts...',
           })
 
-          const result = await aiService.generateHtmlPresentation(sourceTexts, {
+          const slides = await aiService.planPresentationSlides(sourceTexts, {
+            theme,
+            userInstructions: args.userInstructions
+              ? `${args.userInstructions}${styleInstructions ? `. Style: ${styleInstructions}` : ''}`
+              : styleInstructions || undefined,
             model: args.model,
-            userInstructions: args.userInstructions,
-            cssVariables: Object.keys(cssVariables).length > 0 ? cssVariables : undefined,
-            styleInstructions: styleInstructions || undefined,
           })
+
+          broadcastToWindows('html-presentation:progress', {
+            generatedContentId,
+            stage: 'rendering',
+            message: `Rendering ${outputMode === 'pptx' ? 'PowerPoint' : 'HTML'} presentation...`,
+          })
+
+          const data: Record<string, unknown> = { slides, theme, outputMode }
+
+          if (outputMode === 'pptx') {
+            const pptxBuffer = await renderSlidesToPptx(slides, theme)
+            const pptxPath = join(tmpdir(), `presentation-${generatedContentId}.pptx`)
+            await writeFile(pptxPath, pptxBuffer)
+            data.pptxPath = pptxPath
+          } else {
+            data.html = renderSlidesToHtml(slides, theme)
+          }
 
           const currentDb = getDatabase()
           await currentDb
             .update(schema.generatedContent)
             .set({
-              data: { html: result.html } as unknown as string,
+              data: data as unknown as string,
               status: 'completed',
             })
             .where(eq(schema.generatedContent.id, generatedContentId))
@@ -514,7 +667,7 @@ export function registerStudioHandlers() {
             .update(schema.generatedContent)
             .set({
               data: {
-                error: err instanceof Error ? err.message : 'HTML presentation generation failed',
+                error: err instanceof Error ? err.message : 'Presentation generation failed',
               } as unknown as string,
               status: 'failed',
             })
@@ -523,7 +676,7 @@ export function registerStudioHandlers() {
           broadcastToWindows('html-presentation:complete', {
             generatedContentId,
             success: false,
-            error: err instanceof Error ? err.message : 'HTML presentation generation failed',
+            error: err instanceof Error ? err.message : 'Presentation generation failed',
           })
         }
       })()
@@ -532,14 +685,207 @@ export function registerStudioHandlers() {
     }
   )
 
-  // Canvas save — update generated_content data by ID
-  ipcMain.handle(IPC_CHANNELS.CANVAS_SAVE, async (_event, args: { id: string; data: Record<string, unknown> }) => {
-    const db = getDatabase()
-    await db
-      .update(schema.generatedContent)
-      .set({ data: args.data as unknown as string })
-      .where(eq(schema.generatedContent.id, args.id))
-  })
+  // Update a single slide's content (no AI call, instant re-render)
+  ipcMain.handle(
+    IPC_CHANNELS.HTML_PRESENTATION_UPDATE_SLIDE,
+    async (_event, args: { generatedContentId: string; slide: StructuredSlide }) => {
+      const db = getDatabase()
+      const records = await db
+        .select()
+        .from(schema.generatedContent)
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+      const record = records[0]
+      if (!record) throw new Error('Content not found')
+
+      const data = (typeof record.data === 'string' ? JSON.parse(record.data) : record.data) as Record<string, unknown>
+      const slides = (data.slides || []) as StructuredSlide[]
+      const theme = data.theme as PresentationTheme
+      const idx = slides.findIndex(s => s.id === args.slide.id)
+      if (idx !== -1) slides[idx] = args.slide
+      data.slides = slides
+      const imageDataMap = await resolveSlideImages(slides)
+      const html = renderSlidesToHtml(slides, theme, imageDataMap)
+      data.html = html
+
+      await db.update(schema.generatedContent)
+        .set({ data: data as unknown as string })
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      return { html }
+    }
+  )
+
+  // Regenerate a single slide with AI
+  ipcMain.handle(
+    IPC_CHANNELS.HTML_PRESENTATION_REGEN_SLIDE,
+    async (_event, args: { generatedContentId: string; slideId: string; instruction?: string }) => {
+      const db = getDatabase()
+      const records = await db
+        .select()
+        .from(schema.generatedContent)
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+      const record = records[0]
+      if (!record) throw new Error('Content not found')
+
+      const data = (typeof record.data === 'string' ? JSON.parse(record.data) : record.data) as Record<string, unknown>
+      const slides = (data.slides || []) as StructuredSlide[]
+      const theme = data.theme as PresentationTheme
+      const idx = slides.findIndex(s => s.id === args.slideId)
+      if (idx === -1) throw new Error('Slide not found')
+
+      const sourceIdsRaw = typeof record.sourceIds === 'string' ? JSON.parse(record.sourceIds) : record.sourceIds
+      const sources = await db.select().from(schema.sources).where(eq(schema.sources.notebookId, record.notebookId))
+      const sourceExcerpt = sources
+        .filter(s => (sourceIdsRaw as string[]).includes(s.id))
+        .map(s => s.content).join('\n\n---\n\n').slice(0, 20000)
+
+      const newSlide = await aiService.regenerateSingleSlide(
+        slides[idx],
+        {
+          prevSlideTitle: idx > 0 ? slides[idx - 1].title : undefined,
+          nextSlideTitle: idx < slides.length - 1 ? slides[idx + 1].title : undefined,
+          sourceExcerpt,
+        },
+        args.instruction
+      )
+
+      slides[idx] = newSlide
+      data.slides = slides
+      const imageDataMap = await resolveSlideImages(slides)
+      const html = renderSlidesToHtml(slides, theme, imageDataMap)
+      data.html = html
+
+      await db.update(schema.generatedContent)
+        .set({ data: data as unknown as string })
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      return { slide: newSlide, html }
+    }
+  )
+
+  // Reorder slides
+  ipcMain.handle(
+    IPC_CHANNELS.HTML_PRESENTATION_REORDER_SLIDES,
+    async (_event, args: { generatedContentId: string; slideIds: string[] }) => {
+      const db = getDatabase()
+      const records = await db
+        .select()
+        .from(schema.generatedContent)
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+      const record = records[0]
+      if (!record) throw new Error('Content not found')
+
+      const data = (typeof record.data === 'string' ? JSON.parse(record.data) : record.data) as Record<string, unknown>
+      const slides = (data.slides || []) as StructuredSlide[]
+      const theme = data.theme as PresentationTheme
+
+      const slideMap = new Map(slides.map(s => [s.id, s]))
+      const reordered = args.slideIds
+        .map(id => slideMap.get(id))
+        .filter((s): s is StructuredSlide => !!s)
+        .map((s, i) => ({ ...s, slideNumber: i + 1 }))
+
+      data.slides = reordered
+      const imageDataMap = await resolveSlideImages(reordered)
+      data.html = renderSlidesToHtml(reordered, theme, imageDataMap)
+
+      await db.update(schema.generatedContent)
+        .set({ data: data as unknown as string })
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+    }
+  )
+
+  // Generate image for a slide body content item
+  ipcMain.handle(
+    IPC_CHANNELS.HTML_PRESENTATION_GENERATE_IMAGE,
+    async (_event, args: { generatedContentId: string; slideId: string; bodyContentId: string; prompt: string; imageModel?: import('../../shared/types').ImageModelId }) => {
+      const db = getDatabase()
+      const records = await db
+        .select()
+        .from(schema.generatedContent)
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+      const record = records[0]
+      if (!record) throw new Error('Content not found')
+
+      const data = (typeof record.data === 'string' ? JSON.parse(record.data) : record.data) as Record<string, unknown>
+      const slides = (data.slides || []) as StructuredSlide[]
+      const theme = data.theme as PresentationTheme
+
+      const slideIdx = slides.findIndex(s => s.id === args.slideId)
+      if (slideIdx === -1) throw new Error('Slide not found')
+
+      const slide = slides[slideIdx]
+      const bcIdx = slide.bodyContent.findIndex(bc => bc.id === args.bodyContentId)
+      if (bcIdx === -1) throw new Error('Body content item not found')
+
+      // Generate the image
+      const imagePath = await imagenService.generateSlideImage(args.prompt, {
+        aspectRatio: '16:9',
+        contentId: args.generatedContentId,
+        slideNumber: slide.slideNumber,
+        imageModel: args.imageModel,
+      })
+
+      // Update slide data
+      slide.bodyContent[bcIdx].imagePath = imagePath
+      slide.bodyContent[bcIdx].imagePrompt = args.prompt
+      slides[slideIdx] = slide
+      data.slides = slides
+
+      // Re-render HTML with images
+      const imageDataMap = await resolveSlideImages(slides)
+      const html = renderSlidesToHtml(slides, theme, imageDataMap)
+      data.html = html
+
+      await db.update(schema.generatedContent)
+        .set({ data: data as unknown as string })
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      return { slide, html }
+    }
+  )
+
+  // Export to PPTX from any presentation (even HTML-mode ones)
+  ipcMain.handle(
+    IPC_CHANNELS.HTML_PRESENTATION_EXPORT_PPTX,
+    async (_event, args: { generatedContentId: string }) => {
+      const db = getDatabase()
+      const records = await db
+        .select()
+        .from(schema.generatedContent)
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+      const record = records[0]
+      if (!record) throw new Error('Content not found')
+
+      const data = (typeof record.data === 'string' ? JSON.parse(record.data) : record.data) as Record<string, unknown>
+      const slides = (data.slides || []) as StructuredSlide[]
+      const theme = data.theme as PresentationTheme
+
+      if (!slides.length) throw new Error('No structured slides found. This presentation was generated with an older version.')
+
+      const pptxBuffer = await renderSlidesToPptx(slides, theme)
+      const pptxPath = join(tmpdir(), `presentation-${args.generatedContentId}.pptx`)
+      await writeFile(pptxPath, pptxBuffer)
+
+      const safeName = (record.title || 'Presentation').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60)
+      const result = await dialog.showSaveDialog({
+        defaultPath: `${safeName}.pptx`,
+        filters: [{ name: 'PowerPoint', extensions: ['pptx'] }],
+      })
+
+      if (result.canceled || !result.filePath) return { success: false }
+      await copyFile(pptxPath, result.filePath)
+      return { success: true, filePath: result.filePath }
+    }
+  )
+
+  // Parse PPTX template
+  ipcMain.handle(
+    IPC_CHANNELS.HTML_PRESENTATION_PARSE_TEMPLATE,
+    async (_event, args: { filePath: string }) => {
+      return parsePptxTemplate(args.filePath)
+    }
+  )
 
   // Suggest report formats based on sources
   ipcMain.handle(IPC_CHANNELS.STUDIO_SUGGEST_FORMATS, async (_event, notebookId: string) => {

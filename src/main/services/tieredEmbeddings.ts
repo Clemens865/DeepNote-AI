@@ -1,15 +1,31 @@
 /**
- * Tiered Embeddings — ONNX (local) → Gemini API → hash fallback.
- * Respects the config setting: 'auto' | 'gemini' | 'local'.
+ * Tiered Embeddings — Ollama (local) → ONNX (local) → hash fallback.
+ * Default is 'local': tries Ollama first (nomic-embed-text), then ONNX, then hash.
  */
 
 import { configService } from './config'
 import { embeddingsService } from './embeddings'
 import * as localEmbeddings from './localEmbeddings'
+import * as ollamaEmbeddings from './ollamaEmbeddings'
+
+/** Cache Ollama availability to avoid repeated health checks. */
+let ollamaAvailable: boolean | null = null
+let ollamaCheckedAt = 0
+const OLLAMA_CHECK_INTERVAL = 60_000 // recheck every 60s
+
+async function checkOllama(): Promise<boolean> {
+  const now = Date.now()
+  if (ollamaAvailable !== null && now - ollamaCheckedAt < OLLAMA_CHECK_INTERVAL) {
+    return ollamaAvailable
+  }
+  ollamaAvailable = await ollamaEmbeddings.isAvailable()
+  ollamaCheckedAt = now
+  return ollamaAvailable
+}
 
 /**
  * Hash-based fallback embeddings.
- * Produces a deterministic 768-dim vector from text.
+ * Produces a deterministic vector from text.
  * Quality is poor but prevents total failure.
  */
 function hashEmbed(text: string, dim = 768): number[] {
@@ -18,7 +34,6 @@ function hashEmbed(text: string, dim = 768): number[] {
     const idx = i % dim
     vec[idx] += text.charCodeAt(i) / 256
   }
-  // Normalize
   const norm = Math.sqrt(vec.reduce((s: number, v: number) => s + v * v, 0))
   if (norm > 0) {
     for (let i = 0; i < dim; i++) vec[i] /= norm
@@ -27,20 +42,13 @@ function hashEmbed(text: string, dim = 768): number[] {
 }
 
 /**
- * Embed texts using the tiered approach.
+ * Embed texts using the configured approach.
+ * Default: Ollama → ONNX → hash fallback.
  */
 export async function embed(texts: string[]): Promise<number[][]> {
-  const mode = configService.getEmbeddingsModel?.() ?? 'auto'
+  const mode = configService.getEmbeddingsModel?.() ?? 'local'
 
-  // Forced local
-  if (mode === 'local') {
-    if (localEmbeddings.isAvailable() && localEmbeddings.isModelDownloaded()) {
-      return localEmbeddings.embed(texts)
-    }
-    console.warn('[TieredEmbeddings] Local mode requested but not available, falling back')
-  }
-
-  // Forced gemini
+  // Forced gemini (user explicitly chose it)
   if (mode === 'gemini') {
     try {
       return await embeddingsService.embed(texts)
@@ -50,21 +58,26 @@ export async function embed(texts: string[]): Promise<number[][]> {
     }
   }
 
-  // Auto mode: try local → gemini → hash
+  // Local: try Ollama → ONNX → hash
+  if (await checkOllama()) {
+    try {
+      return await ollamaEmbeddings.embed(texts)
+    } catch (err) {
+      console.warn('[TieredEmbeddings] Ollama failed:', err)
+      // Invalidate cache so we recheck next time
+      ollamaAvailable = null
+    }
+  }
+
   if (localEmbeddings.isAvailable() && localEmbeddings.isModelDownloaded()) {
     try {
       return await localEmbeddings.embed(texts)
     } catch (err) {
-      console.warn('[TieredEmbeddings] Local ONNX failed, trying Gemini:', err)
+      console.warn('[TieredEmbeddings] Local ONNX failed:', err)
     }
   }
 
-  try {
-    return await embeddingsService.embed(texts)
-  } catch (err) {
-    console.warn('[TieredEmbeddings] Gemini failed, using hash fallback:', err)
-    return texts.map((t) => hashEmbed(t))
-  }
+  return texts.map((t) => hashEmbed(t))
 }
 
 /**
@@ -78,16 +91,10 @@ export async function embedQuery(text: string): Promise<number[]> {
 /**
  * Get info about what embedding model is currently active.
  */
-export function getActiveModel(): 'local' | 'gemini' | 'hash' {
-  const mode = configService.getEmbeddingsModel?.() ?? 'auto'
-
-  if (mode === 'local' && localEmbeddings.isAvailable() && localEmbeddings.isModelDownloaded()) {
-    return 'local'
-  }
+export async function getActiveModel(): Promise<'ollama' | 'local' | 'gemini' | 'hash'> {
+  const mode = configService.getEmbeddingsModel?.() ?? 'local'
   if (mode === 'gemini') return 'gemini'
-  if (mode === 'auto') {
-    if (localEmbeddings.isAvailable() && localEmbeddings.isModelDownloaded()) return 'local'
-    return 'gemini'
-  }
-  return 'gemini'
+  if (await checkOllama()) return 'ollama'
+  if (localEmbeddings.isAvailable() && localEmbeddings.isModelDownloaded()) return 'local'
+  return 'hash'
 }

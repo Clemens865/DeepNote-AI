@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Settings, Info, Brain, Server, Check, BarChart3, RotateCcw, Monitor } from 'lucide-react'
+import { Settings, Info, Database, Server, Check, BarChart3, RotateCcw } from 'lucide-react'
 import { Modal } from './Modal'
 import { Button } from './Button'
 import { Spinner } from './Spinner'
@@ -13,21 +13,11 @@ interface SettingsModalProps {
 
 type Tab = 'settings' | 'integrations' | 'usage' | 'about'
 
-interface DeepBrainStatus {
-  available: boolean
+interface KnowledgeStatus {
   enabled: boolean
-  memoryCount: number
-  thoughtCount: number
-  aiProvider: string
-  embeddingProvider: string
-  learningTrend: string
-  indexedFiles: number
-}
-
-interface DaemonStatus {
-  state: 'stopped' | 'starting' | 'running' | 'external' | 'error'
-  pid: number | null
-  error: string | null
+  total: number
+  byType: Record<string, number>
+  folderCount: number
 }
 
 const FEATURES = [
@@ -90,29 +80,26 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null)
 
-  // DeepBrain state
-  const [sbStatus, setSbStatus] = useState<DeepBrainStatus | null>(null)
-  const [sbLoading, setSbLoading] = useState(false)
+  // Knowledge state
+  const [knowledgeStatus, setKnowledgeStatus] = useState<KnowledgeStatus | null>(null)
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false)
   const [dnApiPort, setDnApiPort] = useState<number | null>(null)
-  const [daemonStatus, setDaemonStatus] = useState<DaemonStatus | null>(null)
 
   // Usage state
   const [usageSummary, setUsageSummary] = useState<TokenUsageSummary | null>(null)
   const [usageLoading, setUsageLoading] = useState(false)
 
-  const loadDeepBrainStatus = useCallback(async () => {
-    setSbLoading(true)
+  const loadKnowledgeStatus = useCallback(async () => {
+    setKnowledgeLoading(true)
     try {
-      const status = await window.api.deepbrainStatus() as DeepBrainStatus | null
-      setSbStatus(status)
+      const status = await window.api.knowledgeStatus() as KnowledgeStatus
+      setKnowledgeStatus(status)
       const apiStatus = await window.api.deepnoteApiStatus() as { port: number }
       setDnApiPort(apiStatus.port)
-      const daemon = await window.api.deepbrainDaemonStatus() as DaemonStatus
-      setDaemonStatus(daemon)
     } catch {
-      setSbStatus(null)
+      setKnowledgeStatus(null)
     } finally {
-      setSbLoading(false)
+      setKnowledgeLoading(false)
     }
   }, [])
 
@@ -147,9 +134,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       }).catch(() => {})
       setSavedKeys({})
       setTestResult(null)
-      loadDeepBrainStatus()
+      loadKnowledgeStatus()
     }
-  }, [isOpen, loadDeepBrainStatus])
+  }, [isOpen, loadKnowledgeStatus])
 
   useEffect(() => {
     if (isOpen && tab === 'usage') {
@@ -208,7 +195,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             Settings
           </button>
           <button onClick={() => setTab('integrations')} className={tabClass('integrations')}>
-            <Brain size={14} />
+            <Database size={14} />
             Integrations
           </button>
           <button onClick={() => setTab('usage')} className={tabClass('usage')}>
@@ -311,103 +298,49 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         {tab === 'integrations' && (
           <div className="space-y-5">
-            {/* DeepBrain */}
-            {sbStatus?.available ? (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Brain size={16} className={sbStatus?.enabled !== false ? 'text-purple-500' : 'text-zinc-400'} />
-                    <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">DeepBrain</h4>
-                    {daemonStatus && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                        daemonStatus.state === 'running'
-                          ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
-                          : daemonStatus.state === 'external'
-                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'
-                            : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
-                      }`}>
-                        {daemonStatus.state === 'running' ? 'Managed' : daemonStatus.state === 'external' ? 'External' : daemonStatus.state}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={async () => {
-                        const newEnabled = !(sbStatus?.enabled !== false)
-                        await window.api.deepbrainConfigure({ enabled: newEnabled })
-                        setSbStatus((prev) => prev ? { ...prev, enabled: newEnabled } : prev)
-                      }}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        sbStatus?.enabled !== false ? 'bg-purple-500' : 'bg-zinc-300 dark:bg-zinc-600'
-                      }`}
-                      title={sbStatus?.enabled !== false ? 'Disable DeepBrain' : 'Enable DeepBrain'}
-                    >
-                      <span
-                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                          sbStatus?.enabled !== false ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                        }`}
-                      />
-                    </button>
-                    {sbLoading ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <div className={`flex items-center gap-1.5 text-xs ${sbStatus?.available && sbStatus?.enabled !== false ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
-                        <div className={`w-2 h-2 rounded-full ${sbStatus?.available && sbStatus?.enabled !== false ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300 dark:bg-zinc-600'}`} />
-                        {sbStatus?.enabled === false ? 'Disabled' : sbStatus?.available ? 'Connected' : 'Not connected'}
-                      </div>
-                    )}
-                    <button
-                      onClick={loadDeepBrainStatus}
-                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                    >
-                      Refresh
-                    </button>
-                  </div>
+            {/* Knowledge Store */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Database size={16} className={knowledgeStatus?.enabled !== false ? 'text-violet-500' : 'text-zinc-400'} />
+                  <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Knowledge Store</h4>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                    knowledgeStatus?.enabled !== false
+                      ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+                      : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
+                  }`}>
+                    {knowledgeStatus?.enabled !== false ? 'Active' : 'Disabled'}
+                  </span>
                 </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20">
-                    <p className="text-[10px] text-purple-500 dark:text-purple-400 uppercase tracking-wide">Memories</p>
-                    <p className="text-lg font-bold text-purple-700 dark:text-purple-300">{sbStatus.memoryCount.toLocaleString()}</p>
-                  </div>
-                  <div className="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20">
-                    <p className="text-[10px] text-purple-500 dark:text-purple-400 uppercase tracking-wide">Indexed Files</p>
-                    <p className="text-lg font-bold text-purple-700 dark:text-purple-300">{sbStatus.indexedFiles.toLocaleString()}</p>
-                  </div>
-                  <div className="px-3 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">AI Provider</p>
-                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">{sbStatus.aiProvider}</p>
-                  </div>
-                  <div className="px-3 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Embeddings</p>
-                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">{sbStatus.embeddingProvider}</p>
-                  </div>
-                  <div className="px-3 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04] col-span-2">
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Learning Trend</p>
-                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200 capitalize">{sbStatus.learningTrend}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="px-4 py-4 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05]">
-                <div className="flex items-center gap-2 mb-2">
-                  <Brain size={16} className="text-purple-400 dark:text-purple-500" />
-                  <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">DeepBrain</h4>
-                  {daemonStatus?.state === 'starting' ? (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 font-medium">Starting...</span>
-                  ) : daemonStatus?.state === 'error' ? (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400 font-medium">Error</span>
+                <div className="flex items-center gap-2">
+                  {knowledgeLoading ? (
+                    <Spinner size="sm" />
                   ) : (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 font-medium">Offline</span>
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      Ready
+                    </div>
                   )}
+                  <button
+                    onClick={loadKnowledgeStatus}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Refresh
+                  </button>
                 </div>
-                <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed">
-                  {daemonStatus?.error
-                    ? `Error: ${daemonStatus.error}`
-                    : 'System-wide memory, file indexing, email search, clipboard history, and cross-app AI context. The brain engine will start automatically.'}
-                </p>
               </div>
-            )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="px-3 py-2 rounded-lg bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20">
+                  <p className="text-[10px] text-violet-500 dark:text-violet-400 uppercase tracking-wide">Memories</p>
+                  <p className="text-lg font-bold text-violet-700 dark:text-violet-300">{(knowledgeStatus?.total ?? 0).toLocaleString()}</p>
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Scan Folders</p>
+                  <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">{knowledgeStatus?.folderCount ?? 0}</p>
+                </div>
+              </div>
+            </div>
 
             {/* Divider */}
             <div className="border-t border-black/[0.04] dark:border-white/[0.04]" />
@@ -431,7 +364,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   http://127.0.0.1:{dnApiPort || 19520}
                 </code>
                 <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1.5 leading-relaxed">
-                  DeepBrain, shell scripts, Raycast, and other tools can query your notebooks via this API.
+                  Shell scripts, Raycast, and other tools can query your notebooks via this API.
                 </p>
               </div>
             </div>

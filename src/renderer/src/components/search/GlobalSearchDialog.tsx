@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Search, X, BookOpen, FileText, Brain, HardDrive, Tag, Mail, Plus } from 'lucide-react'
+import { Search, X, BookOpen, FileText, Database, HardDrive, Tag, Mail, Plus } from 'lucide-react'
 import { Spinner } from '../common/Spinner'
 import { useNotebookStore } from '../../stores/notebookStore'
 
@@ -265,8 +265,8 @@ export function GlobalSearchDialog({ isOpen, onClose, onNavigate, initialFilter 
             <div>
               <div className="px-5 py-2 bg-purple-50 dark:bg-purple-500/10 border-b border-purple-100 dark:border-purple-500/20 sticky top-0">
                 <span className="flex items-center gap-1.5 text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-wide">
-                  <Brain size={11} />
-                  DeepBrain Memories
+                  <Database size={11} />
+                  Knowledge Memories
                 </span>
               </div>
               {systemMemories.map((mem, i) => (
@@ -291,7 +291,7 @@ export function GlobalSearchDialog({ isOpen, onClose, onNavigate, initialFilter 
             </div>
           )}
 
-          {/* DeepBrain Files */}
+          {/* Knowledge Files */}
           {hasFiles && showSection('files') && (
             <div>
               <div className="px-5 py-2 bg-purple-50 dark:bg-purple-500/10 border-b border-purple-100 dark:border-purple-500/20 sticky top-0">
@@ -440,8 +440,8 @@ export function GlobalSearchDialog({ isOpen, onClose, onNavigate, initialFilter 
             )}
             {hasSystemResults && (
               <span className="flex items-center gap-1 text-[10px] text-purple-500 dark:text-purple-400">
-                <Brain size={10} />
-                DeepBrain
+                <Database size={10} />
+                Knowledge
               </span>
             )}
           </div>

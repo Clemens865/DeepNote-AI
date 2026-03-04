@@ -43,10 +43,6 @@ const api = {
   notesResolveLink: (args: { notebookId: string; linkTitle: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.NOTES_RESOLVE_LINK, args),
 
-  // Canvas
-  canvasSave: (args: { id: string; data: Record<string, unknown> }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.CANVAS_SAVE, args),
-
   // Chat
   chatMessages: (notebookId: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.CHAT_MESSAGES, notebookId),
@@ -191,6 +187,13 @@ const api = {
   htmlPresentationExportPptx: (args: {
     generatedContentId: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_EXPORT_PPTX, args),
+  htmlPresentationGenerateImage: (args: {
+    generatedContentId: string
+    slideId: string
+    bodyContentId: string
+    prompt: string
+    imageModel?: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_GENERATE_IMAGE, args),
   htmlPresentationParseTemplate: (args: {
     filePath: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_PARSE_TEMPLATE, args),
@@ -437,79 +440,44 @@ const api = {
   globalSearch: (args: { query: string; notebookIds?: string[]; limit?: number }) =>
     ipcRenderer.invoke(IPC_CHANNELS.SEARCH_GLOBAL, args),
 
-  // DeepBrain Integration
-  deepbrainStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_STATUS),
-  deepbrainRecall: (args: { query: string; limit?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_RECALL, args),
-  deepbrainSearch: (args: { query: string; limit?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_SEARCH, args),
-  deepbrainClipboard: (args?: { limit?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_CLIPBOARD, args),
-  deepbrainRemember: (args: { content: string; memoryType?: string; importance?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_REMEMBER, args),
-  deepbrainThink: (args: { input: string }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_THINK, args),
-  deepbrainConfigure: (args: { port?: number; token?: string | null; enabled?: boolean }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_CONFIGURE, args),
+  // Knowledge Store
+  knowledgeStatus: () => ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_STATUS),
+  knowledgeSearch: (args: { query: string; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_SEARCH, args),
+  knowledgeAdd: (args: { content: string; type?: string; importance?: number; tags?: string[] }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_ADD, args),
+  knowledgeList: (args: { type?: string; offset?: number; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_LIST, args),
+  knowledgeDelete: (args: { id: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_DELETE, args),
+  knowledgeFoldersGet: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_FOLDERS_GET),
+  knowledgeFoldersAdd: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_FOLDERS_ADD),
+  knowledgeFoldersRemove: (args: { id: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_FOLDERS_REMOVE, args),
+  knowledgeScan: (args: { folderId: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_SCAN, args),
+  knowledgeGraph: (args: { seedId?: string; hops?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_GRAPH, args),
+  knowledgeConfigure: (args: { enabled: boolean }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_CONFIGURE, args),
+  onKnowledgeScanProgress: (
+    callback: (data: { stage: string; message: string; current?: number; total?: number }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { stage: string; message: string; current?: number; total?: number }
+    ) => callback(data)
+    ipcRenderer.on('knowledge:scan-progress', handler)
+    return () => {
+      ipcRenderer.removeListener('knowledge:scan-progress', handler)
+    }
+  },
 
   // System
   systemOpenFile: (args: { filePath: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_FILE, args),
-
-  // DeepBrain (extra)
-  deepbrainSearchEmails: (args: { query: string; limit?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_SEARCH_EMAILS, args),
-  deepbrainActivityCurrent: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_ACTIVITY_CURRENT),
-
-  // DeepBrain Control Center
-  deepbrainConnectors: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_CONNECTORS),
-  deepbrainConnectorConfig: (args: { id: string; enabled?: boolean; pathOverride?: string }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_CONNECTOR_CONFIG, args),
-  deepbrainBootstrap: (args: { sources: string[] }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BOOTSTRAP, args),
-  deepbrainGraphStats: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_GRAPH_STATS),
-  deepbrainGraphNeighbors: (args: { nodeId: string; hops?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_GRAPH_NEIGHBORS, args),
-  deepbrainSonaStats: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_SONA_STATS),
-  deepbrainNervousStats: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_NERVOUS_STATS),
-  deepbrainStorageHealth: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_STORAGE_HEALTH),
-  deepbrainCompressionStats: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_COMPRESSION_STATS),
-  deepbrainLlmStatus: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_LLM_STATUS),
-  deepbrainMemories: (args: { type?: string; offset?: number; limit?: number }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_MEMORIES, args),
-  deepbrainMemoryDelete: (args: { id: string }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_MEMORY_DELETE, args),
-  deepbrainBrainCycle: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAIN_CYCLE),
-  deepbrainBrainEvolve: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAIN_EVOLVE),
-  deepbrainBrainFlush: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAIN_FLUSH),
-  deepbrainBrainwireConsolidate: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_CONSOLIDATE),
-  deepbrainBrainwireStatus: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_STATUS),
-  deepbrainBrainwireWorkingMemory: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_WORKING_MEMORY),
-
-  // DeepBrain Knowledge Export
-  deepbrainExportKnowledge: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_EXPORT_KNOWLEDGE),
-  deepbrainKnowledgeTopics: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPICS),
-  deepbrainKnowledgeTopic: (args: { slug: string }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPIC, args),
-
-  // DeepBrain Daemon
-  deepbrainDaemonStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEEPBRAIN_DAEMON_STATUS),
 
   // DeepNote API
   deepnoteApiStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEEPNOTE_API_STATUS),

@@ -12,11 +12,9 @@ interface AppConfig {
   chatProvider: ChatProviderType
   chatModel: string
   embeddingsModel: 'auto' | 'gemini' | 'local'
-  deepbrainPort: number
-  deepbrainToken: string
-  deepbrainEnabled: boolean
   deepnoteApiPort: number
   deepnoteApiToken: string
+  knowledgeEnabled: boolean
 }
 
 const defaultConfig: AppConfig = {
@@ -26,12 +24,10 @@ const defaultConfig: AppConfig = {
   groqApiKey: '',
   chatProvider: 'gemini',
   chatModel: 'gemini-3-flash-preview',
-  embeddingsModel: 'auto',
-  deepbrainPort: 19519,
-  deepbrainToken: '',
-  deepbrainEnabled: true,
+  embeddingsModel: 'local',
   deepnoteApiPort: 19520,
   deepnoteApiToken: '',
+  knowledgeEnabled: true,
 }
 
 function getConfigPath(): string {

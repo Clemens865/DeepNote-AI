@@ -1,5 +1,7 @@
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
 
+export { knowledge, knowledgeFolders } from './knowledgeSchema'
+
 export const notebooks = sqliteTable('notebooks', {
   id: text('id').primaryKey(),
   title: text('title').notNull().default('Untitled notebook'),
@@ -64,7 +66,7 @@ export const generatedContent = sqliteTable('generated_content', {
   id: text('id').primaryKey(),
   notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
   type: text('type', {
-    enum: ['audio', 'video', 'slides', 'image-slides', 'quiz', 'flashcard', 'mindmap', 'infographic', 'datatable', 'report', 'dashboard', 'literature-review', 'competitive-analysis', 'diff', 'citation-graph', 'whitepaper', 'html-presentation', 'canvas'],
+    enum: ['audio', 'video', 'slides', 'image-slides', 'quiz', 'flashcard', 'mindmap', 'infographic', 'datatable', 'report', 'dashboard', 'literature-review', 'competitive-analysis', 'diff', 'citation-graph', 'whitepaper', 'html-presentation'],
   }).notNull(),
   title: text('title').notNull(),
   data: text('data', { mode: 'json' }).notNull().default('{}'),

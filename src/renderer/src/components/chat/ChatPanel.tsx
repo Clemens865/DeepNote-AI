@@ -17,7 +17,7 @@ import {
   Gauge,
   Clock,
   Mic,
-  Brain,
+  Database,
   ChevronDown,
 } from 'lucide-react'
 import type { ChatMessage as ChatMessageType, SourceType } from '@shared/types'
@@ -65,7 +65,7 @@ export function ChatPanel() {
   const [uploadingFile, setUploadingFile] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [showVoice, setShowVoice] = useState(false)
-  const [sbEnabled, setSbEnabled] = useState(true)
+  const [knowledgeEnabled, setKnowledgeEnabled] = useState(true)
   const [chatProvider, setChatProvider] = useState<ChatProviderType>('gemini')
   const [chatModel, setChatModel] = useState('gemini-2.5-flash')
   const [providerKeys, setProviderKeys] = useState({ hasGeminiKey: false, hasClaudeKey: false, hasOpenaiKey: false, hasGroqKey: false })
@@ -83,10 +83,10 @@ export function ChatPanel() {
 
   useEffect(() => {
     loadMessages()
-    // Load DeepBrain enabled state
-    window.api.deepbrainStatus().then((status) => {
+    // Load knowledge enabled state
+    window.api.knowledgeStatus().then((status) => {
       if (status && typeof (status as { enabled?: boolean }).enabled === 'boolean') {
-        setSbEnabled((status as { enabled: boolean }).enabled)
+        setKnowledgeEnabled((status as { enabled: boolean }).enabled)
       }
     }).catch(() => {})
     // Load chat provider config
@@ -482,7 +482,7 @@ export function ChatPanel() {
         </div>
       )}
 
-      {/* Model selector + Artifact shortcut chips + DeepBrain toggle */}
+      {/* Model selector + Artifact shortcut chips + Knowledge toggle */}
       <div className="flex flex-wrap items-center gap-1.5 px-6 py-1.5 max-w-3xl mx-auto w-full">
         {/* Model selector */}
         <div className="relative flex-shrink-0" ref={modelMenuRef}>
@@ -539,23 +539,23 @@ export function ChatPanel() {
 
         <div className="w-px h-4 bg-black/[0.08] dark:bg-white/[0.08] flex-shrink-0" />
 
-        {/* DeepBrain toggle */}
+        {/* Knowledge toggle */}
         <button
           onClick={async () => {
-            const newEnabled = !sbEnabled
-            setSbEnabled(newEnabled)
-            await window.api.deepbrainConfigure({ enabled: newEnabled })
+            const newEnabled = !knowledgeEnabled
+            setKnowledgeEnabled(newEnabled)
+            await window.api.knowledgeConfigure({ enabled: newEnabled })
           }}
           className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
-            sbEnabled
+            knowledgeEnabled
               ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-600 dark:text-purple-400'
               : 'bg-black/[0.03] dark:bg-white/[0.03] border-black/[0.06] dark:border-white/[0.06] text-zinc-400 dark:text-zinc-500'
           }`}
-          title={sbEnabled ? 'DeepBrain enabled — click to disable' : 'DeepBrain disabled — click to enable'}
+          title={knowledgeEnabled ? 'Knowledge enabled — click to disable' : 'Knowledge disabled — click to enable'}
         >
-          <Brain size={12} />
-          <span className="hidden sm:inline">{sbEnabled ? 'DeepBrain' : 'DeepBrain off'}</span>
-          <div className={`w-1.5 h-1.5 rounded-full ${sbEnabled ? 'bg-purple-500 animate-pulse' : 'bg-zinc-300 dark:bg-zinc-600'}`} />
+          <Database size={12} />
+          <span className="hidden sm:inline">{knowledgeEnabled ? 'Knowledge' : 'Knowledge off'}</span>
+          <div className={`w-1.5 h-1.5 rounded-full ${knowledgeEnabled ? 'bg-purple-500 animate-pulse' : 'bg-zinc-300 dark:bg-zinc-600'}`} />
         </button>
 
         {hasSelectedSources && (

@@ -1,4 +1,4 @@
-import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, DeepBrainEmailResult, TokenUsageSummary, ImageModelId, StructuredSlide, PresentationTheme } from './index'
+import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, TokenUsageSummary, ImageModelId, StructuredSlide, PresentationTheme } from './index'
 
 export const IPC_CHANNELS = {
   // Notebooks
@@ -23,9 +23,6 @@ export const IPC_CHANNELS = {
   NOTES_TAGS: 'notes:tags',
   NOTES_BACKLINKS: 'notes:backlinks',
   NOTES_RESOLVE_LINK: 'notes:resolveLink',
-
-  // Canvas
-  CANVAS_SAVE: 'canvas:save',
 
   // Notebooks (extra)
   NOTEBOOKS_EXPORT: 'notebooks:export',
@@ -68,6 +65,7 @@ export const IPC_CHANNELS = {
   HTML_PRESENTATION_REGEN_SLIDE: 'html-presentation:regen-slide',
   HTML_PRESENTATION_REORDER_SLIDES: 'html-presentation:reorder-slides',
   HTML_PRESENTATION_EXPORT_PPTX: 'html-presentation:export-pptx',
+  HTML_PRESENTATION_GENERATE_IMAGE: 'html-presentation:generate-image',
   HTML_PRESENTATION_PARSE_TEMPLATE: 'html-presentation:parse-template',
 
   // Config
@@ -126,49 +124,21 @@ export const IPC_CHANNELS = {
   // Global Search
   SEARCH_GLOBAL: 'search:global',
 
-  // DeepBrain Integration
-  DEEPBRAIN_STATUS: 'deepbrain:status',
-  DEEPBRAIN_RECALL: 'deepbrain:recall',
-  DEEPBRAIN_SEARCH: 'deepbrain:search',
-  DEEPBRAIN_CLIPBOARD: 'deepbrain:clipboard',
-  DEEPBRAIN_REMEMBER: 'deepbrain:remember',
-  DEEPBRAIN_THINK: 'deepbrain:think',
-  DEEPBRAIN_CONFIGURE: 'deepbrain:configure',
+  // Knowledge Store
+  KNOWLEDGE_STATUS: 'knowledge:status',
+  KNOWLEDGE_SEARCH: 'knowledge:search',
+  KNOWLEDGE_ADD: 'knowledge:add',
+  KNOWLEDGE_LIST: 'knowledge:list',
+  KNOWLEDGE_DELETE: 'knowledge:delete',
+  KNOWLEDGE_FOLDERS_GET: 'knowledge:foldersGet',
+  KNOWLEDGE_FOLDERS_ADD: 'knowledge:foldersAdd',
+  KNOWLEDGE_FOLDERS_REMOVE: 'knowledge:foldersRemove',
+  KNOWLEDGE_SCAN: 'knowledge:scan',
+  KNOWLEDGE_GRAPH: 'knowledge:graph',
+  KNOWLEDGE_CONFIGURE: 'knowledge:configure',
 
   // System
   SYSTEM_OPEN_FILE: 'system:openFile',
-
-  // DeepBrain (extra)
-  DEEPBRAIN_SEARCH_EMAILS: 'deepbrain:searchEmails',
-  DEEPBRAIN_ACTIVITY_CURRENT: 'deepbrain:activityCurrent',
-
-  // DeepBrain Control Center
-  DEEPBRAIN_CONNECTORS: 'deepbrain:connectors',
-  DEEPBRAIN_CONNECTOR_CONFIG: 'deepbrain:connectorConfig',
-  DEEPBRAIN_BOOTSTRAP: 'deepbrain:bootstrap',
-  DEEPBRAIN_GRAPH_STATS: 'deepbrain:graphStats',
-  DEEPBRAIN_GRAPH_NEIGHBORS: 'deepbrain:graphNeighbors',
-  DEEPBRAIN_SONA_STATS: 'deepbrain:sonaStats',
-  DEEPBRAIN_NERVOUS_STATS: 'deepbrain:nervousStats',
-  DEEPBRAIN_STORAGE_HEALTH: 'deepbrain:storageHealth',
-  DEEPBRAIN_COMPRESSION_STATS: 'deepbrain:compressionStats',
-  DEEPBRAIN_LLM_STATUS: 'deepbrain:llmStatus',
-  DEEPBRAIN_MEMORIES: 'deepbrain:memories',
-  DEEPBRAIN_MEMORY_DELETE: 'deepbrain:memoryDelete',
-  DEEPBRAIN_BRAIN_CYCLE: 'deepbrain:brainCycle',
-  DEEPBRAIN_BRAIN_EVOLVE: 'deepbrain:brainEvolve',
-  DEEPBRAIN_BRAIN_FLUSH: 'deepbrain:brainFlush',
-  DEEPBRAIN_BRAINWIRE_CONSOLIDATE: 'deepbrain:brainwireConsolidate',
-  DEEPBRAIN_BRAINWIRE_STATUS: 'deepbrain:brainwireStatus',
-  DEEPBRAIN_BRAINWIRE_WORKING_MEMORY: 'deepbrain:brainwireWorkingMemory',
-
-  // DeepBrain Knowledge Export
-  DEEPBRAIN_EXPORT_KNOWLEDGE: 'deepbrain:exportKnowledge',
-  DEEPBRAIN_KNOWLEDGE_TOPICS: 'deepbrain:knowledgeTopics',
-  DEEPBRAIN_KNOWLEDGE_TOPIC: 'deepbrain:knowledgeTopic',
-
-  // DeepBrain Daemon
-  DEEPBRAIN_DAEMON_STATUS: 'deepbrain:daemonStatus',
 
   // DeepNote API
   DEEPNOTE_API_STATUS: 'deepnote-api:status',
@@ -223,12 +193,6 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.NOTES_RESOLVE_LINK]: {
     args: [{ notebookId: string; linkTitle: string }]
     return: { id: string; title: string } | null
-  }
-
-  // Canvas
-  [IPC_CHANNELS.CANVAS_SAVE]: {
-    args: [{ id: string; data: Record<string, unknown> }]
-    return: void
   }
 
   // Chat
@@ -502,45 +466,54 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.VOICE_SEND_AUDIO]: { args: [{ sessionId: string; audioData: string }]; return: void }
   [IPC_CHANNELS.VOICE_STOP]: { args: [{ sessionId: string }]; return: void }
 
-  // DeepBrain
-  [IPC_CHANNELS.DEEPBRAIN_STATUS]: {
+  // Knowledge Store
+  [IPC_CHANNELS.KNOWLEDGE_STATUS]: {
     args: []
     return: {
-      available: boolean
       enabled: boolean
-      memoryCount: number
-      thoughtCount: number
-      aiProvider: string
-      aiAvailable: boolean
-      embeddingProvider: string
-      learningTrend: string
-      indexedFiles: number
-      indexedChunks: number
-      uptimeMs: number
-    } | null
+      total: number
+      byType: Record<string, number>
+      folderCount: number
+    }
   }
-  [IPC_CHANNELS.DEEPBRAIN_RECALL]: {
+  [IPC_CHANNELS.KNOWLEDGE_SEARCH]: {
     args: [{ query: string; limit?: number }]
-    return: { id: string; content: string; similarity: number; memoryType: string }[]
+    return: { id: string; content: string; type: string; similarity: number; sourceTitle: string | null }[]
   }
-  [IPC_CHANNELS.DEEPBRAIN_SEARCH]: {
-    args: [{ query: string; limit?: number }]
-    return: { path: string; name: string; chunk: string; similarity: number; fileType: string }[]
+  [IPC_CHANNELS.KNOWLEDGE_ADD]: {
+    args: [{ content: string; type?: string; importance?: number; tags?: string[] }]
+    return: { id: string } | null
   }
-  [IPC_CHANNELS.DEEPBRAIN_CLIPBOARD]: {
-    args: [{ limit?: number }?]
-    return: { content: string; timestamp: number }[]
+  [IPC_CHANNELS.KNOWLEDGE_LIST]: {
+    args: [{ type?: string; offset?: number; limit?: number }]
+    return: { items: { id: string; content: string; type: string; importance: number; sourceTitle: string | null; tags: string[]; createdAt: number }[]; total: number }
   }
-  [IPC_CHANNELS.DEEPBRAIN_REMEMBER]: {
-    args: [{ content: string; memoryType?: string; importance?: number }]
-    return: { id: string; memoryCount: number } | null
+  [IPC_CHANNELS.KNOWLEDGE_DELETE]: {
+    args: [{ id: string }]
+    return: boolean
   }
-  [IPC_CHANNELS.DEEPBRAIN_THINK]: {
-    args: [{ input: string }]
-    return: { response: string; confidence: number; thoughtId: string; memoryCount: number; aiEnhanced: boolean } | null
+  [IPC_CHANNELS.KNOWLEDGE_FOLDERS_GET]: {
+    args: []
+    return: { id: string; path: string; fileCount: number; lastScanAt: number | null; enabled: boolean }[]
   }
-  [IPC_CHANNELS.DEEPBRAIN_CONFIGURE]: {
-    args: [{ port?: number; token?: string | null; enabled?: boolean }]
+  [IPC_CHANNELS.KNOWLEDGE_FOLDERS_ADD]: {
+    args: []
+    return: { id: string; path: string } | null
+  }
+  [IPC_CHANNELS.KNOWLEDGE_FOLDERS_REMOVE]: {
+    args: [{ id: string }]
+    return: boolean
+  }
+  [IPC_CHANNELS.KNOWLEDGE_SCAN]: {
+    args: [{ folderId: string }]
+    return: { filesScanned: number; chunksCreated: number; skipped: number; errors: number }
+  }
+  [IPC_CHANNELS.KNOWLEDGE_GRAPH]: {
+    args: [{ seedId?: string; hops?: number }]
+    return: { nodes: { id: string; label: string; type: string; importance: number; content?: string }[]; edges: { source: string; target: string; weight: number }[] }
+  }
+  [IPC_CHANNELS.KNOWLEDGE_CONFIGURE]: {
+    args: [{ enabled: boolean }]
     return: void
   }
 
@@ -548,121 +521,6 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.SYSTEM_OPEN_FILE]: {
     args: [{ filePath: string }]
     return: { success: boolean; error?: string }
-  }
-
-  // DeepBrain (extra)
-  [IPC_CHANNELS.DEEPBRAIN_SEARCH_EMAILS]: {
-    args: [{ query: string; limit?: number }]
-    return: DeepBrainEmailResult[]
-  }
-  [IPC_CHANNELS.DEEPBRAIN_ACTIVITY_CURRENT]: {
-    args: []
-    return: {
-      activeApp: string
-      windowTitle: string
-      project?: string
-      idleSeconds: number
-      recentFiles: { path: string; timestamp: number }[]
-      recentClipboard?: string
-    } | null
-  }
-
-  // DeepBrain Control Center
-  [IPC_CHANNELS.DEEPBRAIN_CONNECTORS]: {
-    args: []
-    return: { id: string; name: string; description: string; enabled: boolean; detected: boolean; detectionDetails?: string; iconHint?: string; configurable?: boolean; pathOverride?: string }[]
-  }
-  [IPC_CHANNELS.DEEPBRAIN_CONNECTOR_CONFIG]: {
-    args: [{ id: string; enabled?: boolean; pathOverride?: string }]
-    return: boolean
-  }
-  [IPC_CHANNELS.DEEPBRAIN_BOOTSTRAP]: {
-    args: [{ sources: string[] }]
-    return: { totalCreated: number; totalSkipped: number; totalErrors: number; sources: { source: string; created: number; skipped: number; errors: number }[] } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_GRAPH_STATS]: {
-    args: []
-    return: { nodeCount: number; edgeCount: number; avgDegree: number; components: number } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_GRAPH_NEIGHBORS]: {
-    args: [{ nodeId: string; hops?: number }]
-    return: { nodes: { id: string; label: string; memoryType: string; importance: number; content?: string }[]; edges: { source: string; target: string; weight: number; edgeType?: string }[] } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_SONA_STATS]: {
-    args: []
-    return: { loopA: { active: boolean; gradientNorm: number; microLoraCount: number }; loopB: { active: boolean; clusterCount: number; lastRun?: string }; loopC: { active: boolean; ewcPenalty: number; lastRun?: string } } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_NERVOUS_STATS]: {
-    args: []
-    return: { routerSync: number; hopfieldEnergy: number; oscillatorPhase: number; predictiveCodingError: number } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_STORAGE_HEALTH]: {
-    args: []
-    return: { hotTierSize: number; warmTierSize: number; coldTierSize: number; totalSize: number; fragmentationRatio: number } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_COMPRESSION_STATS]: {
-    args: []
-    return: { hotTierSize: number; warmTierSize: number; coldTierSize: number; compressionRatio: number; totalRecords: number } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_LLM_STATUS]: {
-    args: []
-    return: { loaded: boolean; backend: string; modelName: string; memoryUsageMb: number; tokensProcessed: number } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_MEMORIES]: {
-    args: [{ type?: string; offset?: number; limit?: number }]
-    return: { items: { id: string; content: string; memoryType: string; importance: number; createdAt?: string }[]; total: number; offset: number; limit: number }
-  }
-  [IPC_CHANNELS.DEEPBRAIN_MEMORY_DELETE]: {
-    args: [{ id: string }]
-    return: boolean
-  }
-  [IPC_CHANNELS.DEEPBRAIN_BRAIN_CYCLE]: {
-    args: []
-    return: { cycleNumber: number; trainingInsights: string[]; memoriesPruned: number } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_BRAIN_EVOLVE]: {
-    args: []
-    return: { adaptations: string[]; improvements: string[]; thoughtId?: string } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_BRAIN_FLUSH]: {
-    args: []
-    return: boolean
-  }
-  [IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_CONSOLIDATE]: {
-    args: []
-    return: { memoriesProcessed: number; clustersFound: number; memoriesConsolidated: number; newAbstractions: number; memoriesDecayed: number } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_STATUS]: {
-    args: []
-    return: { totalMemories: number; activeMemories: number; dormantMemories: number; stmEntries: number; consolidationCycles: number; avgSalience: number; workingMemoryItems: number; conceptCount: number } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_BRAINWIRE_WORKING_MEMORY]: {
-    args: []
-    return: { memoryId: string; gist: string; concepts: string[]; activatedAt: string; relevance: number }[]
-  }
-
-  // DeepBrain Knowledge Export
-  [IPC_CHANNELS.DEEPBRAIN_EXPORT_KNOWLEDGE]: {
-    args: []
-    return: { topicsWritten: number; memoriesExported: number; outputPath: string } | null
-  }
-  [IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPICS]: {
-    args: []
-    return: { topics: { slug: string; name: string; sizeBytes: number; modifiedTs: number; memoryCount: number }[]; stats: { topicsWritten: number; memoriesExported: number; consolidationCycles: number; avgSalience: number } | null; lastExported: number | null }
-  }
-  [IPC_CHANNELS.DEEPBRAIN_KNOWLEDGE_TOPIC]: {
-    args: [{ slug: string }]
-    return: { slug: string; content: string } | null
-  }
-
-  // DeepBrain Daemon
-  [IPC_CHANNELS.DEEPBRAIN_DAEMON_STATUS]: {
-    args: []
-    return: {
-      state: 'stopped' | 'starting' | 'running' | 'external' | 'error'
-      pid: number | null
-      error: string | null
-    }
   }
 
   // Token Usage
@@ -695,37 +553,27 @@ export interface IpcHandlerMap {
     return: { generatedContentId: string }
   }
   [IPC_CHANNELS.HTML_PRESENTATION_UPDATE_SLIDE]: {
-    args: [{
-      generatedContentId: string
-      slide: StructuredSlide
-    }]
-    return: void
+    args: [{ generatedContentId: string; slide: StructuredSlide }]
+    return: { html: string }
   }
   [IPC_CHANNELS.HTML_PRESENTATION_REGEN_SLIDE]: {
-    args: [{
-      generatedContentId: string
-      slideId: string
-      instruction?: string
-    }]
-    return: { slide: StructuredSlide }
+    args: [{ generatedContentId: string; slideId: string; instruction?: string }]
+    return: { slide: StructuredSlide; html: string }
+  }
+  [IPC_CHANNELS.HTML_PRESENTATION_GENERATE_IMAGE]: {
+    args: [{ generatedContentId: string; slideId: string; bodyContentId: string; prompt: string; imageModel?: ImageModelId }]
+    return: { slide: StructuredSlide; html: string }
   }
   [IPC_CHANNELS.HTML_PRESENTATION_REORDER_SLIDES]: {
-    args: [{
-      generatedContentId: string
-      slideIds: string[]
-    }]
+    args: [{ generatedContentId: string; slideIds: string[] }]
     return: void
   }
   [IPC_CHANNELS.HTML_PRESENTATION_EXPORT_PPTX]: {
-    args: [{
-      generatedContentId: string
-    }]
+    args: [{ generatedContentId: string }]
     return: { success: boolean; filePath?: string }
   }
   [IPC_CHANNELS.HTML_PRESENTATION_PARSE_TEMPLATE]: {
-    args: [{
-      filePath: string
-    }]
+    args: [{ filePath: string }]
     return: PresentationTheme
   }
 

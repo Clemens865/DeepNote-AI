@@ -139,6 +139,35 @@ function initializeDatabase() {
     sqlite.exec("ALTER TABLE notes ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
   }
 
+  // Knowledge Store tables
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS knowledge (
+      id TEXT PRIMARY KEY,
+      content TEXT NOT NULL,
+      embedding BLOB,
+      embedding_dim INTEGER NOT NULL DEFAULT 768,
+      type TEXT NOT NULL DEFAULT 'document',
+      importance REAL NOT NULL DEFAULT 0.5,
+      source_path TEXT,
+      source_title TEXT,
+      content_hash TEXT NOT NULL,
+      tags TEXT NOT NULL DEFAULT '[]',
+      cluster_id TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS knowledge_folders (
+      id TEXT PRIMARY KEY,
+      path TEXT NOT NULL,
+      file_count INTEGER NOT NULL DEFAULT 0,
+      last_scan_at INTEGER,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      created_at INTEGER NOT NULL
+    );
+
+  `)
+
   // Indexes for frequently queried foreign keys
   sqlite.exec(`
     CREATE INDEX IF NOT EXISTS idx_sources_notebook_id ON sources(notebook_id);
@@ -148,6 +177,9 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_generated_content_notebook_id ON generated_content(notebook_id);
     CREATE INDEX IF NOT EXISTS idx_user_memory_notebook_id ON user_memory(notebook_id);
     CREATE INDEX IF NOT EXISTS idx_workspace_files_notebook_id ON workspace_files(notebook_id);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_content_hash ON knowledge(content_hash);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_type ON knowledge(type);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_cluster_id ON knowledge(cluster_id);
   `)
 }
 

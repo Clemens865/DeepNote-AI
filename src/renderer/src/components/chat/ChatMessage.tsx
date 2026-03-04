@@ -10,7 +10,7 @@ import { ChatArtifactMermaid } from './ChatArtifactMermaid'
 import { ChatArtifactKanban } from './ChatArtifactKanban'
 import { ChatArtifactKpi } from './ChatArtifactKpi'
 import { ChatArtifactTimeline } from './ChatArtifactTimeline'
-import { ChatDeepBrainResults } from './ChatDeepBrainResults'
+import { ChatKnowledgeResults } from './ChatKnowledgeResults'
 
 class ArtifactErrorBoundary extends Component<
   { children: ReactNode; type: string },
@@ -249,9 +249,9 @@ export function ChatMessage({ message, onSaveToNote, onSaveAsSource, onSaveToWor
           </div>
         )}
 
-        {/* DeepBrain results */}
-        {!isUser && message.deepbrainResults && (
-          <ChatDeepBrainResults results={message.deepbrainResults} />
+        {/* Knowledge results */}
+        {!isUser && message.knowledgeResults && (
+          <ChatKnowledgeResults results={message.knowledgeResults} />
         )}
 
         {/* Citations */}

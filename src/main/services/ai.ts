@@ -27,26 +27,22 @@ export async function buildSystemPrompt(
   context: string,
   notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
   notebookId?: string,
-  deepbrainEnabled?: boolean
+  knowledgeEnabled?: boolean
 ): Promise<string> {
-  const sbEnabled = deepbrainEnabled !== false
-  let systemPrompt = sbEnabled
-    ? `You are a helpful AI assistant in DeepNote AI, a notebook application integrated with DeepBrain — a system-wide cognitive engine.
+  const kEnabled = knowledgeEnabled !== false
+  let systemPrompt = kEnabled
+    ? `You are a helpful AI assistant in DeepNote AI, a notebook application with an integrated Knowledge Store.
 
 CRITICAL: You have access to TWO data sources:
 1. NOTEBOOK SOURCES — documents, PDFs, pastes uploaded to this notebook
-2. SYSTEM-WIDE DATA (DeepBrain) — the user's emails, local files, clipboard history, cross-app memories, and OS-level activity tracking
+2. KNOWLEDGE STORE — the user's indexed documents, notes, and cross-notebook memories stored locally
 
-NEVER say "I cannot access your emails" or "I don't have access to your files." Instead, check the system-wide data section below. If DeepBrain found matching data, USE IT. If DeepBrain is connected but found nothing, tell the user the specific content wasn't found in the indexed files. If DeepBrain is not running, tell the user to start DeepBrain to enable system-wide search.
+NEVER say "I cannot access your files" or "I don't have that information." Instead, check the knowledge context section below. If knowledge results were found, USE THEM. If no matching knowledge was found, tell the user the specific content wasn't found in the indexed files. Suggest they add scan folders in the Knowledge Hub to index more documents.
 
-INTERPRETING SYSTEM-WIDE DATA:
-- "Activity history" = OS-level app-switch tracking with timestamps. These are FACTS about what apps/windows were open and when. Use these as the primary evidence for "what was I working on?" questions.
-- "Current activity" = what the user is doing RIGHT NOW (frontmost app, window, project, recently opened files).
-- "System files" = files whose CONTENT matched the search query semantically. These may be old files — do NOT assume they were recently edited unless the activity history or the "modified" timestamp confirms it.
-- "System memories" = cross-app memories stored by DeepBrain. These are curated knowledge entries, not activity logs.
-- "Emails" = indexed email content matching the query.
-
-When the user asks "what was I working on?", prioritize the ACTIVITY HISTORY timeline over file search results. Activity history shows actual OS-level app switches with timestamps — this is ground truth. File search results only show files whose content matches the query, not necessarily recent activity.`
+INTERPRETING KNOWLEDGE DATA:
+- "Knowledge memories" = semantically indexed content from documents, notes, chat conversations, and manually added entries.
+- "System files" = files whose CONTENT matched the search query semantically. These may be old files — do NOT assume they were recently edited.
+- Knowledge results include a similarity score — higher scores indicate more relevant matches.`
     : `You are a helpful AI assistant in DeepNote AI, a notebook application for document analysis and research.
 
 You answer questions based on the NOTEBOOK SOURCES — documents, PDFs, pastes, and other materials uploaded to this notebook.`
@@ -150,10 +146,10 @@ export class AiService {
     context: string,
     notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
     notebookId?: string,
-    deepbrainEnabled?: boolean
+    knowledgeEnabled?: boolean
   ): Promise<string> {
     const ai = getClient()
-    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId, deepbrainEnabled)
+    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId, knowledgeEnabled)
 
     const contents = messages.map((m) => ({
       role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
@@ -176,10 +172,10 @@ export class AiService {
     notebook?: { description?: string; responseLength?: string; hasSpreadsheetSources?: boolean },
     onChunk?: (text: string) => void,
     notebookId?: string,
-    deepbrainEnabled?: boolean
+    knowledgeEnabled?: boolean
   ): Promise<string> {
     const ai = getClient()
-    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId, deepbrainEnabled)
+    const systemPrompt = await buildSystemPrompt(context, notebook, notebookId, knowledgeEnabled)
 
     const contents = messages.map((m) => ({
       role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
@@ -1154,117 +1150,136 @@ CRITICAL INSTRUCTIONS:
 
   async planPresentationSlides(
     sourceTexts: string[],
-    options: {
+    opts: {
       theme: PresentationTheme
       userInstructions?: string
       model?: 'flash' | 'pro'
     }
   ): Promise<StructuredSlide[]> {
     const ai = getClient()
-    const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 100000)
-    const modelChoice = options.model === 'pro' ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview'
-    const userDesc = options.userInstructions ? `\nUser instructions: ${options.userInstructions}` : ''
+    const { theme, userInstructions, model = 'flash' } = opts
+    const combined = sourceTexts.join('\n\n---\n\n').slice(0, 60000)
+    const modelChoice = model === 'pro' ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview'
 
-    const prompt = `You are a presentation design expert. Analyze the source material and create a structured slide deck as JSON.${userDesc}
+    const prompt = `You are a presentation designer. Create a structured slide deck (8-12 slides) from the source material below.
 
-Theme: "${options.theme.name}" with colors: accent1=${options.theme.colors.accent1}, accent2=${options.theme.colors.accent2}, accent3=${options.theme.colors.accent3}
+IMPORTANT RULES:
+1. Extract REAL, SPECIFIC content from the sources — never use placeholder text.
+2. Use a variety of layouts. Never use the same layout type for two consecutive slides.
+3. The first slide MUST be layout "title-slide". The last slide MUST be layout "closing".
+4. Include at least one "stat-row" or "card-grid" slide for visual variety.
+5. Each bodyContent item needs a unique "id" field (use short random strings like "bc-1", "bc-2", etc.).
+6. Each slide needs a unique "id" field (use "slide-1", "slide-2", etc.).
+7. For "stat" type body content, always provide both statValue and statLabel.
+8. For "bullets" type, provide 3-5 bullet points per item.
+
+Available layouts: title-slide, section-header, content, two-column, card-grid, stat-row, quote, closing
+
+Theme name: ${theme.name}
+${userInstructions ? `User instructions: ${userInstructions}` : ''}
 
 Source material:
-${combinedText}
+${combined}
 
-Create 8-12 slides as a JSON array. Each slide has this structure:
-{
-  "slideNumber": 1,
-  "layout": "title-slide",
-  "title": "Presentation Title",
-  "subtitle": "Optional subtitle",
-  "bodyContent": [
-    { "type": "text", "text": "Some text" },
-    { "type": "bullets", "bullets": ["Point 1", "Point 2"] },
-    { "type": "stat", "statValue": "95%", "statLabel": "Accuracy" },
-    { "type": "quote", "text": "A notable quote" }
-  ],
-  "notes": "Speaker notes for this slide"
-}
-
-Available layouts (use a MIX — never use the same layout consecutively):
-- "title-slide": Hero slide with big title + subtitle. Use for slide 1.
-- "section-header": Section divider with title. Use to introduce major sections.
-- "content": Standard content slide with title + body content (text, bullets).
-- "two-column": Title + two side-by-side content areas. Put 2+ bodyContent items.
-- "card-grid": Title + 2-3 card items. Each bodyContent item becomes a card.
-- "stat-row": Title + stat items with big numbers. Use "stat" type bodyContent.
-- "quote": Centered quote slide. Use "quote" type bodyContent.
-- "closing": Final "Key Takeaways" slide with bullet summary.
-
-Rules:
-1. Slide 1 MUST be layout "title-slide". Last slide MUST be layout "closing".
-2. Never repeat the same layout consecutively.
-3. Include at least 1 stat-row and 1 card-grid slide.
-4. Extract REAL, SPECIFIC content from the sources. No placeholder text.
-5. Each bodyContent item needs an "id" field (short unique string like "bc1", "bc2").
-6. Speaker notes should summarize talking points.
-7. Output ONLY valid JSON array. No markdown fences. No explanation.`
+Return ONLY a JSON array of slide objects. No markdown fences. No explanation.
+Each slide object must have: id, slideNumber, layout, title, bodyContent (array), and optionally subtitle and notes.
+Each bodyContent item must have: id, type, and the relevant fields for that type.`
 
     const response = await ai.models.generateContent({
       model: modelChoice,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
-    trackGeminiResponse(response, modelChoice, 'studio:plan-presentation-slides')
+    trackGeminiResponse(response, modelChoice, 'studio:plan-presentation')
 
-    let text = response.text ?? '[]'
+    let text = response.text ?? ''
     text = text.replace(/^```json\n?/i, '').replace(/```\n?$/i, '').trim()
 
-    const slides: StructuredSlide[] = JSON.parse(text)
-    // Ensure each slide has a proper id
-    for (const slide of slides) {
-      if (!slide.id) slide.id = randomUUID()
-      for (const bc of slide.bodyContent) {
-        if (!bc.id) bc.id = randomUUID()
+    let slides: StructuredSlide[]
+    try {
+      slides = JSON.parse(text)
+    } catch {
+      const arrMatch = text.match(/\[[\s\S]*\]/)
+      if (arrMatch) {
+        slides = JSON.parse(arrMatch[0])
+      } else {
+        throw new Error('AI did not return valid JSON slide array')
       }
     }
+
+    // Ensure IDs are set
+    slides = slides.map((s, i) => ({
+      ...s,
+      id: s.id || `slide-${randomUUID().slice(0, 8)}`,
+      slideNumber: i + 1,
+      bodyContent: (s.bodyContent || []).map((bc) => ({
+        ...bc,
+        id: bc.id || `bc-${randomUUID().slice(0, 8)}`,
+      })),
+    }))
     return slides
   }
 
   async regenerateSingleSlide(
     currentSlide: StructuredSlide,
-    context: { prevSlideTitle?: string; nextSlideTitle?: string; sourceExcerpt: string },
+    opts: {
+      prevSlideTitle?: string
+      nextSlideTitle?: string
+      sourceExcerpt: string
+    },
     instruction?: string
   ): Promise<StructuredSlide> {
     const ai = getClient()
-    const userInstruction = instruction ? `\nUser instruction: ${instruction}` : ''
+    const { prevSlideTitle, nextSlideTitle, sourceExcerpt } = opts
 
-    const prompt = `You are a presentation design expert. Regenerate this single slide with improved content.${userInstruction}
+    const context = [
+      prevSlideTitle ? `Previous slide: "${prevSlideTitle}"` : '',
+      nextSlideTitle ? `Next slide: "${nextSlideTitle}"` : '',
+    ]
+      .filter(Boolean)
+      .join('. ')
 
-Current slide:
+    const prompt = `You are regenerating a single presentation slide. Here is the current slide:
+
 ${JSON.stringify(currentSlide, null, 2)}
 
-Context:
-- Previous slide title: ${context.prevSlideTitle || '(first slide)'}
-- Next slide title: ${context.nextSlideTitle || '(last slide)'}
-- Source excerpt: ${context.sourceExcerpt.slice(0, 20000)}
+Context: ${context}
+${instruction ? `User instruction: ${instruction}` : 'Make it better — improve content, clarity, and impact.'}
 
-Rules:
-1. Keep the same layout type ("${currentSlide.layout}") unless the user instruction requests a change.
-2. Keep the same slideNumber (${currentSlide.slideNumber}).
-3. Improve the content — make it more specific, impactful, and engaging.
-4. Each bodyContent item needs an "id" field.
-5. Output ONLY a single JSON object (not an array). No markdown fences. No explanation.`
+Relevant source material excerpt:
+${sourceExcerpt.slice(0, 15000)}
+
+Return ONLY a single JSON object for the regenerated slide. Keep the same "id" and "slideNumber".
+Use unique IDs for bodyContent items (e.g. "bc-regen-1", "bc-regen-2").
+No markdown fences. No explanation.`
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
-    trackGeminiResponse(response, 'gemini-3-flash-preview', 'studio:regen-single-slide')
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'studio:regen-slide')
 
-    let text = response.text ?? '{}'
+    let text = response.text ?? ''
     text = text.replace(/^```json\n?/i, '').replace(/```\n?$/i, '').trim()
 
-    const slide: StructuredSlide = JSON.parse(text)
-    slide.id = currentSlide.id // preserve original ID
-    for (const bc of slide.bodyContent) {
-      if (!bc.id) bc.id = randomUUID()
+    let slide: StructuredSlide
+    try {
+      slide = JSON.parse(text)
+    } catch {
+      const objMatch = text.match(/\{[\s\S]*\}/)
+      if (objMatch) {
+        slide = JSON.parse(objMatch[0])
+      } else {
+        throw new Error('AI did not return valid JSON slide object')
+      }
     }
+
+    // Preserve original ID and slideNumber
+    slide.id = currentSlide.id
+    slide.slideNumber = currentSlide.slideNumber
+    slide.bodyContent = (slide.bodyContent || []).map((bc) => ({
+      ...bc,
+      id: bc.id || `bc-${randomUUID().slice(0, 8)}`,
+    }))
     return slide
   }
 

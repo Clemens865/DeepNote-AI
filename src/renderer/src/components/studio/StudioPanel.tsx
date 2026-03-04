@@ -37,7 +37,6 @@ const TYPE_LABELS: Record<string, string> = {
   'citation-graph': 'Citation Graph',
   whitepaper: 'White Paper',
   'html-presentation': 'Web Deck',
-  canvas: 'Canvas',
 }
 
 interface StudioPanelProps {
@@ -195,22 +194,6 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
     }
   }
 
-  const handleStartCanvas = async () => {
-    if (!currentNotebook) return
-    try {
-      const result = (await window.api.studioGenerate({
-        notebookId: currentNotebook.id,
-        type: 'canvas',
-      })) as GeneratedContent
-      if (result) {
-        setGeneratedItems((prev) => [result, ...prev])
-        setViewing(result)
-      }
-    } catch (err) {
-      console.error('Canvas creation failed:', err)
-    }
-  }
-
   const handleCustomizeGenerate = async (options: StudioToolOptions) => {
     if (!currentNotebook || !customizeTool) return
 
@@ -305,7 +288,6 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
               onStartInfographic={() => setShowInfographicWizard(true)}
               onStartWhitePaper={() => setShowWhitePaperWizard(true)}
               onStartHtmlPresentation={() => setShowHtmlPresentationWizard(true)}
-              onStartCanvas={handleStartCanvas}
             />
 
             {generatedItems.length > 0 && (

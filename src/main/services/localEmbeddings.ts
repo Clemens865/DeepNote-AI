@@ -147,6 +147,9 @@ async function ensureSession(): Promise<void> {
 
 /**
  * Generate embeddings for a batch of texts using the local ONNX model.
+ * Processes one text at a time to control memory — ONNX tensors use external
+ * memory tracked by V8's ExternalMemoryAccounter, and processing too many
+ * without GC pauses causes EXC_BREAKPOINT crashes.
  */
 export async function embed(texts: string[]): Promise<number[][]> {
   await ensureSession()
@@ -155,7 +158,8 @@ export async function embed(texts: string[]): Promise<number[][]> {
   const Tensor = ort.Tensor
   const results: number[][] = []
 
-  for (const text of texts) {
+  for (let t = 0; t < texts.length; t++) {
+    const text = texts[t]
     const tokenIds = simpleTokenize(text)
     const attentionMask = tokenIds.map(() => 1)
     const tokenTypeIds = tokenIds.map(() => 0)
@@ -181,7 +185,7 @@ export async function embed(texts: string[]): Promise<number[][]> {
       token_type_ids: tokenTypes,
     }
 
-    const output = await (session as { run: (feeds: unknown) => Promise<Record<string, { data: Float32Array }>> }).run(feeds)
+    const output = await (session as { run: (feeds: unknown) => Promise<Record<string, { data: Float32Array; dispose?: () => void }>> }).run(feeds)
     const embeddings = output['last_hidden_state'] || output[Object.keys(output)[0]]
 
     // Mean pooling over token dimension
@@ -204,6 +208,15 @@ export async function embed(texts: string[]): Promise<number[][]> {
     }
 
     results.push(vec)
+
+    // Release ONNX tensor references to reduce external memory pressure
+    for (const key of Object.keys(output)) {
+      const tensor = output[key] as { dispose?: () => void }
+      tensor?.dispose?.()
+    }
+    (inputIds as { dispose?: () => void }).dispose?.();
+    (attnMask as { dispose?: () => void }).dispose?.();
+    (tokenTypes as { dispose?: () => void }).dispose?.()
   }
 
   return results

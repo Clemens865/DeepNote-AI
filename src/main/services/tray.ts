@@ -1,6 +1,6 @@
 import { Tray, Menu, globalShortcut, clipboard, BrowserWindow, nativeImage, app } from 'electron'
 import { join } from 'path'
-import { deepbrainService } from './deepbrain'
+import { knowledgeStoreService } from './knowledgeStore'
 import { configService } from './config'
 import { getDatabase, schema } from '../db'
 
@@ -33,7 +33,7 @@ class TrayService {
     this.tray.setToolTip('DeepNote AI')
     this.updateMenu()
 
-    // Start polling DeepBrain status for tray display
+    // Start polling knowledge status for tray display
     this.pollBrainStatus()
     this.brainStatusTimer = setInterval(() => this.pollBrainStatus(), BRAIN_STATUS_POLL_MS)
 
@@ -69,13 +69,12 @@ class TrayService {
     // Broadcast to renderer
     this.broadcastToWindows('clipboard:captured', { text })
 
-    // Fire-and-forget: store in DeepBrain as working memory (if enabled)
-    if (configService.getAll().deepbrainEnabled !== false) {
-      deepbrainService.remember(
+    // Fire-and-forget: store in knowledge as clipboard memory (if enabled)
+    if (configService.getAll().knowledgeEnabled !== false) {
+      knowledgeStoreService.add(
         `[Clipboard Capture] ${text.slice(0, 500)}`,
-        'working',
-        0.3
-      ).catch((err) => console.warn('[Tray] DeepBrain remember failed:', err))
+        { type: 'clipboard', importance: 0.3 }
+      ).catch((err) => console.warn('[Tray] Knowledge store failed:', err))
     }
 
     // Update tray menu
@@ -167,9 +166,9 @@ class TrayService {
         },
       },
       {
-        label: 'Quick Search (⌘⇧Space)',
-        sublabel: 'Opens DeepBrain overlay',
-        enabled: false, // Informational — shortcut handled by DeepBrain
+        label: 'Quick Search (⌘K)',
+        sublabel: 'Opens search in DeepNote',
+        enabled: false,
       },
       {
         label: 'Quit',
@@ -187,17 +186,12 @@ class TrayService {
 
   private async pollBrainStatus(): Promise<void> {
     try {
-      const status = await deepbrainService.getStatus()
-      if (status?.available) {
-        const memCount = (status.memoryCount || 0).toLocaleString()
-        this.brainStatusLine = `Brain: Idle \u2014 ${memCount} memories`
-        this.tray?.setToolTip(`DeepNote AI \u2014 Brain: ${memCount} memories`)
-      } else {
-        this.brainStatusLine = 'Brain: Not connected'
-        this.tray?.setToolTip('DeepNote AI \u2014 Brain offline')
-      }
+      const stats = knowledgeStoreService.getStats()
+      const memCount = stats.total.toLocaleString()
+      this.brainStatusLine = `Knowledge: ${memCount} memories`
+      this.tray?.setToolTip(`DeepNote AI \u2014 ${memCount} memories`)
     } catch {
-      this.brainStatusLine = 'Brain: Not connected'
+      this.brainStatusLine = 'Knowledge: Ready'
     }
     this.updateMenu()
   }

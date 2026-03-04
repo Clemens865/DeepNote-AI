@@ -7,7 +7,7 @@ import { GlobalSearchDialog } from '../search/GlobalSearchDialog'
 import { ManualDialog } from '../help/ManualDialog'
 import { CommandPalette } from '../common/CommandPalette'
 import { QuickSwitcher } from '../common/QuickSwitcher'
-import { ArrowLeft, Download, Settings, Sun, Moon, Search, BookOpen, Brain } from 'lucide-react'
+import { ArrowLeft, Download, Settings, Sun, Moon, Search, BookOpen, Database } from 'lucide-react'
 
 export function Header() {
   const location = useLocation()
@@ -23,17 +23,17 @@ export function Header() {
   const [showManual, setShowManual] = useState(false)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false)
-  const [deepbrainAvailable, setDeepbrainAvailable] = useState(false)
+  const [knowledgeCount, setKnowledgeCount] = useState(0)
   const exportRef = useRef<HTMLDivElement>(null)
 
-  // Poll DeepBrain availability
+  // Poll knowledge store status
   useEffect(() => {
     const check = async () => {
       try {
-        const status = await window.api.deepbrainStatus()
-        setDeepbrainAvailable(status?.available === true)
+        const status = await window.api.knowledgeStatus()
+        setKnowledgeCount(status?.total ?? 0)
       } catch {
-        setDeepbrainAvailable(false)
+        setKnowledgeCount(0)
       }
     }
     check()
@@ -146,12 +146,14 @@ export function Header() {
       )}
 
       <button
-        onClick={() => navigate('/deepbrain')}
+        onClick={() => navigate('/knowledge')}
         className="titlebar-no-drag relative w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors mr-1"
-        title="DeepBrain Control Center"
+        title="Knowledge Hub"
       >
-        <Brain className="w-4 h-4" />
-        <span className={`absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full ${deepbrainAvailable ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}`} />
+        <Database className="w-4 h-4" />
+        {knowledgeCount > 0 && (
+          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        )}
       </button>
 
       <button

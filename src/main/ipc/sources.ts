@@ -5,7 +5,7 @@ import { getDatabase, schema } from '../db'
 import { vectorStoreService } from '../services/vectorStore'
 import { ingestSource } from '../services/sourceIngestion'
 import { recommendationsService } from '../services/recommendations'
-import { deepbrainService } from '../services/deepbrain'
+import { knowledgeStoreService } from '../services/knowledgeStore'
 import { configService } from '../services/config'
 import type { SourceType } from '../../shared/types'
 
@@ -35,14 +35,13 @@ export function registerSourceHandlers() {
       url: args.url,
     })
 
-    // Fire-and-forget: store source addition in DeepBrain (if enabled)
-    if (configService.getAll().deepbrainEnabled !== false) {
+    // Fire-and-forget: store source addition in knowledge store (if enabled)
+    if (configService.getAll().knowledgeEnabled !== false) {
       const preview = (source.content || '').slice(0, 200)
-      deepbrainService.remember(
+      knowledgeStoreService.add(
         `[DeepNote Source] Added "${source.title}" (${source.type}) to notebook ${args.notebookId}. Preview: ${preview}`,
-        'semantic',
-        0.4
-      ).catch((err) => console.warn('[Sources] DeepBrain remember failed:', err))
+        { type: 'note', importance: 0.4 }
+      ).catch((err) => console.warn('[Sources] Knowledge store failed:', err))
     }
 
     return source

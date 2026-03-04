@@ -6,11 +6,10 @@ import { getDatabase, schema } from '../db'
 import { ragService } from '../services/rag'
 import { aiService, buildSystemPrompt } from '../services/ai'
 import { memoryService } from '../services/memory'
-import { deepbrainService } from '../services/deepbrain'
 import { configService } from '../services/config'
+import { knowledgeStoreService } from '../services/knowledgeStore'
 import { getChatProvider } from '../services/providers'
 import type { ChatProviderType } from '../../shared/providers'
-import type { DeepBrainResults } from '../../shared/types'
 
 export function registerChatHandlers() {
   ipcMain.handle(IPC_CHANNELS.CHAT_MESSAGES, async (_event, notebookId: string) => {
@@ -24,7 +23,7 @@ export function registerChatHandlers() {
       const metadata = row.metadata as Record<string, unknown> | null
       return {
         ...row,
-        deepbrainResults: metadata?.deepbrainResults as DeepBrainResults | undefined,
+        knowledgeResults: metadata?.knowledgeResults as { id: string; content: string; type: string; similarity: number; sourceTitle: string | null }[] | undefined,
       }
     })
   })
@@ -102,111 +101,36 @@ export function registerChatHandlers() {
       }
     }
 
-    // DeepBrain: recall memories + search files + emails + activity in parallel (gracefully skips if offline or disabled)
-    const sbEnabled = configService.getAll().deepbrainEnabled !== false
-    let deepbrainContext = ''
-    let deepbrainConnected = false
-    let deepbrainResults: DeepBrainResults | undefined
+    // Knowledge Store: search for relevant cross-notebook knowledge
+    const knowledgeEnabled = configService.getAll().knowledgeEnabled !== false
+    let knowledgeContext = ''
+    let knowledgeResults: { id: string; content: string; type: string; similarity: number; sourceTitle: string | null }[] | undefined
     try {
-      if (sbEnabled) {
-        deepbrainConnected = await deepbrainService.isAvailable()
-      }
-      if (deepbrainConnected) {
-        // Build activity stream time range: last 8 hours
-        const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+      if (knowledgeEnabled) {
+        const results = await knowledgeStoreService.search(args.message, 8)
+        if (results.length > 0) {
+          knowledgeResults = results.map((r) => ({
+            id: r.id,
+            content: r.content,
+            type: r.type,
+            similarity: r.similarity,
+            sourceTitle: r.sourceTitle,
+          }))
 
-        const [sbMemories, sbFiles, sbEmails, sbActivity, sbActivityStream] = await Promise.all([
-          deepbrainService.recall(args.message, 8).catch(() => []),
-          deepbrainService.searchFiles(args.message, 5).catch(() => []),
-          deepbrainService.searchEmails(args.message, 5).catch(() => []),
-          deepbrainService.getActivityCurrent().catch(() => null),
-          deepbrainService.getActivityStream(eightHoursAgo, { limit: 30 }).catch(() => []),
-        ])
-
-        // Store results for UI preview cards
-        deepbrainResults = {
-          memories: sbMemories,
-          files: sbFiles,
-          emails: sbEmails,
-        }
-
-        const sbParts: string[] = []
-
-        if (sbMemories.length > 0) {
-          sbParts.push('System memories:')
-          for (const m of sbMemories) {
-            sbParts.push(`  [${m.memoryType}] ${m.content}`)
-          }
-          console.log(`[Chat] DeepBrain provided ${sbMemories.length} memories`)
-        }
-
-        if (sbFiles.length > 0) {
-          sbParts.push('System files (emails, documents, indexed files):')
-          for (const f of sbFiles) {
-            const meta = [f.project ? `project: ${f.project}` : '', f.modified ? `modified: ${f.modified}` : ''].filter(Boolean).join(', ')
-            sbParts.push(`  [File: ${f.name}] (${f.path})${meta ? ` [${meta}]` : ''}\n  ${f.chunk}`)
-          }
-          console.log(`[Chat] DeepBrain provided ${sbFiles.length} file matches`)
-        }
-
-        if (sbEmails.length > 0) {
-          sbParts.push('Emails:')
-          for (const e of sbEmails) {
-            sbParts.push(`  [Email] "${e.subject}" from ${e.sender} (${e.date})\n  ${e.chunk}`)
-          }
-          console.log(`[Chat] DeepBrain provided ${sbEmails.length} email matches`)
-        }
-
-        // Current activity context
-        if (sbActivity) {
-          const parts = [`Currently using ${sbActivity.activeApp}`]
-          if (sbActivity.project) parts.push(`project: ${sbActivity.project}`)
-          if (sbActivity.windowTitle) parts.push(`window: "${sbActivity.windowTitle}"`)
-          if (sbActivity.recentFiles?.length > 0) {
-            const fileNames = sbActivity.recentFiles.slice(0, 5).map((f) => f.path.split('/').pop()).join(', ')
-            parts.push(`recent files: ${fileNames}`)
-          }
-          sbParts.push(`Current activity: ${parts.join(' — ')}`)
-        }
-
-        // Activity history (app switches, file edits over last 8h)
-        if (sbActivityStream.length > 0) {
-          sbParts.push('Activity history (last 8 hours):')
-          // Deduplicate consecutive identical apps, show timeline
-          let lastApp = ''
-          for (const ev of sbActivityStream) {
-            const time = new Date(ev.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-            const entry = ev.filePath
-              ? `${time} — ${ev.appName}: ${ev.filePath}${ev.project ? ` [${ev.project}]` : ''}`
-              : ev.appName !== lastApp
-                ? `${time} — ${ev.appName}: "${ev.windowTitle}"${ev.project ? ` [${ev.project}]` : ''}`
-                : null
-            if (entry) sbParts.push(`  ${entry}`)
-            lastApp = ev.appName
-          }
-          console.log(`[Chat] DeepBrain provided ${sbActivityStream.length} activity events`)
-        }
-
-        if (sbParts.length > 0) {
-          deepbrainContext = `\n\n--- SYSTEM-WIDE DATA (DeepBrain connected) ---\nYou DO have access to the user's system files, emails, clipboard history, and cross-app memories through DeepBrain. The following data was found for this query:\n${sbParts.join('\n')}`
-        } else {
-          deepbrainContext = `\n\n--- SYSTEM-WIDE DATA (DeepBrain connected) ---\nDeepBrain is connected but found no matching files or memories for this query. The user's emails and files ARE searchable — this query just didn't match any indexed content. Suggest the user check if their emails/files are indexed in DeepBrain.`
+          const parts = results.map((r) => {
+            const source = r.sourceTitle ? ` (from: ${r.sourceTitle})` : ''
+            return `  [${r.type}]${source} ${r.content.slice(0, 500)}`
+          })
+          knowledgeContext = `\n\n--- KNOWLEDGE BASE ---\nRelevant knowledge from your indexed documents and notes:\n${parts.join('\n')}`
+          console.log(`[Chat] Knowledge store provided ${results.length} results`)
         }
       }
     } catch {
-      // DeepBrain offline
+      // Knowledge search failed silently
     }
 
-    // Only include results if non-empty
-    if (deepbrainResults && !deepbrainResults.memories.length && !deepbrainResults.files.length && !deepbrainResults.emails.length) {
-      deepbrainResults = undefined
-    }
-
-    // When DeepBrain is not connected, omit system prompt about it entirely
-    // to avoid AI mentioning a feature users don't have access to
-
-    // Combine RAG context with DeepBrain context
-    context = context + deepbrainContext
+    // Combine RAG context with knowledge context
+    context = context + knowledgeContext
 
     // Get chat history for context
     const history = await db
@@ -238,7 +162,7 @@ export function registerChatHandlers() {
         description: notebook?.description,
         responseLength: notebook?.responseLength,
         hasSpreadsheetSources,
-      }, args.notebookId, sbEnabled)
+      }, args.notebookId, knowledgeEnabled)
 
       responseText = await provider.chatStream(recentHistory, systemPrompt, (chunk) => {
         _event.sender.send('chat:stream-chunk', { messageId: assistantId, chunk })
@@ -248,20 +172,20 @@ export function registerChatHandlers() {
       citations = []
     }
 
-    // Save assistant message (with optional DeepBrain metadata)
+    // Save assistant message (with optional knowledge metadata)
     const assistantMessage = {
       id: assistantId,
       notebookId: args.notebookId,
       role: 'assistant' as const,
       content: responseText,
       citations,
-      deepbrainResults,
+      knowledgeResults,
       createdAt: new Date().toISOString(),
     }
     await db.insert(schema.chatMessages).values({
       ...assistantMessage,
       citations: JSON.stringify(assistantMessage.citations),
-      metadata: deepbrainResults ? JSON.stringify({ deepbrainResults }) : null,
+      metadata: knowledgeResults ? JSON.stringify({ knowledgeResults }) : null,
     })
 
     // Fire-and-forget: extract memories from conversation
@@ -270,13 +194,12 @@ export function registerChatHandlers() {
       recentHistory.concat([{ role: 'assistant', content: responseText }])
     ).catch((err) => console.warn('[Chat] Memory extraction failed:', err))
 
-    // Fire-and-forget: store Q&A in DeepBrain as episodic memory
-    if (sbEnabled) {
-      deepbrainService.remember(
-        `[DeepNote Chat | ${notebook?.title || args.notebookId}] Q: ${args.message}\nA: ${responseText.slice(0, 500)}`,
-        'episodic',
-        0.6
-      ).catch((err) => console.warn('[Chat] DeepBrain remember failed:', err))
+    // Fire-and-forget: store Q&A in knowledge as chat memory
+    if (knowledgeEnabled) {
+      knowledgeStoreService.add(
+        `[Chat | ${notebook?.title || args.notebookId}] Q: ${args.message}\nA: ${responseText.slice(0, 500)}`,
+        { type: 'chat', importance: 0.4 }
+      ).catch((err) => console.warn('[Chat] Knowledge store failed:', err))
     }
 
     return assistantMessage

@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Brain, Key, Shield, Zap, Check, ChevronRight, ExternalLink, Loader2 } from 'lucide-react'
+import { Database, Key, Shield, Zap, Check, ChevronRight, ExternalLink, Loader2 } from 'lucide-react'
 
 interface SetupWizardProps {
   onComplete: () => void
 }
 
-type Step = 'welcome' | 'apiKey' | 'brain' | 'permissions' | 'ready'
-const STEPS: Step[] = ['welcome', 'apiKey', 'brain', 'permissions', 'ready']
+type Step = 'welcome' | 'apiKey' | 'knowledge' | 'permissions' | 'ready'
+const STEPS: Step[] = ['welcome', 'apiKey', 'knowledge', 'permissions', 'ready']
 
 interface PermissionState {
   fullDisk: boolean
@@ -20,7 +20,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [testing, setTesting] = useState(false)
   const [keyValid, setKeyValid] = useState<boolean | null>(null)
   const [keyError, setKeyError] = useState<string | null>(null)
-  const [brainStatus, setBrainStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting')
+  const [knowledgeReady, setKnowledgeReady] = useState(false)
   const [memoryCount, setMemoryCount] = useState(0)
   const [permissions, setPermissions] = useState<PermissionState>({
     fullDisk: false,
@@ -66,52 +66,43 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     }
   }
 
-  // Poll brain status on brain step
-  const pollBrain = useCallback(async () => {
+  // Check knowledge store on knowledge step (always ready since it's built-in)
+  const checkKnowledge = useCallback(async () => {
     try {
-      const status = (await window.api.deepbrainStatus()) as {
-        available: boolean
-        memoryCount: number
-      } | null
-      if (status?.available) {
-        setBrainStatus('connected')
-        setMemoryCount(status.memoryCount || 0)
-      }
+      const status = await window.api.knowledgeStatus()
+      setKnowledgeReady(true)
+      setMemoryCount(status?.total ?? 0)
     } catch {
-      // Still connecting
+      // Knowledge store is built-in, always ready
+      setKnowledgeReady(true)
     }
   }, [])
 
   useEffect(() => {
-    if (step === 'brain') {
-      pollBrain()
-      const interval = setInterval(pollBrain, 2000)
-      return () => clearInterval(interval)
+    if (step === 'knowledge') {
+      checkKnowledge()
     }
-  }, [step, pollBrain])
+    return undefined
+  }, [step, checkKnowledge])
 
   // Check permissions periodically
   useEffect(() => {
     if (step === 'permissions') {
-      // We can't actually check macOS permissions from renderer,
-      // but we can check brain status as a proxy
-      const checkBrain = async () => {
+      const checkKnowledgeFolders = async () => {
         try {
-          const status = (await window.api.deepbrainStatus()) as {
-            available: boolean
-            indexedFiles: number
-          } | null
-          if (status?.available && status.indexedFiles > 0) {
+          const status = await window.api.knowledgeStatus()
+          if (status && status.total > 0) {
             setPermissions((p) => ({ ...p, fullDisk: true }))
           }
         } catch {
           // ignore
         }
       }
-      checkBrain()
-      const interval = setInterval(checkBrain, 3000)
+      checkKnowledgeFolders()
+      const interval = setInterval(checkKnowledgeFolders, 3000)
       return () => clearInterval(interval)
     }
+    return undefined
   }, [step])
 
   // Final step: save onboarded flag and complete
@@ -144,7 +135,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           {step === 'welcome' && (
             <div className="text-center space-y-6">
               <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <Brain size={32} className="text-white" />
+                <Database size={32} className="text-white" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -281,16 +272,16 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             </div>
           )}
 
-          {/* Brain status */}
-          {step === 'brain' && (
+          {/* Knowledge store */}
+          {step === 'knowledge' && (
             <div className="space-y-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center">
-                  <Brain size={20} className="text-purple-500" />
+                  <Database size={20} className="text-purple-500" />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                    System Memory
+                    Knowledge Store
                   </h2>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     Your personal knowledge engine
@@ -300,33 +291,24 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
               <div className="px-4 py-4 rounded-xl bg-purple-50 dark:bg-purple-500/5 border border-purple-100 dark:border-purple-500/10">
                 <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                  DeepBrain runs in the background, indexing your files, emails, and browser history
-                  into a private knowledge base. Everything stays on your Mac.
+                  DeepNote indexes your documents, notes, and conversations into a private
+                  knowledge base with semantic search. Everything stays on your Mac.
                 </p>
               </div>
 
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800">
-                {brainStatus === 'connecting' && (
-                  <>
-                    <Loader2 size={16} className="text-purple-500 animate-spin" />
-                    <span className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Starting brain engine...
-                    </span>
-                  </>
-                )}
-                {brainStatus === 'connected' && (
+                {knowledgeReady ? (
                   <>
                     <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Brain active &mdash; {memoryCount.toLocaleString()} memories
+                      Knowledge store ready{memoryCount > 0 ? ` — ${memoryCount.toLocaleString()} memories` : ''}
                     </span>
                   </>
-                )}
-                {brainStatus === 'failed' && (
+                ) : (
                   <>
-                    <div className="w-3 h-3 rounded-full bg-amber-400" />
-                    <span className="text-sm text-zinc-500">
-                      Brain will start when ready &mdash; you can continue
+                    <Loader2 size={16} className="text-purple-500 animate-spin" />
+                    <span className="text-sm text-zinc-600 dark:text-zinc-300">
+                      Initializing knowledge store...
                     </span>
                   </>
                 )}
