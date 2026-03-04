@@ -1299,7 +1299,8 @@ CRITICAL RULES:
       notebookId: string
       stylePresetId: string
       format: 'presentation' | 'pitch' | 'report'
-      length: 'test' | 'short' | 'default'
+      length?: 'test' | 'short' | 'default'
+      slideCount?: number
       aspectRatio: '16:9' | '4:3'
       userInstructions?: string
       customStyleImagePath?: string
@@ -1307,6 +1308,8 @@ CRITICAL RULES:
       customStyleColors?: string[]
       customStyleDescription?: string
       imageModel?: import('../../shared/types').ImageModelId
+      promptTemplateId?: string
+      promptOverride?: string
     }) => {
       const renderMode = args.renderMode || 'full-image'
       const db = getDatabase()
@@ -1375,13 +1378,35 @@ CRITICAL RULES:
             message: 'Planning slide content...',
           })
 
-          const slideCount = args.length === 'test' ? 3 : args.length === 'short' ? 5 : 10
+          // Determine slide count: explicit slideCount > length enum > default 10
+          const slideCount = args.slideCount
+            ? Math.max(1, Math.min(20, args.slideCount))
+            : args.length === 'test' ? 3 : args.length === 'short' ? 5 : 10
+
+          // Resolve user instructions: template → optimize → raw instructions
+          let resolvedInstructions = args.userInstructions
+          if (args.promptTemplateId || args.promptOverride) {
+            let rawText = args.promptOverride || ''
+            if (args.promptTemplateId && !rawText) {
+              const db2 = getDatabase()
+              const tplRows = await db2.select().from(schema.slidePromptTemplates).where(eq(schema.slidePromptTemplates.id, args.promptTemplateId))
+              if (tplRows[0]) rawText = tplRows[0].promptText
+            }
+            if (rawText) {
+              try {
+                const styleCtx = args.customStyleDescription || stylePreset?.colorPalette?.join(', ')
+                resolvedInstructions = await aiService.optimizeSlidePrompt(rawText, styleCtx)
+              } catch {
+                resolvedInstructions = rawText
+              }
+            }
+          }
 
           const contentPlan = await aiService.planImageSlides(
             sourceTexts,
             slideCount,
             args.format,
-            args.userInstructions,
+            resolvedInstructions,
             renderMode
           )
 
@@ -1471,7 +1496,12 @@ CRITICAL RULES:
                 })
               }
             } catch (slideErr) {
-              console.warn(`Skipping slide ${plan.slideNumber}:`, slideErr instanceof Error ? slideErr.message : slideErr)
+              console.error(`Skipping slide ${plan.slideNumber}:`, slideErr instanceof Error ? slideErr.message : slideErr)
+              if (slideErr && typeof slideErr === 'object') {
+                if ('status' in slideErr) console.error('  API status:', (slideErr as { status: unknown }).status)
+                if ('errorDetails' in slideErr) console.error('  API errorDetails:', JSON.stringify((slideErr as { errorDetails: unknown }).errorDetails))
+                if ('message' in slideErr) console.error('  Full message:', (slideErr as { message: unknown }).message)
+              }
               broadcastToWindows('image-slides:progress', {
                 generatedContentId,
                 stage: 'generating',
@@ -1573,6 +1603,112 @@ CRITICAL RULES:
         .update(schema.generatedContent)
         .set({ data: data as unknown as string })
         .where(eq(schema.generatedContent.id, args.generatedContentId))
+    }
+  )
+
+  // Image Slides — suggest slide count
+  ipcMain.handle(
+    IPC_CHANNELS.IMAGE_SLIDES_SUGGEST_COUNT,
+    async (_event, args: { notebookId: string; format: 'presentation' | 'pitch' | 'report' }) => {
+      const db = getDatabase()
+      const sources = await db
+        .select()
+        .from(schema.sources)
+        .where(eq(schema.sources.notebookId, args.notebookId))
+
+      const selectedSources = sources.filter((s) => s.isSelected)
+      if (selectedSources.length === 0) {
+        return { count: 10, reasoning: 'No sources selected — using default' }
+      }
+
+      const sourceTexts = selectedSources.map((s) => s.content)
+      return aiService.suggestSlideCount(sourceTexts, args.format)
+    }
+  )
+
+  // Slide Prompt Templates — CRUD
+  const DEFAULT_TEMPLATE_ID = 'default-slide-template'
+
+  // Ensure default template exists
+  const ensureDefaultTemplate = async () => {
+    const db = getDatabase()
+    const existing = await db
+      .select()
+      .from(schema.slidePromptTemplates)
+      .where(eq(schema.slidePromptTemplates.id, DEFAULT_TEMPLATE_ID))
+
+    if (existing.length === 0) {
+      const now = new Date().toISOString()
+      await db.insert(schema.slidePromptTemplates).values({
+        id: DEFAULT_TEMPLATE_ID,
+        name: 'Default',
+        promptText: 'Professional presentation with clear topic flow. Each slide has a title and 2-3 key points following the "Bold Label: Explanation" pattern.',
+        isDefault: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+    }
+  }
+
+  ipcMain.handle(
+    IPC_CHANNELS.SLIDE_TEMPLATES_LIST,
+    async () => {
+      await ensureDefaultTemplate()
+      const db = getDatabase()
+      return db.select().from(schema.slidePromptTemplates).orderBy(desc(schema.slidePromptTemplates.isDefault))
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.SLIDE_TEMPLATES_CREATE,
+    async (_event, args: { name: string; promptText: string }) => {
+      const db = getDatabase()
+      const now = new Date().toISOString()
+      const id = randomUUID()
+      await db.insert(schema.slidePromptTemplates).values({
+        id,
+        name: args.name,
+        promptText: args.promptText,
+        isDefault: false,
+        createdAt: now,
+        updatedAt: now,
+      })
+      const rows = await db.select().from(schema.slidePromptTemplates).where(eq(schema.slidePromptTemplates.id, id))
+      return rows[0]
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.SLIDE_TEMPLATES_UPDATE,
+    async (_event, args: { id: string; name?: string; promptText?: string }) => {
+      const db = getDatabase()
+      const rows = await db.select().from(schema.slidePromptTemplates).where(eq(schema.slidePromptTemplates.id, args.id))
+      const template = rows[0]
+      if (!template) throw new Error('Template not found')
+      if (template.isDefault) throw new Error('Cannot edit the default template')
+
+      const now = new Date().toISOString()
+      await db.update(schema.slidePromptTemplates).set({
+        ...(args.name !== undefined ? { name: args.name } : {}),
+        ...(args.promptText !== undefined ? { promptText: args.promptText } : {}),
+        updatedAt: now,
+      }).where(eq(schema.slidePromptTemplates.id, args.id))
+
+      const updated = await db.select().from(schema.slidePromptTemplates).where(eq(schema.slidePromptTemplates.id, args.id))
+      return updated[0]
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.SLIDE_TEMPLATES_DELETE,
+    async (_event, args: { id: string }) => {
+      const db = getDatabase()
+      const rows = await db.select().from(schema.slidePromptTemplates).where(eq(schema.slidePromptTemplates.id, args.id))
+      const template = rows[0]
+      if (!template) throw new Error('Template not found')
+      if (template.isDefault) throw new Error('Cannot delete the default template')
+
+      await db.delete(schema.slidePromptTemplates).where(eq(schema.slidePromptTemplates.id, args.id))
     }
   )
 

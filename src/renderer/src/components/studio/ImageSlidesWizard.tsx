@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Upload, Loader2, Check, Palette } from 'lucide-react'
-import { IMAGE_MODELS, type ImageModelId } from '../../../../shared/types'
+import { X, Upload, Loader2, Check, Palette, Sparkles, Save, Trash2 } from 'lucide-react'
+import { IMAGE_MODELS, type ImageModelId, type SlidePromptTemplate } from '../../../../shared/types'
 
 interface StyleOption {
   id: string
@@ -67,12 +67,6 @@ const FORMAT_OPTIONS = [
   },
 ]
 
-const LENGTH_OPTIONS = [
-  { id: 'test' as const, label: 'Test (3)', count: 3 },
-  { id: 'short' as const, label: 'Short (5)', count: 5 },
-  { id: 'default' as const, label: 'Default (10)', count: 10 },
-]
-
 interface ImageSlidesWizardProps {
   notebookId: string
   onComplete: (contentId: string) => void
@@ -85,10 +79,19 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
   const [format, setFormat] = useState<'presentation' | 'pitch' | 'report'>('presentation')
   const [selectedStyle, setSelectedStyle] = useState('neon-circuit')
   const [customStylePath, setCustomStylePath] = useState<string | null>(null)
-  const [length, setLength] = useState<'test' | 'short' | 'default'>('default')
+  const [slideCount, setSlideCount] = useState(10)
+  const [isAutoSuggesting, setIsAutoSuggesting] = useState(false)
+  const [autoSuggestReasoning, setAutoSuggestReasoning] = useState<string | null>(null)
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '4:3'>('16:9')
   const [userInstructions, setUserInstructions] = useState('')
   const [imageModel, setImageModel] = useState<ImageModelId>('nano-banana-pro')
+
+  // Template state
+  const [templates, setTemplates] = useState<SlidePromptTemplate[]>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
+  const [templateText, setTemplateText] = useState('')
+  const [newTemplateName, setNewTemplateName] = useState('')
+  const [showSaveAs, setShowSaveAs] = useState(false)
 
   // Custom style builder state
   const [customColors, setCustomColors] = useState(['#0a0a14', '#a855f7', '#22d3ee', '#e2e8f0'])
@@ -101,6 +104,69 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
       return next
     })
   }, [])
+
+  // Load templates on mount
+  useEffect(() => {
+    window.api.slideTemplatesList().then((tpls: SlidePromptTemplate[]) => {
+      setTemplates(tpls)
+      const defaultTpl = tpls.find(t => t.isDefault)
+      if (defaultTpl) {
+        setSelectedTemplateId(defaultTpl.id)
+        setTemplateText(defaultTpl.promptText)
+      }
+    })
+  }, [])
+
+  const handleAutoSuggest = useCallback(async () => {
+    setIsAutoSuggesting(true)
+    setAutoSuggestReasoning(null)
+    try {
+      const result = await window.api.imageSlidesSuggestCount({ notebookId, format })
+      setSlideCount(result.count)
+      setAutoSuggestReasoning(result.reasoning)
+    } catch {
+      setAutoSuggestReasoning('Could not auto-suggest')
+    } finally {
+      setIsAutoSuggesting(false)
+    }
+  }, [notebookId, format])
+
+  const handleSelectTemplate = useCallback((tpl: SlidePromptTemplate) => {
+    setSelectedTemplateId(tpl.id)
+    setTemplateText(tpl.promptText)
+    setShowSaveAs(false)
+  }, [])
+
+  const handleSaveTemplate = useCallback(async () => {
+    if (!selectedTemplateId) return
+    const tpl = templates.find(t => t.id === selectedTemplateId)
+    if (!tpl || tpl.isDefault) return
+    const updated = await window.api.slideTemplatesUpdate({ id: selectedTemplateId, promptText: templateText })
+    setTemplates(prev => prev.map(t => t.id === updated.id ? updated : t))
+  }, [selectedTemplateId, templateText, templates])
+
+  const handleSaveAsNew = useCallback(async () => {
+    if (!newTemplateName.trim()) return
+    const created = await window.api.slideTemplatesCreate({ name: newTemplateName.trim(), promptText: templateText })
+    setTemplates(prev => [...prev, created])
+    setSelectedTemplateId(created.id)
+    setNewTemplateName('')
+    setShowSaveAs(false)
+  }, [newTemplateName, templateText])
+
+  const handleDeleteTemplate = useCallback(async () => {
+    if (!selectedTemplateId) return
+    const tpl = templates.find(t => t.id === selectedTemplateId)
+    if (!tpl || tpl.isDefault) return
+    await window.api.slideTemplatesDelete({ id: selectedTemplateId })
+    const remaining = templates.filter(t => t.id !== selectedTemplateId)
+    setTemplates(remaining)
+    const defaultTpl = remaining.find(t => t.isDefault)
+    if (defaultTpl) {
+      setSelectedTemplateId(defaultTpl.id)
+      setTemplateText(defaultTpl.promptText)
+    }
+  }, [selectedTemplateId, templates])
 
   // Progress state
   const [isGenerating, setIsGenerating] = useState(false)
@@ -156,16 +222,24 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
     setError(null)
 
     try {
+      // Determine if using template text as override
+      const selectedTpl = templates.find(t => t.id === selectedTemplateId)
+      const isTemplateModified = selectedTpl && templateText !== selectedTpl.promptText
+      const promptOverride = isTemplateModified ? templateText : undefined
+      const promptTemplateId = !isTemplateModified && selectedTemplateId && !selectedTpl?.isDefault ? selectedTemplateId : undefined
+
       const result = await window.api.imageSlidesStart({
         notebookId,
         stylePresetId: selectedStyle === 'custom' ? 'neon-circuit' : selectedStyle,
         format,
-        length,
+        slideCount,
         aspectRatio,
         userInstructions: userInstructions.trim() || undefined,
         customStyleImagePath: customStylePath ?? undefined,
         renderMode,
         imageModel,
+        promptTemplateId,
+        promptOverride,
         ...(selectedStyle === 'custom-builder' ? {
           customStyleColors: customColors,
           customStyleDescription: customStyleDesc.trim() || 'modern, clean, professional tech aesthetic with subtle geometric elements',
@@ -182,7 +256,7 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-black/[0.06] dark:border-white/[0.06] w-full max-w-lg mx-4 max-h-[85vh] flex flex-col">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-black/[0.06] dark:border-white/[0.06] w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06] dark:border-white/[0.04] shrink-0 rounded-t-2xl">
           <h2 className="font-bold text-zinc-800 dark:text-zinc-100">Customize Slide Deck</h2>
@@ -366,28 +440,34 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
             </button>
           </div>
 
-          {/* Length + Aspect Ratio row */}
+          {/* Slide Count + Aspect Ratio row */}
           <div className="flex gap-4">
-            <div className="flex-1">
+            <div className="flex-[2]">
               <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-                Length
+                Slides: {slideCount}
               </label>
-              <div className="flex rounded-lg border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
-                {LENGTH_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => setLength(opt.id)}
-                    className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                      length === opt.id
-                        ? 'bg-black/[0.04] dark:bg-white/[0.04] text-zinc-800 dark:text-zinc-100'
-                        : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
-                    }`}
-                  >
-                    {length === opt.id && <Check size={12} />}
-                    {opt.label}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={1}
+                  max={20}
+                  value={slideCount}
+                  onChange={(e) => { setSlideCount(Number(e.target.value)); setAutoSuggestReasoning(null) }}
+                  className="flex-1 h-1.5 accent-indigo-500"
+                />
+                <button
+                  onClick={handleAutoSuggest}
+                  disabled={isAutoSuggesting}
+                  className="px-2.5 py-1.5 text-[10px] font-medium rounded-md border border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors flex items-center gap-1 disabled:opacity-50"
+                  title="AI suggests optimal slide count"
+                >
+                  {isAutoSuggesting ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                  Auto
+                </button>
               </div>
+              {autoSuggestReasoning && (
+                <p className="text-[9px] text-indigo-500 dark:text-indigo-400 mt-1">{autoSuggestReasoning}</p>
+              )}
             </div>
 
             <div className="flex-1">
@@ -436,16 +516,78 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
             </div>
           </div>
 
-          {/* Description / Custom Instructions */}
+          {/* Prompt Template */}
           <div>
             <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-              Describe the slide deck you want to create
+              Prompt Template
+            </label>
+            {/* Template selector */}
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {templates.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  onClick={() => handleSelectTemplate(tpl)}
+                  className={`px-2.5 py-1 text-[11px] font-medium rounded-full border transition-all ${
+                    selectedTemplateId === tpl.id
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                      : 'border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:border-zinc-300'
+                  }`}
+                >
+                  {tpl.name}
+                  {tpl.isDefault && <span className="ml-1 text-[9px] text-zinc-400">(built-in)</span>}
+                </button>
+              ))}
+            </div>
+            {/* Template text editor */}
+            <textarea
+              value={templateText}
+              onChange={(e) => setTemplateText(e.target.value)}
+              placeholder='e.g. "Bold provocative headlines, no bullets, one visual metaphor per slide"'
+              rows={2}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-indigo-400 resize-none"
+            />
+            {/* Template action buttons */}
+            <div className="flex items-center gap-2 mt-1.5">
+              {selectedTemplateId && !templates.find(t => t.id === selectedTemplateId)?.isDefault && (
+                <>
+                  <button onClick={handleSaveTemplate} className="text-[10px] text-zinc-500 hover:text-indigo-600 flex items-center gap-0.5" title="Save changes">
+                    <Save size={10} /> Save
+                  </button>
+                  <button onClick={handleDeleteTemplate} className="text-[10px] text-zinc-500 hover:text-red-600 flex items-center gap-0.5" title="Delete template">
+                    <Trash2 size={10} /> Delete
+                  </button>
+                </>
+              )}
+              <button onClick={() => setShowSaveAs(!showSaveAs)} className="text-[10px] text-zinc-500 hover:text-indigo-600 flex items-center gap-0.5">
+                <Save size={10} /> Save as New
+              </button>
+            </div>
+            {showSaveAs && (
+              <div className="flex gap-2 mt-1.5">
+                <input
+                  type="text"
+                  value={newTemplateName}
+                  onChange={(e) => setNewTemplateName(e.target.value)}
+                  placeholder="Template name..."
+                  className="flex-1 px-2 py-1 text-xs rounded-md border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-400"
+                />
+                <button onClick={handleSaveAsNew} disabled={!newTemplateName.trim()} className="px-2.5 py-1 text-[10px] font-medium rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
+                  Create
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Additional Instructions */}
+          <div>
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
+              Additional Instructions <span className="text-zinc-400 font-normal">(optional)</span>
             </label>
             <textarea
               value={userInstructions}
               onChange={(e) => setUserInstructions(e.target.value)}
-              placeholder='Guide the content focus, audience, or outline. Example: "Create a beginner-friendly overview focusing on practical examples."'
-              rows={3}
+              placeholder='Guide content focus, audience, or outline. Example: "Focus on practical examples for beginners."'
+              rows={2}
               className="w-full px-3 py-2 text-sm rounded-lg border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-indigo-400 resize-none"
             />
           </div>

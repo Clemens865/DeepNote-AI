@@ -33,6 +33,13 @@ export const IPC_CHANNELS = {
   // Image Slides
   IMAGE_SLIDES_START: 'image-slides:start',
   IMAGE_SLIDES_UPDATE_TEXT: 'image-slides:update-text',
+  IMAGE_SLIDES_SUGGEST_COUNT: 'image-slides:suggest-count',
+
+  // Slide Prompt Templates
+  SLIDE_TEMPLATES_LIST: 'slide-templates:list',
+  SLIDE_TEMPLATES_CREATE: 'slide-templates:create',
+  SLIDE_TEMPLATES_UPDATE: 'slide-templates:update',
+  SLIDE_TEMPLATES_DELETE: 'slide-templates:delete',
 
   // Chat
   CHAT_MESSAGES: 'chat:messages',
@@ -283,7 +290,8 @@ export interface IpcHandlerMap {
       notebookId: string
       stylePresetId: string
       format: 'presentation' | 'pitch' | 'report'
-      length: 'test' | 'short' | 'default'
+      length?: 'test' | 'short' | 'default'
+      slideCount?: number
       aspectRatio: '16:9' | '4:3'
       userInstructions?: string
       customStyleImagePath?: string
@@ -291,11 +299,35 @@ export interface IpcHandlerMap {
       customStyleColors?: string[]
       customStyleDescription?: string
       imageModel?: ImageModelId
+      promptTemplateId?: string
+      promptOverride?: string
     }]
     return: { generatedContentId: string }
   }
   [IPC_CHANNELS.IMAGE_SLIDES_UPDATE_TEXT]: {
     args: [{ generatedContentId: string; slideNumber: number; title: string; bullets: string[]; elements?: SlideTextElement[] }]
+    return: void
+  }
+  [IPC_CHANNELS.IMAGE_SLIDES_SUGGEST_COUNT]: {
+    args: [{ notebookId: string; format: 'presentation' | 'pitch' | 'report' }]
+    return: { count: number; reasoning: string }
+  }
+
+  // Slide Prompt Templates
+  [IPC_CHANNELS.SLIDE_TEMPLATES_LIST]: {
+    args: []
+    return: import('./index').SlidePromptTemplate[]
+  }
+  [IPC_CHANNELS.SLIDE_TEMPLATES_CREATE]: {
+    args: [{ name: string; promptText: string }]
+    return: import('./index').SlidePromptTemplate
+  }
+  [IPC_CHANNELS.SLIDE_TEMPLATES_UPDATE]: {
+    args: [{ id: string; name?: string; promptText?: string }]
+    return: import('./index').SlidePromptTemplate
+  }
+  [IPC_CHANNELS.SLIDE_TEMPLATES_DELETE]: {
+    args: [{ id: string }]
     return: void
   }
 

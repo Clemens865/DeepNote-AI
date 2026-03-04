@@ -262,7 +262,8 @@ const api = {
     notebookId: string
     stylePresetId: string
     format: 'presentation' | 'pitch' | 'report'
-    length: 'test' | 'short' | 'default'
+    length?: 'test' | 'short' | 'default'
+    slideCount?: number
     aspectRatio: '16:9' | '4:3'
     userInstructions?: string
     customStyleImagePath?: string
@@ -270,7 +271,20 @@ const api = {
     customStyleColors?: string[]
     customStyleDescription?: string
     imageModel?: string
+    promptTemplateId?: string
+    promptOverride?: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.IMAGE_SLIDES_START, args),
+  imageSlidesSuggestCount: (args: { notebookId: string; format: 'presentation' | 'pitch' | 'report' }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.IMAGE_SLIDES_SUGGEST_COUNT, args),
+
+  // Slide Prompt Templates
+  slideTemplatesList: () => ipcRenderer.invoke(IPC_CHANNELS.SLIDE_TEMPLATES_LIST),
+  slideTemplatesCreate: (args: { name: string; promptText: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SLIDE_TEMPLATES_CREATE, args),
+  slideTemplatesUpdate: (args: { id: string; name?: string; promptText?: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SLIDE_TEMPLATES_UPDATE, args),
+  slideTemplatesDelete: (args: { id: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SLIDE_TEMPLATES_DELETE, args),
   imageSlidesUpdateText: (args: {
     generatedContentId: string
     slideNumber: number

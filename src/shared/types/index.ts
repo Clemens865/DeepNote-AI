@@ -241,6 +241,16 @@ export interface ImageSlidesProgressEvent {
   message: string
 }
 
+// Slide Prompt Template
+export interface SlidePromptTemplate {
+  id: string
+  name: string
+  promptText: string
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 // White Paper types
 export interface WhitePaperSection {
   number: string

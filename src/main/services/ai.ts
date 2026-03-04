@@ -670,21 +670,24 @@ ${formatDirective}${userDirective}
 
 CRITICAL RULES:
 1.  **Slide Count**: You MUST output EXACTLY ${slideCount} slides. Not ${slideCount - 1}, not ${slideCount + 1}. Exactly ${slideCount}.
-2.  **VISUAL + TEXT BALANCE**: Each slide combines a rich illustration with concise explanatory text. The visual is the hero (~2/3 of the slide), but the text must provide enough context that a reader can understand the slide's point without a presenter. A slide with only a title and keywords is NOT acceptable (except the title and closing slides).
-3.  **Text format — "Bold Label: Explanation" pattern**: For slides 2+, use this structure in the content field:
-    - A clear TITLE (3-6 words) on the first line
-    - Then 2-3 KEY POINTS, each following the pattern: **Bold Label:** One explanatory sentence (10-20 words).
-    - Example content: "Progressive Indexing\\n\\nInstant Availability: Queries begin immediately on partial data while full index loads in background.\\nTemperature Tiering: Hot data stays in fast fp16, cold data compresses to binary quantization automatically.\\nZero Downtime: Index upgrades happen live without taking the system offline."
-    - This gives enough context to understand the topic while keeping text compact. Do NOT write full paragraphs — each point should be ONE sentence.
-    - Do NOT use only bare keywords like "Fast" or "Secure" — always include the explanatory sentence.
-4.  **Visuals**: For each slide, write a RICH, DETAILED visual description in visualCue. Be specific and vivid — describe the scene, metaphors, colors, mood, and composition. The visual should complement and reinforce the text points, not just be decorative. For technical topics, prefer architectural diagrams, split-views, layered visualizations, or annotated schematics over abstract art.
-5.  **Content Field**: The content field is rendered as text ON the slide image. Use \\n for line breaks. Follow the bold-label format from rule 3. Aim for 3-6 lines of text total — enough to be self-explanatory, short enough to leave room for the visual.
+2.  **VISUAL + TEXT BALANCE**: Each slide combines a rich illustration with concise explanatory text. The visual is the hero (~2/3 of the slide), but the text must provide enough context. A slide with only a title and keywords is NOT acceptable (except title and closing slides).
+3.  **Text format — keep text MINIMAL**: The image model will render this text on the slide, and too much text causes generation failures. For slides 2+, use this structure in the content field:
+    - A clear TITLE (2-4 words MAX) on the first line
+    - Then 2-3 KEY POINTS, each following the pattern: **Bold Label (2-6 words):** One short sentence (8-15 words max).
+    - The ENTIRE content field must be under 200 characters and under 4 lines.
+    - Example content: "How Models Learn\\n\\nSupervised: Train on labeled data to learn patterns.\\nLoss Functions: Measure error to guide improvements.\\nGradient Descent: Adjust weights iteratively to reduce error."
+    - Do NOT write full paragraphs — each point should be ONE short sentence.
+    - Do NOT use only bare keywords like "Fast" or "Secure" — always include a brief explanation.
+4.  **Visuals**: For each slide, write a RICH visual description in visualCue. Be specific — describe scene, metaphors, colors, mood, composition. The visual should complement the text. For technical topics, prefer architectural diagrams, layered visualizations, or annotated schematics.
+5.  **Content Field**: The content field is rendered as text ON the slide image. Use \\n for line breaks. STRICT LIMIT: max 200 characters total, max 4 lines. Keep text compact to prevent image generation failures.
 ${hybridLayoutSection}
-SLIDE 1 REQUIREMENT: The first slide MUST be a "Title" layout slide with a short, punchy title (2-4 words) and one subtitle line. The visualCue should describe a dramatic, atmospheric, cinematic scene that sets the tone for the entire deck.
+SLIDE 1 REQUIREMENT (ATTENTION CATCHER): The first slide MUST be a "Title" layout slide — an attention-grabbing opener. Short, punchy title (2-4 words) and one subtitle line. The visualCue should describe a dramatic, atmospheric, cinematic scene that sets the tone for the entire deck. This slide grabs attention and makes the audience want to see more.
+
+SLIDE ${slideCount} REQUIREMENT (CLOSING SLIDE): The LAST slide MUST be a "Closing" layout slide — a strong finish. Use a memorable closing statement or call to action as the title (2-5 words, e.g. "The Future Starts Now", "Key Takeaways", "What's Next?"). Include 1-2 takeaway bullets or a call to action. The visualCue should describe a powerful, uplifting, or thought-provoking scene that leaves a lasting impression.
 
 Output a JSON array with EXACTLY ${slideCount} objects (ONLY valid JSON, no markdown fences).
 
-Slide 1 example (title slide — short title + subtitle, visual sets the mood):
+Slide 1 example (title/opener — attention catcher):
 {
   "slideNumber": 1, "layout": "Title", "title": "Machine Learning", "bullets": ["A Visual Journey"],
   "visualCue": "A vast cosmic neural network stretching across deep space — luminous nodes pulsing with warm golden light connected by flowing streams of data particles, set against a deep indigo nebula.",
@@ -692,12 +695,20 @@ Slide 1 example (title slide — short title + subtitle, visual sets the mood):
   "speakerNotes": "Today we explore Machine Learning — how systems learn from data."${hybridLayoutExample}
 }
 
-Slide 2+ example (content slide — bold-label format with explanatory sentences):
+Slide 2 to ${slideCount - 1} example (content slide — short bold-label format, under 200 chars):
 {
   "slideNumber": 2, "layout": "Content", "title": "How Models Learn", "bullets": ["Supervised learning uses labeled examples", "Loss functions measure prediction errors", "Gradient descent adjusts weights iteratively"],
   "visualCue": "A layered cross-section of a neural network, showing data flowing left to right through input, hidden, and output layers. Weights visualized as glowing connections of varying thickness. A gradient arrow curves back through the layers, colored in warm-to-cool spectrum.",
-  "content": "How Models Learn\\n\\nSupervised Learning: Models train on labeled data, comparing predictions against known answers to improve.\\nLoss Functions: Each prediction error is measured mathematically, guiding the model toward accuracy.\\nGradient Descent: Weights are adjusted iteratively in the direction that reduces total error.",
+  "content": "How Models Learn\\n\\nSupervised: Train on labeled data to learn patterns.\\nLoss Functions: Measure error to guide improvements.\\nGradient Descent: Adjust weights to reduce error.",
   "speakerNotes": "The three pillars of model training: labeled data, error measurement, and iterative weight adjustment."
+}
+
+Slide ${slideCount} example (closing slide — strong finish):
+{
+  "slideNumber": ${slideCount}, "layout": "Closing", "title": "The Future Is Learning", "bullets": ["AI transforms how we solve problems"],
+  "visualCue": "A sunrise over a futuristic city skyline with neural pathways woven into the architecture, warm golden light breaking through clouds, hopeful and forward-looking atmosphere.",
+  "content": "The Future Is Learning\\n\\nAI is reshaping every industry — the question is how you'll use it.",
+  "speakerNotes": "Thank you. The future of AI is in your hands."
 }
 
 Output the full array with EXACTLY ${slideCount} slides:`
@@ -715,10 +726,17 @@ Output the full array with EXACTLY ${slideCount} slides:`
       const plans = JSON.parse(cleaned)
       if (!Array.isArray(plans)) throw new Error('Expected array')
 
-      // Ensure every slide has a non-empty content field
+      // Ensure every slide has a non-empty content field, and enforce length limits
       for (const plan of plans) {
         if (!plan.content || !plan.content.trim()) {
           plan.content = [plan.title || '', '', ...(plan.bullets || [])].join('\n')
+        }
+
+        // Safety net: truncate overly long content to prevent image model failures
+        if (plan.content.length > 250) {
+          const lines = plan.content.split('\n').filter((l: string) => l.trim())
+          // Keep title + first 2 bullet points only
+          plan.content = lines.slice(0, 3).join('\n')
         }
       }
 
@@ -726,6 +744,77 @@ Output the full array with EXACTLY ${slideCount} slides:`
     } catch {
       throw new Error('Failed to parse slide content plan from AI response')
     }
+  }
+
+  async suggestSlideCount(
+    sourceTexts: string[],
+    format: 'presentation' | 'pitch' | 'report' = 'presentation'
+  ): Promise<{ count: number; reasoning: string }> {
+    const ai = getClient()
+    const combinedText = sourceTexts.join('\n\n').slice(0, 20000)
+    const wordCount = combinedText.split(/\s+/).length
+
+    const prompt = `Analyze this source material and recommend the ideal number of slides for a ${format} deck.
+
+SOURCE MATERIAL (${wordCount} words):
+${combinedText.slice(0, 5000)}
+${combinedText.length > 5000 ? '\n[... truncated ...]' : ''}
+
+Consider:
+- Topic complexity and number of distinct subtopics
+- Format type: ${format}
+- Enough slides to cover the material without being superficial
+- Not so many that slides become repetitive
+
+Respond with ONLY valid JSON (no markdown fences):
+{"count": <number 3-20>, "reasoning": "<one sentence explanation>"}
+`
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    })
+    trackGeminiResponse(response, 'gemini-2.0-flash', 'studio:slides-suggest')
+
+    const text = response.text ?? '{}'
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    try {
+      const result = JSON.parse(cleaned)
+      return {
+        count: Math.max(3, Math.min(20, Math.round(result.count || 10))),
+        reasoning: result.reasoning || 'Based on source material analysis',
+      }
+    } catch {
+      return { count: 10, reasoning: 'Default recommendation' }
+    }
+  }
+
+  async optimizeSlidePrompt(
+    userText: string,
+    styleContext?: string
+  ): Promise<string> {
+    const ai = getClient()
+
+    const prompt = `You are a presentation design expert. Convert the user's casual description into a precise content directive for an AI slide planner.
+
+USER INSTRUCTION: "${userText}"
+${styleContext ? `VISUAL STYLE CONTEXT: ${styleContext}` : ''}
+
+Output a concise, clear directive (2-4 sentences max) that tells the slide planner:
+- What kind of titles to write (length, tone)
+- What kind of bullet points to use (detail level, format)
+- What visual approach to take
+- Any content structure preferences
+
+Respond with ONLY the directive text, no JSON, no markdown, no quotes. Keep it under 200 characters.`
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    })
+    trackGeminiResponse(response, 'gemini-2.0-flash', 'studio:slides-optimize')
+
+    return (response.text ?? userText).trim().slice(0, 300)
   }
 
   async describeImageStyle(imagePath: string): Promise<string> {

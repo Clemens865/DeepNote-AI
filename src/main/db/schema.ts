@@ -87,6 +87,15 @@ export const userMemory = sqliteTable('user_memory', {
   updatedAt: text('updated_at').notNull(),
 })
 
+export const slidePromptTemplates = sqliteTable('slide_prompt_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  promptText: text('prompt_text').notNull(),
+  isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
 export const workspaceFiles = sqliteTable('workspace_files', {
   id: text('id').primaryKey(),
   notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),

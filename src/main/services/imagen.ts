@@ -104,7 +104,7 @@ TEXT OVERLAY (secondary layer — keep subtle and minimal):
 Render the following text on the image in a clean, elegant, understated style. The text should NOT dominate — it is a light supporting layer over the visual. Use a thin/light-weight sans-serif font, slightly transparent or with a subtle backdrop. Position it so it does not obscure the main visual. Title at top, bullet keywords below.
 
 TEXT:
-${slideContent}`
+${slideContent.length > 250 ? slideContent.split('\n').filter(l => l.trim()).slice(0, 3).join('\n') : slideContent}`
   }
 
   return `Generate a VISUALLY RICH, CINEMATIC presentation slide image. The visual illustration should be the dominant element — covering most of the slide and telling the story through imagery.
@@ -119,7 +119,7 @@ TEXT OVERLAY (secondary, subtle layer):
 Render the following text on the slide in a clean, elegant, understated style. Text should NOT dominate the image — it is a lightweight supporting layer for text-oriented viewers. Use a thin/light-weight sans-serif font. Keep the title compact at top, with minimal bullet keywords below. Ensure text is legible but not overpowering — the visual is the star.
 
 TEXT:
-${slideContent}`
+${slideContent.length > 250 ? slideContent.split('\n').filter(l => l.trim()).slice(0, 3).join('\n') : slideContent}`
 }
 
 /**
@@ -217,27 +217,33 @@ export class ImagenService {
       }
     }
 
-    const maxRetries = 2
+    // Build the list of models to try: selected model first, then fallback to nano-banana (most permissive)
+    const selectedModelEntry = IMAGE_MODELS.find((m) => m.id === config.imageModel) ?? IMAGE_MODELS[0]
+    const fallbackModelEntry = IMAGE_MODELS.find((m) => m.id === 'nano-banana')!
+    const modelsToTry = selectedModelEntry.id !== fallbackModelEntry.id
+      ? [selectedModelEntry, fallbackModelEntry]
+      : [selectedModelEntry]
+
     let lastError: Error | null = null
 
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        // When we have a reference image, use a SHORT prompt so the image signal dominates.
-        // The long verbose prompt dilutes the style reference.
-        let contents: string | { role: string; parts: { text?: string; inlineData?: { data: string; mimeType: string } }[] }[]
-        if (refImageBase64 && refImageMime) {
-          // Strip presentation/slide language from the subject — these words bias the model
-          // toward a "corporate graphic" look instead of matching the reference image's style
-          const rawSubject = config.shortSubject || 'an abstract atmospheric scene'
-          const subject = rawSubject
-            .replace(/\b(presentation|slide|deck|infographic|corporate|professional|business)\b/gi, '')
-            .replace(/\s{2,}/g, ' ')
-            .trim()
+    for (const modelEntry of modelsToTry) {
+      const maxRetries = 2
+      const isFallbackModel = modelEntry.id !== selectedModelEntry.id
 
-          let refPromptText: string
-          if (config.slideTextContent) {
-            // Full-image mode: match reference style BUT include slide text on the image
-            refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}.
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          let contents: string | { role: string; parts: { text?: string; inlineData?: { data: string; mimeType: string } }[] }[]
+          if (refImageBase64 && refImageMime) {
+            const rawSubject = config.shortSubject || 'an abstract atmospheric scene'
+            const subject = rawSubject
+              .replace(/\b(presentation|slide|deck|infographic|corporate|professional|business)\b/gi, '')
+              .replace(/\s{2,}/g, ' ')
+              .trim()
+
+            let refPromptText: string
+            if (config.slideTextContent && attempt === 0) {
+              // Attempt 0: full text on image
+              refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}.
 
 The visual illustration should be the DOMINANT element — rich, cinematic, covering most of the image. It should visually tell the story.
 
@@ -245,86 +251,100 @@ TEXT OVERLAY (secondary, subtle):
 Render the following text on the image in a clean, elegant, understated style. Use a thin/light-weight font. The text should NOT dominate — it is a light supporting layer. Position it so it does not obscure the main visual.
 
 TEXT:
-${config.slideTextContent}`
+${config.slideTextContent.length > 250 ? config.slideTextContent.split('\n').filter(l => l.trim()).slice(0, 3).join('\n') : config.slideTextContent}`
+            } else if (config.slideTextContent && attempt === 1) {
+              // Attempt 1: title only, no bullets
+              const titleOnly = (config.slideTextContent.split('\n').find(l => l.trim()) || subject).slice(0, 60)
+              refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. Add a subtle title "${titleOnly}" at the top in elegant sans-serif. No other text.`
+            } else {
+              // Attempt 2+ or no-text mode: visual only, no text
+              refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. Make the visual rich, cinematic, and immersive — it is the primary storytelling element. No text in the image.`
+            }
+
+            contents = [
+              {
+                role: 'user',
+                parts: [
+                  { inlineData: { data: refImageBase64, mimeType: refImageMime } },
+                  { text: refPromptText },
+                ],
+              },
+            ]
           } else {
-            // Background-only mode (hybrid content slides, infographics, whitepaper images): no text
-            refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. Make the visual rich, cinematic, and immersive — it is the primary storytelling element. No text in the image.`
+            // No reference image — use the provided prompt with progressive simplification
+            if (attempt === 0) {
+              contents = prompt
+            } else if (attempt === 1) {
+              // Strip all bullet text, keep title + visualCue only
+              const titleMatch = prompt.match(/TEXT:\n(.+?)(?:\n|$)/)
+              const titleOnly = titleMatch?.[1]?.slice(0, 60) || ''
+              contents = prompt.replace(/TEXT:\n[\s\S]*$/, titleOnly ? `TEXT:\n${titleOnly}` : '').slice(0, 1500)
+            } else {
+              // Visual-only prompt — strip all text instructions
+              const visualCueMatch = prompt.match(/(?:PRIMARY VISUAL|VISUAL NARRATIVE)[^:]*:\n([\s\S]*?)(?:\n\n|TEXT|CRITICAL)/i)
+              const styleMatch = prompt.match(/VISUAL STYLE[^:]*:\s*([\s\S]*?)(?:\n\n|PRIMARY|VISUAL NARRATIVE)/i)
+              contents = `Generate a RICH, CINEMATIC presentation slide image. ${styleMatch?.[1]?.slice(0, 400) || ''}\n\n${visualCueMatch?.[1]?.slice(0, 300) || 'Create a visually striking abstract scene.'}\n\nDo NOT include any text in the image.`
+            }
           }
 
-          contents = [
-            {
-              role: 'user',
-              parts: [
-                {
-                  inlineData: { data: refImageBase64, mimeType: refImageMime },
-                },
-                {
-                  text: refPromptText,
-                },
-              ],
+          console.log(`Slide ${config.slideNumber} attempt ${attempt + 1}/${maxRetries + 1} with model ${modelEntry.geminiModel}${isFallbackModel ? ' (fallback)' : ''}`)
+
+          const response = await ai.models.generateContent({
+            model: modelEntry.geminiModel,
+            contents,
+            config: {
+              responseModalities: ['IMAGE'],
+              imageConfig: {
+                aspectRatio: config.aspectRatio,
+                imageSize: '2K',
+              },
+              httpOptions: { timeout: 120_000 },
             },
-          ]
-        } else {
-          const currentPrompt = attempt === 0
-            ? prompt
-            : `Generate a presentation slide image with readable text. ${prompt.slice(0, 1200)}`
-          contents = currentPrompt
-        }
+          })
 
-        const modelEntry = IMAGE_MODELS.find((m) => m.id === config.imageModel) ?? IMAGE_MODELS[0]
-        const response = await ai.models.generateContent({
-          model: modelEntry.geminiModel,
-          contents,
-          config: {
-            responseModalities: ['IMAGE'],
-            imageConfig: {
-              aspectRatio: config.aspectRatio,
-              imageSize: '2K',
-            },
-            httpOptions: { timeout: 120_000 },
-          },
-        })
-
-        const parts = response.candidates?.[0]?.content?.parts
-        if (!parts) {
-          lastError = new Error(`No response parts for slide ${config.slideNumber} (attempt ${attempt + 1})`)
-          console.warn(lastError.message, '— retrying...')
-          continue
-        }
-
-        let imageData: string | null = null
-        for (const part of parts) {
-          if (part.inlineData?.data) {
-            imageData = part.inlineData.data
-            break
+          const parts = response.candidates?.[0]?.content?.parts
+          if (!parts) {
+            lastError = new Error(`No response parts for slide ${config.slideNumber} (attempt ${attempt + 1}, model ${modelEntry.id})`)
+            console.warn(lastError.message, '— retrying...')
+            continue
           }
-        }
 
-        if (!imageData) {
-          lastError = new Error(`No image data returned for slide ${config.slideNumber} (attempt ${attempt + 1})`)
-          console.warn(lastError.message, '— retrying...')
-          continue
-        }
+          let imageData: string | null = null
+          for (const part of parts) {
+            if (part.inlineData?.data) {
+              imageData = part.inlineData.data
+              break
+            }
+          }
 
-        const cacheDir = getSlidesCacheDir(config.contentId)
-        const filename = `slide-${String(config.slideNumber).padStart(3, '0')}.png`
-        const outputPath = join(cacheDir, filename)
+          if (!imageData) {
+            lastError = new Error(`No image data returned for slide ${config.slideNumber} (attempt ${attempt + 1}, model ${modelEntry.id})`)
+            console.warn(lastError.message, '— retrying...')
+            continue
+          }
 
-        const buffer = Buffer.from(imageData, 'base64')
-        writeFileSync(outputPath, buffer)
+          const cacheDir = getSlidesCacheDir(config.contentId)
+          const filename = `slide-${String(config.slideNumber).padStart(3, '0')}.png`
+          const outputPath = join(cacheDir, filename)
 
-        return outputPath
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err))
-        console.error(`Slide ${config.slideNumber} attempt ${attempt + 1} failed:`, lastError.message)
-        // Log full error details for debugging
-        if (err && typeof err === 'object' && 'status' in err) {
-          console.error('API error status:', (err as { status: unknown }).status)
-        }
-        if (err && typeof err === 'object' && 'errorDetails' in err) {
-          console.error('API error details:', JSON.stringify((err as { errorDetails: unknown }).errorDetails))
+          const buffer = Buffer.from(imageData, 'base64')
+          writeFileSync(outputPath, buffer)
+
+          return outputPath
+        } catch (err) {
+          lastError = err instanceof Error ? err : new Error(String(err))
+          console.error(`Slide ${config.slideNumber} attempt ${attempt + 1} (model ${modelEntry.id}) failed:`, lastError.message)
+          if (err && typeof err === 'object' && 'status' in err) {
+            console.error('  API status:', (err as { status: unknown }).status)
+          }
+          if (err && typeof err === 'object' && 'errorDetails' in err) {
+            console.error('  API errorDetails:', JSON.stringify((err as { errorDetails: unknown }).errorDetails))
+          }
         }
       }
+
+      if (isFallbackModel) break // don't cascade further
+      console.warn(`Slide ${config.slideNumber}: all attempts with ${modelEntry.id} failed, trying fallback model...`)
     }
 
     throw lastError ?? new Error(`Failed to generate slide ${config.slideNumber}`)
