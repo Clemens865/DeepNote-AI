@@ -106,7 +106,7 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
       {content.type === 'slides' && <SlidesView {...viewerProps} />}
       {content.type === 'image-slides' && <ImageSlidesView data={data} contentId={content.id} />}
       {content.type === 'audio' && <AudioOverviewView {...viewerProps} />}
-      {content.type === 'infographic' && <InfographicView {...viewerProps} />}
+      {content.type === 'infographic' && <InfographicView {...viewerProps} contentId={content.id} />}
       {content.type === 'dashboard' && <DashboardView {...viewerProps} />}
       {content.type === 'literature-review' && <LiteratureReviewView {...viewerProps} />}
       {content.type === 'competitive-analysis' && <CompetitiveAnalysisView {...viewerProps} />}

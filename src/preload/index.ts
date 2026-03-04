@@ -106,6 +106,34 @@ const api = {
     }
   },
 
+  // Infographic Animate
+  infographicAnimate: (args: { generatedContentId: string; animationPrompt?: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.INFOGRAPHIC_ANIMATE, args),
+  onInfographicAnimateProgress: (
+    callback: (data: { generatedContentId: string; stage: string; message: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; stage: string; message: string }
+    ) => callback(data)
+    ipcRenderer.on('infographic:animate-progress', handler)
+    return () => {
+      ipcRenderer.removeListener('infographic:animate-progress', handler)
+    }
+  },
+  onInfographicAnimateComplete: (
+    callback: (data: { generatedContentId: string; success: boolean; videoPath?: string; error?: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; success: boolean; videoPath?: string; error?: string }
+    ) => callback(data)
+    ipcRenderer.on('infographic:animate-complete', handler)
+    return () => {
+      ipcRenderer.removeListener('infographic:animate-complete', handler)
+    }
+  },
+
   // White Paper
   whitepaperStart: (args: {
     notebookId: string
