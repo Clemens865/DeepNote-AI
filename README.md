@@ -2,7 +2,7 @@
 
 > **Beta Release** — This is the first public beta. Expect rough edges, evolving APIs, and occasional AI generation failures. We welcome bug reports and feedback via [GitHub Issues](https://github.com/Clemens865/DeepNote-AI/issues).
 
-A feature-rich, open-source desktop application inspired by Google's NotebookLM. Built with Electron, React, and powered by multi-provider AI (Gemini, Claude, OpenAI, Groq). Upload documents, chat with your sources, and generate studio-quality content — AI podcasts, image slide decks with a drag-and-drop editor, whitepapers, infographics, flashcards, quizzes, mind maps, dashboards, literature reviews, competitive analyses, reports, and more — with agentic RAG, multi-agent generation pipelines, voice Q&A, cross-session memory, DeepBrain system integration, and local embeddings.
+A feature-rich, open-source desktop application inspired by Google's NotebookLM. Built with Electron, React, and powered by multi-provider AI (Gemini, Claude, OpenAI, Groq). Upload documents, chat with your sources, and generate studio-quality content — AI podcasts, HTML presentation decks with a structured slide editor, image slide decks with drag-and-drop editing, PPTX export, whitepapers, infographics with video animation, flashcards, quizzes, mind maps, dashboards, literature reviews, competitive analyses, reports, and more — with agentic RAG, multi-agent generation pipelines, voice Q&A, cross-session memory, Knowledge Hub with file connectors and knowledge graph, and local embeddings.
 
 <!-- TODO: Add hero screenshot -->
 
@@ -61,16 +61,17 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | **AI Chat** | Streaming responses, source-grounded citations, conversation history, suggested prompts, 6 interactive artifact types (Table, Chart, Mermaid, Kanban, KPI, Timeline), one-click artifact shortcut chips, voice Q&A |
 | **Deep Research** | Multi-step AI analysis with real-time progress updates |
 | **Audio Overview** | Multi-speaker AI podcast with 4 format styles (Deep Dive, Brief, Critical Analysis, Debate) |
-| **Image Slides** | AI-generated slide decks with 6 visual styles + custom style builder, 3 image models (Nano Banana Pro / 2 / Classic), 2 render modes (full-image / hybrid editable), fullscreen presenter, rich text drag-and-drop editor, Save button with feedback, PDF export with text overlays |
+| **HTML Presentations** | Structured slide editor with slide navigator, layout picker (title, content, two-column, card-grid, stat-row, quote, closing), per-slide AI regeneration, Nano Banana image generation for slide blocks, live preview, PPTX export with embedded images, prompt templates |
+| **Image Slides** | AI-generated slide decks with 6 visual styles + custom style builder, 3 image models (Nano Banana Pro / 2 / Classic), 2 render modes (full-image / hybrid editable), fullscreen presenter, rich text drag-and-drop editor, Save button with feedback, PDF export with text overlays, prompt customization, AI-recommended slide count |
 | **White Paper** | AI-generated multi-section white papers with cover image, section illustrations, table of contents, references, 3 image models, and A4 PDF export |
-| **Infographic** | AI-generated single-page infographics in full-image or hybrid mode with custom color palettes and 3 image model options |
+| **Infographic** | AI-generated single-page infographics in full-image or hybrid mode with custom color palettes, 3 image model options, and Veo 3.1 video animation |
 | **Study Tools** | Flashcards, Quizzes (multiple choice), Reports, Mind Maps, Data Tables, Dashboards, Literature Reviews, Competitive Analyses, Document Comparisons, Citation Graphs — search/filter/sort for all generated content |
 | **Notes** | Create, edit, auto-save notes; convert notes to sources for AI context |
 | **Workspace** | Link local folders, file tree browser, text editor with AI rewrite, .gitignore support |
 | **Export** | Download audio as WAV, slides as PNG, slide decks as PDF (with text overlays for hybrid mode), whitepapers as A4 PDF, copy reports to clipboard |
 | **AI Architecture** | Agentic RAG (multi-query retrieval), multi-agent generation pipeline (Research → Write → Review), AI output validation with retry, cross-session memory |
 | **Embeddings** | Tiered embedding system: local ONNX (all-MiniLM-L6-v2) → Gemini API → hash fallback |
-| **DeepBrain** | System-wide memory recall, file search, email search, activity context — results shown as preview cards in chat |
+| **Knowledge Hub** | File connectors for local folder ingestion, knowledge graph visualization, Ollama-powered local embeddings, knowledge search across all indexed content |
 | **Multi-Provider Chat** | Gemini (default), Claude, OpenAI, Groq — switch providers and models in Settings |
 | **Productivity** | Clipboard quick-capture via system tray (Cmd+Shift+N), chat-to-source pipeline, smart source recommendations |
 
@@ -78,11 +79,16 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 
 ## What's New — Beta
 
-This beta includes 15+ major features transforming DeepNote AI from a notebook tool into a full intelligent research platform:
+This beta includes 20+ major features transforming DeepNote AI from a notebook tool into a full intelligent research platform:
 
 | Feature | Description |
 |---------|-------------|
-| **15 Studio Tools** | Audio, Image Slides, Flashcards, Quiz, Report, Mind Map, Data Table, Dashboard, Literature Review, Competitive Analysis, Document Comparison, Citation Graph, Infographic, White Paper, and Deep Research |
+| **16 Studio Tools** | Audio, Image Slides, HTML Presentations, Flashcards, Quiz, Report, Mind Map, Data Table, Dashboard, Literature Review, Competitive Analysis, Document Comparison, Citation Graph, Infographic, White Paper, and Deep Research |
+| **HTML Presentation System** | Structured slide editor with 7 layout types, per-slide editing and AI regeneration, slide navigator with drag-and-drop reordering, Nano Banana image generation for individual slide blocks, live preview with instant refresh, and PPTX export with embedded images |
+| **Prompt Templates** | Create, save, and manage custom prompt templates for slide deck generation — reuse your best prompts across notebooks |
+| **Slide Deck Enhancements** | AI-recommended page count (up to 20 slides), prompt customization with custom style overrides, improved generation reliability |
+| **Infographic Animation** | Generate video animations from infographics using Google Veo 3.1 — image-to-video with 4-8s clips, up to 4K resolution |
+| **Knowledge Hub** | Replaced DeepBrain with local-first Knowledge Hub — file connectors for folder ingestion, knowledge graph visualization, Ollama-powered local embeddings |
 | **White Paper Generator** | Multi-section academic/business/technical papers with cover images, section illustrations, ToC, references, and A4 PDF export |
 | **Infographic Generator** | Full-image or hybrid infographics with 6 style presets + custom style builder with reference image analysis |
 | **Hybrid Slide Editor** | Drag-and-drop text overlays on AI backgrounds, Save button with visual feedback, arrow key navigation respects text editing, PDF export includes text overlays |
@@ -95,7 +101,6 @@ This beta includes 15+ major features transforming DeepNote AI from a notebook t
 | **Cross-Session Memory** | AI remembers preferences and learning patterns per notebook with confidence scoring |
 | **Voice Q&A** | Audio transcription → RAG chat → TTS response — speak to your sources |
 | **Multi-Provider Chat** | Gemini, Claude, OpenAI, Groq — switch providers and models per conversation |
-| **DeepBrain Integration** | System-wide memory, file search, email search, activity context — results as clickable preview cards |
 | **Local ONNX Embeddings** | Offline embeddings via all-MiniLM-L6-v2 with tiered fallback (ONNX → Gemini → hash) |
 | **Global Search** | System-wide search across all notebooks, sources, files, emails, and memories (Cmd+K) |
 | **Clipboard Quick-Capture** | System tray icon + Cmd+Shift+N to capture clipboard content to your notebook |
@@ -126,6 +131,7 @@ This beta includes 15+ major features transforming DeepNote AI from a notebook t
 - `llama-3.3-70b-versatile` — Groq chat provider
 - `gemini-2.5-flash-preview-tts` — Multi-speaker text-to-speech (Kore & Puck voices)
 - `gemini-3-pro-image-preview` (Nano Banana Pro) / `gemini-3.1-flash-image-preview` (Nano Banana 2) / `gemini-2.5-flash-image` (Nano Banana) — AI image generation for slides, infographics, whitepapers — selectable per creation
+- `veo-3.1-generate-preview` — Video generation from infographic images (4-8s clips, up to 4K)
 - `text-embedding-004` — Text embeddings for RAG (Gemini cloud tier)
 - `all-MiniLM-L6-v2` — Local ONNX embeddings (offline tier, 384-dim)
 
@@ -248,7 +254,7 @@ The **Chat Panel** is the main interaction mode. Ask questions and get AI-genera
 - **Save to Note** - Save any AI response as a note for later reference
 - **Clear history** - Reset the conversation
 - **Cross-session memory** - The AI remembers your preferences and learning patterns
-- **DeepBrain integration** - When DeepBrain is running, the AI can search your system files, emails, and memories. Results appear as clickable preview cards below each response (file cards open in your default app)
+- **Knowledge Hub integration** - When Knowledge Hub is configured with file connectors, the AI can search across all ingested knowledge. Results appear as context-enriched responses grounded in your knowledge base
 
 **Interactive Artifacts:**
 
@@ -389,7 +395,7 @@ Each generation lets you choose between three Gemini image models:
 - **Pitch Deck** - Business pitch (Problem, Solution, Market, Ask)
 - **Report Deck** - Data-driven analysis with charts
 
-**Slide Count:** Test (3), Short (5), Default (10)
+**Slide Count:** Test (3), Short (5), Default (10), Recommended (AI-optimized, up to 20)
 
 **Aspect Ratios:** 16:9 (widescreen), 4:3 (classic)
 
@@ -426,6 +432,36 @@ Click the pencil icon on any hybrid slide to enter edit mode:
 - **Download** - Save individual slides as PNG files
 
 <!-- TODO: Add slide deck screenshot -->
+
+---
+
+#### HTML Presentation
+
+Generate structured HTML presentations with a full slide editor. This is the newest presentation format, offering fine-grained per-slide editing with AI assistance.
+
+**7 Slide Layouts:**
+
+| Layout | Description |
+|--------|-------------|
+| **Title Slide** | Centered title + subtitle with accent bar |
+| **Section Header** | Section divider with underline accent |
+| **Content** | Title + body content (text, bullets, images) |
+| **Two Column** | Side-by-side content layout |
+| **Card Grid** | 2-3 column card grid (up to 6 cards) |
+| **Stat Row** | Key metrics displayed as large numbers |
+| **Quote** | Centered quote with attribution |
+| **Closing** | Summary slide with checkmark bullets |
+
+**Slide Editor Features:**
+- **Preview / Edit toggle** - Switch between live HTML preview and per-slide editor
+- **Slide Navigator** - Thumbnail sidebar with drag-and-drop reordering, add/delete slides
+- **Per-slide editing** - Edit title, subtitle, speaker notes, and individual content blocks
+- **Layout picker** - Change slide layout type on the fly
+- **AI Regeneration** - Regenerate any slide with custom instructions
+- **Image Generation** - Add image blocks and generate AI images via Nano Banana models
+- **Live Preview** - Instant HTML preview refresh on every edit
+- **PPTX Export** - Export to PowerPoint with embedded images, themed colors, and template support
+- **Prompt Templates** - Save and reuse custom generation prompts
 
 ---
 
@@ -617,7 +653,7 @@ src/
       schema.ts         # Drizzle ORM schema definitions (including user_memory)
     ipc/
       chat.ts           # Chat message handlers (streaming, agentic RAG, DeepBrain context)
-      deepbrain.ts      # DeepBrain bridge handlers (status, recall, file/email search, activity)
+      knowledge.ts      # Knowledge Hub handlers (file connectors, knowledge graph, search)
       clipboard.ts      # Clipboard history & add-to-notebook handlers
       config.ts         # API key management
       memory.ts         # Cross-session memory CRUD handlers
@@ -637,7 +673,10 @@ src/
       documentParser.ts # PDF, DOCX, TXT/MD parsing
       embeddings.ts     # Gemini embedding generation
       generationPipeline.ts  # Multi-agent Research → Write → Review pipeline
+      htmlRenderer.ts   # HTML presentation rendering with image embedding
       imagen.ts         # AI image generation for slides
+      knowledgeIngestion.ts  # Knowledge ingestion pipeline
+      knowledgeStore.ts      # Knowledge storage and retrieval
       localEmbeddings.ts     # ONNX local embedding inference
       memory.ts         # Cross-session memory service
       rag.ts            # Retrieval-Augmented Generation (with agentic option)
@@ -645,7 +684,10 @@ src/
       sourceIngestion.ts     # Shared source processing pipeline
       tieredEmbeddings.ts    # Tiered ONNX → Gemini → hash embedding system
       tray.ts           # System tray icon & clipboard quick-capture
+      pptxRenderer.ts   # PPTX generation with embedded images
+      pptxTemplateParser.ts  # PPTX template parsing for theme extraction
       tts.ts            # Multi-speaker text-to-speech
+      veo.ts            # Veo 3.1 video generation (image-to-video animation)
       vectorStore.ts    # In-memory vector similarity search
       voiceSession.ts   # Voice Q&A session management
       webScraper.ts     # URL content extraction
@@ -665,14 +707,17 @@ src/
       hooks/
         useNotebooks.ts # Notebook listing hook
       components/
-        chat/           # ChatPanel, ChatInput, ChatMessage, ChatDeepBrainResults, VoiceOverlay
+        chat/           # ChatPanel, ChatInput, ChatMessage, ChatKnowledgeResults, VoiceOverlay
         common/         # Button, Modal, Spinner, Toast, SettingsModal
         dashboard/      # Dashboard, NotebookCard
         layout/         # AppLayout, Header, ResizablePanel
         notes/          # NotesPanel, NoteEditor
         sources/        # SourcesPanel, SourceList, AddSourceModal
+        knowledge/      # KnowledgeHub, ConnectorsTab, KnowledgeGraphTab
         studio/         # StudioPanel, ToolGrid, GeneratedContentView,
                         # ImageSlidesView, ImageSlidesWizard,
+                        # HtmlPresentationView, PresentationSlideEditor,
+                        # PresentationSlideNav, HtmlPresentationWizard,
                         # DraggableTextElement, SlideEditorToolbar,
                         # StudioCustomizeDialog
         workspace/      # WorkspaceLayout, FileTreeView, FileTreeNode,
@@ -683,7 +728,7 @@ src/
 
 ## Database Schema
 
-DeepNote AI uses SQLite with 8 tables:
+DeepNote AI uses SQLite with 10+ tables:
 
 | Table | Description |
 |-------|-------------|
@@ -691,10 +736,12 @@ DeepNote AI uses SQLite with 8 tables:
 | `sources` | Ingested documents (content, type, selection state, source guide) |
 | `chunks` | Chunked text with token counts for RAG retrieval |
 | `notes` | User-created notes (title, content, converted-to-source flag) |
-| `chat_messages` | Chat history with citations and DeepBrain metadata (role, content, citations JSON, metadata JSON) |
+| `chat_messages` | Chat history with citations and metadata (role, content, citations JSON, metadata JSON) |
 | `generated_content` | Studio outputs (type, data JSON, status, source IDs) |
 | `workspace_files` | Workspace file manifest (path, hash, status, linked source ID) |
 | `user_memory` | Cross-session AI memory (type, key, value, confidence score, timestamps) |
+| `knowledge_documents` | Knowledge Hub ingested documents with embeddings |
+| `knowledge_connectors` | File connector configurations for knowledge ingestion |
 
 All data is stored locally in `~/.config/deepnote-ai/` (or platform equivalent). No data is sent to external servers except Gemini API calls for AI features.
 
