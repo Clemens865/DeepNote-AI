@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Download } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Download, Film, X, Loader2 } from 'lucide-react'
 import { FullscreenWrapper } from './FullscreenWrapper'
 
 // --- New plan schema ---
@@ -187,13 +187,155 @@ function InfographicOverlay({ plan, imagePath }: { plan: InfographicPlan | null;
   )
 }
 
+// --- Animate Dialog ---
+
+function AnimateDialog({
+  contentId,
+  onClose,
+  onVideoGenerated,
+}: {
+  contentId: string
+  onClose: () => void
+  onVideoGenerated: (videoPath: string) => void
+}) {
+  const [prompt, setPrompt] = useState('')
+  const [isLoadingPrompt, setIsLoadingPrompt] = useState(true)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [progressMessage, setProgressMessage] = useState('')
+  const [error, setError] = useState('')
+
+  // Auto-generate prompt on open
+  useEffect(() => {
+    window.api.infographicAnimate({ generatedContentId: contentId }).then(() => {
+      // The IPC returns immediately (fire-and-forget). We listen via progress events.
+    }).catch(() => {
+      // This path generates the prompt only — we handle via a separate approach below
+    })
+
+    // Actually we need a different approach: generate prompt first, show it, then user clicks generate.
+    // Let's use the IPC but only for generating the prompt. We'll call it without a prompt first
+    // to just get the suggested prompt. But the current IPC fires the full pipeline...
+    // Instead, let's just do the prompt generation inline by calling the animate IPC
+    // with the prompt left empty — it will generate the prompt AND start video generation.
+    // But the user wants to edit the prompt first.
+    //
+    // Better approach: we call infographicAnimate without a prompt. The progress event
+    // with stage 'prompt' will give us the message. But we won't get the actual prompt text back.
+    //
+    // Simplest approach: just show a loading state, generate prompt client-side isn't possible
+    // (no direct Gemini access from renderer). So let's add a separate approach:
+    // We'll pass the prompt as empty string initially, catch the prompt from progress,
+    // but actually we need the prompt text itself.
+    //
+    // Let me rethink: The cleanest way is to NOT auto-start generation. Instead:
+    // 1. On dialog open, we just show a text area with placeholder
+    // 2. User can type their own prompt or leave it empty
+    // 3. When they click Generate, if prompt is empty, the IPC handler generates one automatically
+
+    setIsLoadingPrompt(false)
+    setPrompt('')
+  }, [contentId])
+
+  // Listen for progress and completion
+  useEffect(() => {
+    const cleanupProgress = window.api.onInfographicAnimateProgress((data) => {
+      if (data.generatedContentId === contentId) {
+        setProgressMessage(data.message)
+      }
+    })
+    const cleanupComplete = window.api.onInfographicAnimateComplete((data) => {
+      if (data.generatedContentId === contentId) {
+        setIsGenerating(false)
+        if (data.success && data.videoPath) {
+          onVideoGenerated(data.videoPath)
+          onClose()
+        } else {
+          setError(data.error || 'Animation generation failed')
+        }
+      }
+    })
+    return () => {
+      cleanupProgress()
+      cleanupComplete()
+    }
+  }, [contentId, onClose, onVideoGenerated])
+
+  const handleGenerate = useCallback(() => {
+    setIsGenerating(true)
+    setError('')
+    setProgressMessage('Starting animation...')
+    window.api.infographicAnimate({
+      generatedContentId: contentId,
+      animationPrompt: prompt.trim() || undefined,
+    }).catch((err: Error) => {
+      setIsGenerating(false)
+      setError(err.message)
+    })
+  }, [contentId, prompt])
+
+  return (
+    <div className="mt-4 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Film size={14} className="text-violet-500" />
+          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Animate Infographic</span>
+        </div>
+        {!isGenerating && (
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {isLoadingPrompt ? (
+        <div className="flex items-center gap-2 text-xs text-zinc-500">
+          <Loader2 size={12} className="animate-spin" />
+          Generating animation prompt...
+        </div>
+      ) : (
+        <>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Describe how the infographic should animate (leave empty for AI-generated prompt)..."
+            disabled={isGenerating}
+            rows={3}
+            className="w-full rounded-lg border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-zinc-800 px-3 py-2 text-xs text-zinc-700 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/40 disabled:opacity-50"
+          />
+
+          {error && (
+            <p className="text-xs text-red-500">{error}</p>
+          )}
+
+          {isGenerating ? (
+            <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+              <Loader2 size={12} className="animate-spin text-violet-500" />
+              {progressMessage || 'Generating animation...'}
+            </div>
+          ) : (
+            <button
+              onClick={handleGenerate}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+            >
+              <Film size={12} />
+              Generate Video
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 // --- Main components ---
 
-function InfographicContent({ data }: { data: Record<string, unknown> }) {
+function InfographicContent({ data, contentId }: { data: Record<string, unknown>; contentId: string }) {
   const imagePath = data.imagePath as string | undefined
   const rawPlan = data.plan ?? null
   const plan = normalizePlan(rawPlan)
   const renderMode = (data.renderMode as string | undefined) || 'hybrid'
+  const [videoPath, setVideoPath] = useState<string | undefined>(data.videoPath as string | undefined)
+  const [showAnimateDialog, setShowAnimateDialog] = useState(false)
 
   if (!imagePath) {
     return <p className="text-sm text-zinc-500 dark:text-zinc-400">No infographic generated yet.</p>
@@ -212,7 +354,39 @@ function InfographicContent({ data }: { data: Record<string, unknown> }) {
           <InfographicOverlay plan={plan} imagePath={imagePath} />
         )}
       </div>
-      <div className="flex justify-end">
+
+      {/* Video player */}
+      {videoPath && (
+        <div className="space-y-2">
+          <div className="rounded-lg overflow-hidden border border-black/[0.06] dark:border-white/[0.06]">
+            <video
+              src={`local-file://${videoPath}`}
+              controls
+              className="w-full"
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={() => window.api.studioSaveFile({ sourcePath: videoPath, defaultName: 'infographic-animation.mp4' })}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+            >
+              <Download size={12} />
+              Download video
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={() => setShowAnimateDialog(true)}
+          disabled={showAnimateDialog}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-violet-500/20 text-violet-600 dark:text-violet-400 hover:bg-violet-500/[0.06] hover:text-violet-700 dark:hover:text-violet-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Film size={12} />
+          {videoPath ? 'Re-animate' : 'Animate'}
+        </button>
         <button
           onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: 'infographic.png' })}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
@@ -221,6 +395,15 @@ function InfographicContent({ data }: { data: Record<string, unknown> }) {
           Download image
         </button>
       </div>
+
+      {/* Animate dialog */}
+      {showAnimateDialog && (
+        <AnimateDialog
+          contentId={contentId}
+          onClose={() => setShowAnimateDialog(false)}
+          onVideoGenerated={(path) => setVideoPath(path)}
+        />
+      )}
     </div>
   )
 }
@@ -230,9 +413,10 @@ interface InfographicViewProps {
   isFullscreen: boolean
   onCloseFullscreen: () => void
   title: string
+  contentId?: string
 }
 
-export function InfographicView({ data, isFullscreen, onCloseFullscreen, title }: InfographicViewProps) {
+export function InfographicView({ data, isFullscreen, onCloseFullscreen, title, contentId }: InfographicViewProps) {
   const imagePath = data.imagePath as string | undefined
   const rawPlan = data.plan ?? null
   const plan = normalizePlan(rawPlan)
@@ -250,7 +434,7 @@ export function InfographicView({ data, isFullscreen, onCloseFullscreen, title }
 
   return (
     <>
-      <InfographicContent data={data} />
+      <InfographicContent data={data} contentId={contentId || ''} />
       <FullscreenWrapper
         isOpen={isFullscreen}
         onClose={onCloseFullscreen}

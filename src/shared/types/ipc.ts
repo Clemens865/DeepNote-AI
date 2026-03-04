@@ -52,6 +52,7 @@ export const IPC_CHANNELS = {
 
   // Studio (infographic)
   INFOGRAPHIC_START: 'infographic:start',
+  INFOGRAPHIC_ANIMATE: 'infographic:animate',
 
   // Studio (white paper)
   WHITEPAPER_START: 'whitepaper:start',
@@ -231,6 +232,12 @@ export interface IpcHandlerMap {
       customStyleDescription?: string
       imageModel?: ImageModelId
     }]
+    return: { generatedContentId: string }
+  }
+
+  // Infographic Animate
+  [IPC_CHANNELS.INFOGRAPHIC_ANIMATE]: {
+    args: [{ generatedContentId: string; animationPrompt?: string }]
     return: { generatedContentId: string }
   }
 

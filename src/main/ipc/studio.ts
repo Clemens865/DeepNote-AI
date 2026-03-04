@@ -1104,6 +1104,90 @@ CRITICAL RULES:
     }
   )
 
+  // Infographic Animate — fire-and-forget pattern
+  ipcMain.handle(
+    IPC_CHANNELS.INFOGRAPHIC_ANIMATE,
+    async (_event, args: { generatedContentId: string; animationPrompt?: string }) => {
+      const { generateAnimationPrompt, animateImage } = await import('../services/veo')
+      const db = getDatabase()
+
+      const [content] = await db
+        .select()
+        .from(schema.generatedContent)
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      if (!content) throw new Error('Generated content not found')
+
+      const data = content.data as unknown as Record<string, unknown>
+      const imagePath = data.imagePath as string | undefined
+      if (!imagePath) throw new Error('No infographic image found to animate')
+
+      ;(async () => {
+        try {
+          let prompt = args.animationPrompt
+          if (!prompt) {
+            broadcastToWindows('infographic:animate-progress', {
+              generatedContentId: args.generatedContentId,
+              stage: 'prompt',
+              message: 'Generating animation prompt...',
+            })
+            prompt = await generateAnimationPrompt(imagePath)
+          }
+
+          broadcastToWindows('infographic:animate-progress', {
+            generatedContentId: args.generatedContentId,
+            stage: 'generating',
+            message: 'Generating video with Veo 3.1...',
+          })
+
+          const { app } = await import('electron')
+          const { join } = await import('path')
+          const { mkdirSync, existsSync } = await import('fs')
+          const cacheDir = join(app.getPath('userData'), 'slides-cache', args.generatedContentId)
+          if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true })
+          const videoOutputPath = join(cacheDir, 'animation.mp4')
+
+          await animateImage(imagePath, prompt, videoOutputPath, (message) => {
+            broadcastToWindows('infographic:animate-progress', {
+              generatedContentId: args.generatedContentId,
+              stage: 'generating',
+              message,
+            })
+          })
+
+          // Update generatedContent data with videoPath
+          const currentDb = getDatabase()
+          const [current] = await currentDb
+            .select()
+            .from(schema.generatedContent)
+            .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+          const currentData = (current?.data as unknown as Record<string, unknown>) || {}
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              data: { ...currentData, videoPath: videoOutputPath } as unknown as string,
+            })
+            .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+          broadcastToWindows('infographic:animate-complete', {
+            generatedContentId: args.generatedContentId,
+            success: true,
+            videoPath: videoOutputPath,
+          })
+        } catch (err) {
+          broadcastToWindows('infographic:animate-complete', {
+            generatedContentId: args.generatedContentId,
+            success: false,
+            error: err instanceof Error ? err.message : 'Animation generation failed',
+          })
+        }
+      })()
+
+      return { generatedContentId: args.generatedContentId }
+    }
+  )
+
   // White Paper — fire-and-forget pattern with image generation
   ipcMain.handle(
     IPC_CHANNELS.WHITEPAPER_START,
