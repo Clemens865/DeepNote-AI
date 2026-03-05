@@ -761,11 +761,19 @@ Output the full array with EXACTLY ${slideCount} slides:`
 
   async reviseImageSlide(
     currentSlide: { title: string; bullets: string[]; content: string; visualCue: string; speakerNotes: string; layout: string },
-    context: { prevSlideTitle?: string; nextSlideTitle?: string; sourceExcerpt: string },
+    context: { prevSlideTitle?: string; nextSlideTitle?: string; sourceExcerpt: string; slideIndex: number; totalSlides: number },
     instruction?: string,
     renderMode: 'full-image' | 'hybrid' = 'full-image'
   ): Promise<{ title: string; bullets: string[]; content: string; visualCue: string; speakerNotes: string }> {
     const ai = getClient()
+
+    const isFirst = context.slideIndex === 0
+    const isLast = context.slideIndex === context.totalSlides - 1
+    const positionHint = isFirst
+      ? 'This is the OPENING/TITLE slide of the deck — it should hook the audience, set the topic, and create visual impact.'
+      : isLast
+        ? 'This is the CLOSING/SUMMARY slide of the deck — it should wrap up key takeaways, provide a conclusion, or end with a call to action.'
+        : `This is slide ${context.slideIndex + 1} of ${context.totalSlides} — a content slide in the middle of the deck.`
 
     const neighborCtx = [
       context.prevSlideTitle ? `Previous slide: "${context.prevSlideTitle}"` : '',
@@ -777,6 +785,8 @@ Output the full array with EXACTLY ${slideCount} slides:`
       : 'This is an infographic-style slide where text is part of the image. Include meaningful, self-explanatory text in the content field (max 250 chars, max 5 lines). The visualCue should describe the layout approach (diagram type, chart style, icon arrangement).'
 
     const prompt = `You are revising a single slide in an infographic-style presentation deck.
+
+SLIDE POSITION: ${positionHint}
 
 CURRENT SLIDE:
 - Title: ${currentSlide.title}

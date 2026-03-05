@@ -367,7 +367,7 @@ function InfographicContent({ data, contentId }: { data: Record<string, unknown>
           </div>
           <div className="flex justify-end">
             <button
-              onClick={() => window.api.studioSaveFile({ sourcePath: videoPath, defaultName: 'infographic-animation.mp4' })}
+              onClick={() => window.api.studioSaveFile({ sourcePath: videoPath, defaultName: `${(data.assetName as string) || 'infographic-animation'}.mp4` })}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
             >
               <Download size={12} />
@@ -388,7 +388,7 @@ function InfographicContent({ data, contentId }: { data: Record<string, unknown>
           {videoPath ? 'Re-animate' : 'Animate'}
         </button>
         <button
-          onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: 'infographic.png' })}
+          onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: `${(data.assetName as string) || 'infographic'}.png` })}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
         >
           <Download size={12} />
@@ -424,7 +424,7 @@ export function InfographicView({ data, isFullscreen, onCloseFullscreen, title, 
 
   const downloadAction = imagePath ? (
     <button
-      onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: 'infographic.png' })}
+      onClick={() => window.api.studioSaveFile({ sourcePath: imagePath, defaultName: `${(data.assetName as string) || 'infographic'}.png` })}
       className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
       title="Download image"
     >

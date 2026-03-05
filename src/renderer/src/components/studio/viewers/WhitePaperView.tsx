@@ -277,7 +277,7 @@ export function WhitePaperView({ data, isFullscreen, onCloseFullscreen, title }:
         keyFindings: (data.keyFindings as string[]) || [],
         conclusion: (data.conclusion as string) || '',
         coverImagePath: (data.coverImagePath as string) || undefined,
-        defaultName: `${((data.title as string) || 'White Paper').replace(/[^a-zA-Z0-9 ]/g, '').trim()}.pdf`,
+        defaultName: `${(data.assetName as string) || ((data.title as string) || 'White Paper').replace(/[^a-zA-Z0-9 ]/g, '').trim()}.pdf`,
       })
     } catch (err) {
       console.error('PDF export failed:', err)

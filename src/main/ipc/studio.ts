@@ -44,6 +44,18 @@ function hexToRgbTuple(hex: string): string {
   return `${r},${g},${b}`
 }
 
+/** Build a slugified asset name: TopicName-AssetType-Date */
+function buildAssetName(topicTitle: string, assetType: string): string {
+  const slug = topicTitle
+    .replace(/[^a-zA-Z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 50)
+    .replace(/-+$/, '')
+  const date = new Date().toISOString().split('T')[0]
+  return `${slug}-${assetType}-${date}`
+}
+
 /** Build a Map of bodyContentId → base64 data URL for all slides with imagePath set */
 async function resolveSlideImages(slides: StructuredSlide[]): Promise<Map<string, string>> {
   const map = new Map<string, string>()
@@ -348,7 +360,7 @@ export function registerStudioHandlers() {
       id,
       notebookId: args.notebookId,
       type: args.type as 'report' | 'quiz' | 'flashcard',
-      title: `${TYPE_TITLES[args.type] || args.type} — ${notebookTitle}`,
+      title: buildAssetName(notebookTitle, TYPE_TITLES[args.type]?.replace(/\s+/g, '') || args.type),
       data: JSON.stringify({}),
       sourceIds: JSON.stringify(sourceIds),
       status: 'generating' as const,
@@ -382,6 +394,9 @@ export function registerStudioHandlers() {
         // Generate content via AI (uses pipeline for complex types, middleware for simple)
         generatedData = await aiService.generateContent(args.type, sourceTexts, args.options)
       }
+
+      // Store asset name in data for viewer export access
+      generatedData.assetName = record.title
 
       // Update record with generated data
       await db
@@ -649,10 +664,17 @@ export function registerStudioHandlers() {
             data.html = renderSlidesToHtml(slides, theme)
           }
 
+          // Update title with AI-generated name from first slide
+          const presentationTitle = (slides[0]?.title || 'Presentation').replace(/^Title:\s*/i, '')
+          const typeLabel = outputMode === 'pptx' ? 'PowerPoint' : 'Presentation'
+          const presentationAssetName = buildAssetName(presentationTitle, typeLabel)
+          data.assetName = presentationAssetName
+
           const currentDb = getDatabase()
           await currentDb
             .update(schema.generatedContent)
             .set({
+              title: presentationAssetName,
               data: data as unknown as string,
               status: 'completed',
             })
@@ -977,6 +999,11 @@ export function registerStudioHandlers() {
 
           const plan = await aiService.planInfographic(sourceTexts, args.format)
 
+          // Update title with AI-generated name
+          const formatLabel = args.format === 'advertisement' ? 'Ad' : args.format === 'social-post' ? 'SocialPost' : 'Infographic'
+          const assetName = buildAssetName(plan.title, formatLabel)
+          await db.update(schema.generatedContent).set({ title: assetName }).where(eq(schema.generatedContent.id, generatedContentId))
+
           broadcastToWindows('infographic:progress', {
             generatedContentId,
             stage: 'generating',
@@ -1086,7 +1113,7 @@ CRITICAL RULES:
           await currentDb
             .update(schema.generatedContent)
             .set({
-              data: { imagePath, plan, style: args.stylePresetId, aspectRatio: args.aspectRatio, renderMode } as unknown as string,
+              data: { imagePath, plan, style: args.stylePresetId, aspectRatio: args.aspectRatio, renderMode, assetName } as unknown as string,
               status: 'completed',
             })
             .where(eq(schema.generatedContent.id, generatedContentId))
@@ -1355,12 +1382,14 @@ CRITICAL RULES:
             conclusion: plan.conclusion,
             coverImagePath,
             style: args.stylePresetId,
+            assetName: buildAssetName(plan.title, 'WhitePaper'),
           }
 
+          const wpAssetName = buildAssetName(plan.title, 'WhitePaper')
           await currentDb
             .update(schema.generatedContent)
             .set({
-              title: `White Paper: ${plan.title}`,
+              title: wpAssetName,
               data: wpData as unknown as string,
               status: 'completed',
             })
@@ -1516,6 +1545,11 @@ CRITICAL RULES:
             renderMode
           )
 
+          // Update title with AI-generated name from first slide
+          const deckTitle = contentPlan[0]?.title || 'Slide Deck'
+          const assetName = buildAssetName(deckTitle, 'Slides')
+          await db.update(schema.generatedContent).set({ title: assetName }).where(eq(schema.generatedContent.id, generatedContentId))
+
           // Phase B: Generate each slide image
           const slides: { slideNumber: number; title: string; bullets: string[]; imagePath: string; speakerNotes: string }[] = []
           const hybridSlides: { slideNumber: number; title: string; bullets: string[]; imagePath: string; speakerNotes: string; layout: string; elementLayout?: { type: string; content: string; x: number; y: number; width: number; fontSize: number; align: string }[] }[] = []
@@ -1635,6 +1669,7 @@ CRITICAL RULES:
             totalSlides: totalGenerated,
             contentPlan,
             renderMode,
+            assetName,
             ...(args.stylePresetId === 'custom-builder' && args.customStyleColors
               ? { customPalette: args.customStyleColors }
               : {}),
@@ -1772,7 +1807,7 @@ CRITICAL RULES:
 
       const revised = await aiService.reviseImageSlide(
         currentPlan,
-        { prevSlideTitle, nextSlideTitle, sourceExcerpt },
+        { prevSlideTitle, nextSlideTitle, sourceExcerpt, slideIndex: slideIdx, totalSlides: slidesArray.length },
         args.instruction,
         renderMode as 'full-image' | 'hybrid'
       )
