@@ -907,8 +907,9 @@ export function registerStudioHandlers() {
     IPC_CHANNELS.INFOGRAPHIC_START,
     async (_event, args: {
       notebookId: string
+      format?: 'infographic' | 'advertisement' | 'social-post'
       stylePresetId: string
-      aspectRatio: '16:9' | '4:3' | '1:1'
+      aspectRatio: '16:9' | '4:3' | '1:1' | '9:16' | '3:4'
       renderMode?: 'full-image' | 'hybrid'
       userInstructions?: string
       customStyleImagePath?: string
@@ -972,7 +973,7 @@ export function registerStudioHandlers() {
             message: 'Planning infographic content...',
           })
 
-          const plan = await aiService.planInfographic(sourceTexts)
+          const plan = await aiService.planInfographic(sourceTexts, args.format)
 
           broadcastToWindows('infographic:progress', {
             generatedContentId,
@@ -993,12 +994,21 @@ export function registerStudioHandlers() {
 
           const userInstr = args.userInstructions ? `\nUser instructions: ${args.userInstructions}` : ''
           const renderMode = args.renderMode || 'full-image'
+          const infographicFormat = args.format || 'infographic'
+          const fillRule = `COMPOSITION: The image MUST fill the entire ${args.aspectRatio} frame edge-to-edge with NO empty space, NO borders, NO margins, NO letterboxing. Full-bleed artwork that extends to every edge.`
+
+          // Format-specific design directives
+          const formatDirectives: Record<string, string> = {
+            'infographic': `FORMAT: Data Infographic — visual storytelling through icons, diagrams, charts, and data-viz elements. Think: conference poster or editorial dashboard. 80% visuals, 20% text. Use progress bars, pie charts, comparison arrows, metric badges, flow diagrams. Title at top in bold decorative font. Clean modern layout.`,
+            'advertisement': `FORMAT: Advertisement / Marketing Asset — bold, attention-grabbing product or brand visual. Think: magazine ad, billboard, or product launch hero image. One dominant headline, a striking visual metaphor, and a clear call-to-action. Typography is large, confident, and integrated into the scene. Use lifestyle imagery, product visualization, or aspirational scenes. Keep text to: headline + tagline + CTA only.`,
+            'social-post': `FORMAT: Social Media Post — optimized for sharing on Instagram, LinkedIn, or Twitter. One powerful hero visual with a single bold statement or quote. Minimal text — let the image do the talking. Text should be large, centered, and instantly readable. Think: viral shareable graphic. High visual impact, strong contrast, eye-catching composition.`,
+          }
+          const formatDirective = formatDirectives[infographicFormat] || formatDirectives['infographic']
 
           let imagePrompt: string
           let slideTextContent: string | undefined
 
           if (renderMode === 'full-image') {
-            // Full-image mode: visual-first, bullet-point labels only
             const sectionLabels = planSections.map((s) => {
               const stat = 'stat' in s && s.stat ? ` → ${s.stat.value} ${s.stat.label}` : ''
               const annotation = 'annotation' in s ? (s as { annotation: string }).annotation : ''
@@ -1017,29 +1027,32 @@ export function registerStudioHandlers() {
 
             slideTextContent = textContent
 
-            imagePrompt = `Generate a VISUAL-FIRST infographic about "${plan.title}".
-${visualNarrative ? `\nVISUAL NARRATIVE: ${visualNarrative}` : ''}
+            imagePrompt = `Generate a single cinematic image about "${plan.title}" where text and visuals form one unified composition.
+${visualNarrative ? `\nSCENE AND COMPOSITION: ${visualNarrative}` : ''}
+
+${formatDirective}
+
+${fillRule}
 
 VISUAL STYLE: ${styleDescription}
 
-TEXT LABELS (render these as SHORT bullet points — no paragraphs, no sentences):
+INTEGRATED TEXT — render the following text as part of the image composition. The text should feel like it belongs in the scene — as stylized display typography, integrated into the environment, or as bold graphic design elements. NOT a floating overlay — part of the art:
 ${textContent}
 
 Visual scene elements: ${visualElements}
 
-CRITICAL DESIGN RULES:
-- 80% VISUALS, 20% TEXT. The image tells the story through icons, diagrams, illustrations, arrows, and data-viz elements.
-- Each section gets: a SHORT heading (2-4 words) + an optional number/stat + a tiny bullet-point label (2-6 words max).
-- ABSOLUTELY NO paragraphs, sentences, or body text. If it's longer than 6 words, DON'T render it.
-- ${heroStat ? `Render "${heroStat.value}" as the LARGEST, most prominent text element` : 'Use large icons and visual metaphors as focal points'}
-- Use data-viz elements: progress bars, pie charts, comparison arrows, metric badges, flow diagrams
-- Title at the top in bold decorative font
-- Clean, modern layout with generous whitespace between sections
-- Think: conference poster or dashboard, NOT a text document${userInstr}`
+DESIGN RULES:
+- ${heroStat ? `Render "${heroStat.value}" as the LARGEST, most prominent text element integrated into the visual` : 'Use large icons and visual metaphors as focal points'}
+- All text is part of the visual composition — integrated into surfaces, environments, or as stylized display typography
+- No paragraphs or long sentences — only short labels, numbers, and keywords${userInstr}`
           } else {
             // Hybrid mode: atmospheric background, text overlaid as HTML
-            imagePrompt = `Generate a rich, atmospheric, cinematic background image for an infographic about "${plan.title}".
+            imagePrompt = `Generate a rich, atmospheric, cinematic background image for "${plan.title}".
 ${visualNarrative ? `\nVISUAL STORY: ${visualNarrative}` : ''}
+
+${formatDirective}
+
+${fillRule}
 
 The image should tell the story through visual metaphors, mood, and scene — NOT through text.
 
@@ -1050,12 +1063,11 @@ Visual style: ${styleDescription}
 CRITICAL RULES:
 - Do NOT include ANY text, words, letters, numbers, or typography in the image
 - This is a pure visual background — structured annotations will float on top as HTML
-- Leave slight breathing room at the top and bottom edges (subtle gradient-friendly areas)
 - Make it rich, immersive, and visually striking with depth, lighting, and atmosphere${userInstr}`
           }
 
           const imagePath = await imagenService.generateSlideImage(imagePrompt, {
-            aspectRatio: args.aspectRatio === '1:1' ? '4:3' : args.aspectRatio,
+            aspectRatio: args.aspectRatio,
             contentId: generatedContentId,
             slideNumber: 1,
             referenceImagePath: args.customStyleImagePath,
@@ -1385,7 +1397,7 @@ CRITICAL RULES:
       format: 'presentation' | 'pitch' | 'report'
       length?: 'test' | 'short' | 'default'
       slideCount?: number
-      aspectRatio: '16:9' | '4:3'
+      aspectRatio: '16:9' | '4:3' | '1:1' | '9:16' | '3:4'
       userInstructions?: string
       customStyleImagePath?: string
       renderMode?: 'full-image' | 'hybrid'
@@ -1467,22 +1479,25 @@ CRITICAL RULES:
             ? Math.max(1, Math.min(20, args.slideCount))
             : args.length === 'test' ? 3 : args.length === 'short' ? 5 : 10
 
-          // Resolve user instructions: template → optimize → raw instructions
-          let resolvedInstructions = args.userInstructions
-          if (args.promptTemplateId || args.promptOverride) {
-            let rawText = args.promptOverride || ''
-            if (args.promptTemplateId && !rawText) {
-              const db2 = getDatabase()
-              const tplRows = await db2.select().from(schema.slidePromptTemplates).where(eq(schema.slidePromptTemplates.id, args.promptTemplateId))
-              if (tplRows[0]) rawText = tplRows[0].promptText
-            }
-            if (rawText) {
-              try {
-                const styleCtx = args.customStyleDescription || stylePreset?.colorPalette?.join(', ')
-                resolvedInstructions = await aiService.optimizeSlidePrompt(rawText, styleCtx)
-              } catch {
-                resolvedInstructions = rawText
-              }
+          // Resolve user instructions: combine template + additional instructions into one directive
+          let resolvedInstructions = ''
+          // 1. Start with template text (or override)
+          let templateText = ''
+          if (args.promptOverride) {
+            templateText = args.promptOverride
+          } else if (args.promptTemplateId) {
+            const db2 = getDatabase()
+            const tplRows = await db2.select().from(schema.slidePromptTemplates).where(eq(schema.slidePromptTemplates.id, args.promptTemplateId))
+            if (tplRows[0]) templateText = tplRows[0].promptText
+          }
+          // 2. Combine template + additional instructions
+          const combinedText = [templateText, args.userInstructions].filter(Boolean).join('. ')
+          if (combinedText) {
+            try {
+              const styleCtx = args.customStyleDescription || stylePreset?.colorPalette?.join(', ')
+              resolvedInstructions = await aiService.optimizeSlidePrompt(combinedText, styleCtx)
+            } catch {
+              resolvedInstructions = combinedText
             }
           }
 
@@ -1524,7 +1539,8 @@ CRITICAL RULES:
                     styleDescription,
                     plan.layout,
                     plan.visualCue,
-                    isCustomStyle
+                    isCustomStyle,
+                    args.aspectRatio
                   )
                 } else {
                   prompt = buildHybridSlidePrompt(
@@ -1532,7 +1548,8 @@ CRITICAL RULES:
                     plan.visualCue,
                     plan.layout,
                     false,
-                    isCustomStyle
+                    isCustomStyle,
+                    args.aspectRatio
                   )
                 }
               } else {
@@ -1541,7 +1558,8 @@ CRITICAL RULES:
                   styleDescription,
                   plan.layout,
                   plan.visualCue,
-                  isCustomStyle
+                  isCustomStyle,
+                  args.aspectRatio
                 )
               }
 
@@ -1726,7 +1744,7 @@ CRITICAL RULES:
       await db.insert(schema.slidePromptTemplates).values({
         id: DEFAULT_TEMPLATE_ID,
         name: 'Default',
-        promptText: 'Professional presentation with clear topic flow. Each slide has a title and 2-3 key points following the "Bold Label: Explanation" pattern.',
+        promptText: 'Visual-first slides where text is integrated into the imagery. Use short titles and only keywords or data points when they add value. Each slide should tell its story through the visual.',
         isDefault: true,
         createdAt: now,
         updatedAt: now,
@@ -2126,7 +2144,7 @@ CRITICAL RULES:
     IPC_CHANNELS.STUDIO_EXPORT_PDF,
     async (_event, args: {
       imagePaths: string[]
-      aspectRatio: '16:9' | '4:3'
+      aspectRatio: string
       defaultName: string
       textOverlays?: Array<{
         elements: Array<{
@@ -2157,9 +2175,14 @@ CRITICAL RULES:
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
 
       // Page dimensions in points (72pt/inch)
-      const isWide = args.aspectRatio === '16:9'
-      const pageWidth = isWide ? 960 : 720
-      const pageHeight = isWide ? 540 : 540
+      const aspectDims: Record<string, [number, number]> = {
+        '16:9': [960, 540],
+        '4:3': [720, 540],
+        '1:1': [720, 720],
+        '9:16': [540, 960],
+        '3:4': [540, 720],
+      }
+      const [pageWidth, pageHeight] = aspectDims[args.aspectRatio] || [960, 540]
 
       // Helper: parse hex color to rgb()
       function hexToRgb(hex: string): ReturnType<typeof rgb> {

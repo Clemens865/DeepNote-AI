@@ -82,7 +82,7 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
   const [slideCount, setSlideCount] = useState(10)
   const [isAutoSuggesting, setIsAutoSuggesting] = useState(false)
   const [autoSuggestReasoning, setAutoSuggestReasoning] = useState<string | null>(null)
-  const [aspectRatio, setAspectRatio] = useState<'16:9' | '4:3'>('16:9')
+  const [aspectRatio, setAspectRatio] = useState<'16:9' | '4:3' | '1:1' | '9:16' | '3:4'>('16:9')
   const [userInstructions, setUserInstructions] = useState('')
   const [imageModel, setImageModel] = useState<ImageModelId>('nano-banana-pro')
 
@@ -475,18 +475,24 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
                 Aspect Ratio
               </label>
               <div className="flex rounded-lg border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
-                {(['16:9', '4:3'] as const).map((opt) => (
+                {([
+                  { value: '16:9', label: '16:9' },
+                  { value: '4:3', label: '4:3' },
+                  { value: '1:1', label: '1:1' },
+                  { value: '3:4', label: '3:4' },
+                  { value: '9:16', label: '9:16' },
+                ] as const).map((opt) => (
                   <button
-                    key={opt}
-                    onClick={() => setAspectRatio(opt)}
+                    key={opt.value}
+                    onClick={() => setAspectRatio(opt.value)}
                     className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                      aspectRatio === opt
+                      aspectRatio === opt.value
                         ? 'bg-black/[0.04] dark:bg-white/[0.04] text-zinc-800 dark:text-zinc-100'
                         : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
                     }`}
                   >
-                    {aspectRatio === opt && <Check size={12} />}
-                    {opt}
+                    {aspectRatio === opt.value && <Check size={12} />}
+                    {opt.label}
                   </button>
                 ))}
               </div>
@@ -516,11 +522,14 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
             </div>
           </div>
 
-          {/* Prompt Template */}
+          {/* Instructions */}
           <div>
-            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-              Prompt Template
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1 block">
+              Style & Content Instructions
             </label>
+            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mb-2">
+              Controls how slides look and what text appears. Want more text? Say so. Want visual-only? Say that. You can save reusable presets.
+            </p>
             {/* Template selector */}
             <div className="flex flex-wrap gap-1.5 mb-2">
               {templates.map((tpl) => (
@@ -542,7 +551,7 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
             <textarea
               value={templateText}
               onChange={(e) => setTemplateText(e.target.value)}
-              placeholder='e.g. "Bold provocative headlines, no bullets, one visual metaphor per slide"'
+              placeholder='e.g. "Cinematic visuals with bold titles only" or "Include bullet points with key data on each slide"'
               rows={2}
               className="w-full px-3 py-2 text-sm rounded-lg border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-indigo-400 resize-none"
             />
@@ -576,19 +585,14 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
                 </button>
               </div>
             )}
-          </div>
 
-          {/* Additional Instructions */}
-          <div>
-            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-              Additional Instructions <span className="text-zinc-400 font-normal">(optional)</span>
-            </label>
+            {/* Content-specific instructions */}
             <textarea
               value={userInstructions}
               onChange={(e) => setUserInstructions(e.target.value)}
-              placeholder='Guide content focus, audience, or outline. Example: "Focus on practical examples for beginners."'
-              rows={2}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-indigo-400 resize-none"
+              placeholder='Optional: specific content guidance, e.g. "Focus on Q3 results" or "Target audience: investors"'
+              rows={1}
+              className="w-full mt-2 px-3 py-2 text-sm rounded-lg border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-indigo-400 resize-none"
             />
           </div>
 

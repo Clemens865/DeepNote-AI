@@ -537,7 +537,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
                   : undefined
                 window.api.studioExportPdf({
                   imagePaths: allPaths,
-                  aspectRatio: (slidesData.aspectRatio === '4:3' ? '4:3' : '16:9') as '16:9' | '4:3',
+                  aspectRatio: slidesData.aspectRatio || '16:9',
                   defaultName: 'slide-deck.pdf',
                   textOverlays,
                 })

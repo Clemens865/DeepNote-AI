@@ -33,6 +33,9 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
   - [Studio](#studio)
     - [Audio Overview](#audio-overview)
     - [Image Slide Deck](#image-slide-deck)
+    - [HTML Presentation](#html-presentation)
+    - [Infographic](#infographic)
+    - [White Paper](#white-paper)
     - [Study Flashcards](#study-flashcards)
     - [Quiz](#quiz)
     - [Report](#report)
@@ -62,9 +65,9 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | **Deep Research** | Multi-step AI analysis with real-time progress updates |
 | **Audio Overview** | Multi-speaker AI podcast with 4 format styles (Deep Dive, Brief, Critical Analysis, Debate) |
 | **HTML Presentations** | Structured slide editor with slide navigator, layout picker (title, content, two-column, card-grid, stat-row, quote, closing), per-slide AI regeneration, Nano Banana image generation for slide blocks, live preview, PPTX export with embedded images, prompt templates |
-| **Image Slides** | AI-generated slide decks with 6 visual styles + custom style builder, 3 image models (Nano Banana Pro / 2 / Classic), 2 render modes (full-image / hybrid editable), fullscreen presenter, rich text drag-and-drop editor, Save button with feedback, PDF export with text overlays, prompt customization, AI-recommended slide count |
+| **Image Slides** | AI-generated slide decks with 6 visual styles + custom style builder, 3 image models (Nano Banana Pro / 2 / Classic), 2 render modes (full-image / hybrid editable), 5 aspect ratios (16:9, 4:3, 1:1, 3:4 portrait, 9:16 portrait), visual-first approach with text integrated into imagery, fullscreen presenter, rich text drag-and-drop editor, Save button with feedback, PDF export with text overlays, prompt customization, AI-recommended slide count |
 | **White Paper** | AI-generated multi-section white papers with cover image, section illustrations, table of contents, references, 3 image models, and A4 PDF export |
-| **Infographic** | AI-generated single-page infographics in full-image or hybrid mode with custom color palettes, 3 image model options, and Veo 3.1 video animation |
+| **Infographic** | AI-generated single-page visuals in 3 format types (Infographic, Advertisement, Social Post), full-image or hybrid mode, 5 aspect ratios including portrait (9:16, 3:4), custom color palettes, 3 image model options, and Veo 3.1 video animation |
 | **Study Tools** | Flashcards, Quizzes (multiple choice), Reports, Mind Maps, Data Tables, Dashboards, Literature Reviews, Competitive Analyses, Document Comparisons, Citation Graphs — search/filter/sort for all generated content |
 | **Notes** | Create, edit, auto-save notes; convert notes to sources for AI context |
 | **Workspace** | Link local folders, file tree browser, text editor with AI rewrite, .gitignore support |
@@ -86,11 +89,11 @@ This beta includes 20+ major features transforming DeepNote AI from a notebook t
 | **16 Studio Tools** | Audio, Image Slides, HTML Presentations, Flashcards, Quiz, Report, Mind Map, Data Table, Dashboard, Literature Review, Competitive Analysis, Document Comparison, Citation Graph, Infographic, White Paper, and Deep Research |
 | **HTML Presentation System** | Structured slide editor with 7 layout types, per-slide editing and AI regeneration, slide navigator with drag-and-drop reordering, Nano Banana image generation for individual slide blocks, live preview with instant refresh, and PPTX export with embedded images |
 | **Prompt Templates** | Create, save, and manage custom prompt templates for slide deck generation — reuse your best prompts across notebooks |
-| **Slide Deck Enhancements** | AI-recommended page count (up to 20 slides), prompt customization with custom style overrides, improved generation reliability |
+| **Slide Deck Enhancements** | Visual-first approach (text integrated into imagery), 5 aspect ratios including portrait (3:4, 9:16), AI-recommended page count (up to 20 slides), prompt customization, improved generation reliability |
 | **Infographic Animation** | Generate video animations from infographics using Google Veo 3.1 — image-to-video with 4-8s clips, up to 4K resolution |
 | **Knowledge Hub** | Replaced DeepBrain with local-first Knowledge Hub — file connectors for folder ingestion, knowledge graph visualization, Ollama-powered local embeddings |
 | **White Paper Generator** | Multi-section academic/business/technical papers with cover images, section illustrations, ToC, references, and A4 PDF export |
-| **Infographic Generator** | Full-image or hybrid infographics with 6 style presets + custom style builder with reference image analysis |
+| **Infographic Generator** | 3 format types (Infographic, Advertisement, Social Post) with 5 aspect ratios including portrait (3:4, 9:16), visual-first design, full-image or hybrid mode, 6 style presets + custom style builder with reference image analysis |
 | **Hybrid Slide Editor** | Drag-and-drop text overlays on AI backgrounds, Save button with visual feedback, arrow key navigation respects text editing, PDF export includes text overlays |
 | **Custom Style Builder** | Upload a reference image — the AI extracts and replicates its visual style for slides, infographics, and whitepapers |
 | **Image Model Picker** | Choose between 3 Gemini image models per creation: Nano Banana Pro (highest fidelity), Nano Banana 2 (fast & efficient), Nano Banana (speed optimized) |
@@ -397,13 +400,13 @@ Each generation lets you choose between three Gemini image models:
 
 **Slide Count:** Test (3), Short (5), Default (10), Recommended (AI-optimized, up to 20)
 
-**Aspect Ratios:** 16:9 (widescreen), 4:3 (classic)
+**Aspect Ratios:** 16:9 (widescreen), 4:3 (classic), 1:1 (square), 3:4 (portrait), 9:16 (tall portrait)
 
 **Two Render Modes:**
 
 | Mode | Description |
 |------|-------------|
-| **Full Image** | Text baked directly into the generated image |
+| **Full Image** | Visual-first — text integrated into the imagery as part of the composition |
 | **Hybrid (Editable)** | AI background image + draggable HTML text overlays |
 
 **Rich Slide Editor (Hybrid Mode):**
@@ -462,6 +465,47 @@ Generate structured HTML presentations with a full slide editor. This is the new
 - **Live Preview** - Instant HTML preview refresh on every edit
 - **PPTX Export** - Export to PowerPoint with embedded images, themed colors, and template support
 - **Prompt Templates** - Save and reuse custom generation prompts
+
+---
+
+#### Infographic
+
+Generate AI-powered single-page visuals from your sources with format-specific design intelligence.
+
+**3 Format Types:**
+
+| Format | Description |
+|--------|-------------|
+| **Infographic** | Data visualization with icons, charts, key metrics, and flow diagrams — like a conference poster or editorial dashboard |
+| **Advertisement** | Bold marketing asset with dominant headline, striking visual metaphor, and call-to-action — like a magazine ad or product launch hero |
+| **Social Post** | Shareable visual with hero image and single bold statement — optimized for Instagram, LinkedIn, or Twitter |
+
+**Aspect Ratios:** 16:9, 4:3, 1:1, 3:4 (portrait), 9:16 (tall portrait — ideal for social stories)
+
+**Render Modes:**
+- **Full Image** - Visual-first: all text and graphics integrated into a single AI-generated image
+- **Hybrid** - AI background with structured HTML text annotations overlaid
+
+**Style Options:** 6 visual presets + custom style builder (upload a reference image for AI style matching)
+
+**Additional Features:**
+- **Image Model Picker** - Choose between Nano Banana Pro, Nano Banana 2, or Nano Banana
+- **Veo Animation** - Generate 4-8s video clips from infographics via Google Veo 3.1
+- **Custom Color Palettes** - Extract or define color schemes for consistent branding
+- **Download** - Save as PNG image
+
+---
+
+#### White Paper
+
+Generate multi-section academic, business, or technical papers with AI-generated illustrations.
+
+- **Cover image** - AI-generated cover art matching the paper's theme
+- **Section illustrations** - Each major section includes a generated image
+- **Table of Contents** - Auto-generated with clickable navigation
+- **References** - AI-generated reference list based on source material
+- **3 image models** - Choose Nano Banana Pro, 2, or Classic per generation
+- **A4 PDF Export** - Professional document layout with images, typography, and formatting
 
 ---
 

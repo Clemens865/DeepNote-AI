@@ -88,38 +88,43 @@ export function buildSlidePrompt(
   styleDescription: string,
   _layout: string = 'Centered',
   visualCue: string = '',
-  isCustomStyle: boolean = false
+  isCustomStyle: boolean = false,
+  aspectRatio: string = '16:9'
 ): string {
+  const trimmedContent = slideContent.length > 180
+    ? slideContent.split('\n').filter(l => l.trim()).slice(0, 3).join('\n').slice(0, 180)
+    : slideContent
+
+  const fillRule = `COMPOSITION: The image MUST fill the entire ${aspectRatio} frame edge-to-edge with NO empty space, NO borders, NO margins, NO letterboxing. Full-bleed artwork that extends to every edge.`
+
   if (isCustomStyle) {
     return `MANDATORY VISUAL STYLE — follow this EXACTLY, do not deviate:
 ${styleDescription}
 
-Generate a VISUALLY RICH, CINEMATIC presentation slide image that belongs in the same art series as described above. Match the rendering medium, color palette, saturation level, lighting, and texture PRECISELY.
+Generate a single CINEMATIC presentation slide image that belongs in the same art series as described above. Match the rendering medium, color palette, saturation level, lighting, and texture PRECISELY.
 
-${visualCue ? `PRIMARY VISUAL (this is the MOST IMPORTANT part — the image tells the story):\n${visualCue}` : ''}
+${fillRule}
 
-The illustration/visual should dominate the slide and communicate the concept visually. It should cover most of the image area.
+${visualCue ? `SCENE AND COMPOSITION:\n${visualCue}` : ''}
 
-TEXT OVERLAY (secondary layer — keep subtle and minimal):
-Render the following text on the image in a clean, elegant, understated style. The text should NOT dominate — it is a light supporting layer over the visual. Use a thin/light-weight sans-serif font, slightly transparent or with a subtle backdrop. Position it so it does not obscure the main visual. Title at top, bullet keywords below.
+INTEGRATED TEXT — the following text must be part of the image composition, not a separate overlay. Render it as typography that belongs in the scene — integrated into surfaces, environments, or as stylized display text that complements the visual. Use the style's typography aesthetic. Keep it bold and readable but woven into the art.
 
-TEXT:
-${slideContent.length > 250 ? slideContent.split('\n').filter(l => l.trim()).slice(0, 3).join('\n') : slideContent}`
+TEXT TO INTEGRATE:
+${trimmedContent}`
   }
 
-  return `Generate a VISUALLY RICH, CINEMATIC presentation slide image. The visual illustration should be the dominant element — covering most of the slide and telling the story through imagery.
+  return `Generate a single CINEMATIC presentation slide image where the visual and text form one unified composition — like a movie poster, editorial spread, or infographic.
 
-VISUAL STYLE (you MUST follow this precisely): ${styleDescription}.
+VISUAL STYLE (follow precisely): ${styleDescription}.
 
-${visualCue ? `PRIMARY VISUAL (MOST IMPORTANT — the image tells the story):\n${visualCue}` : ''}
+${fillRule}
 
-The illustration should be vivid, evocative, and communicate the concept visually. It should cover the majority of the slide area.
+${visualCue ? `SCENE AND COMPOSITION:\n${visualCue}` : ''}
 
-TEXT OVERLAY (secondary, subtle layer):
-Render the following text on the slide in a clean, elegant, understated style. Text should NOT dominate the image — it is a lightweight supporting layer for text-oriented viewers. Use a thin/light-weight sans-serif font. Keep the title compact at top, with minimal bullet keywords below. Ensure text is legible but not overpowering — the visual is the star.
+INTEGRATED TEXT — render the following text as part of the image composition. The text should feel like it belongs in the scene — as stylized display typography, integrated into the environment, or as bold graphic text that is part of the visual design. NOT a floating overlay — part of the art.
 
-TEXT:
-${slideContent.length > 250 ? slideContent.split('\n').filter(l => l.trim()).slice(0, 3).join('\n') : slideContent}`
+TEXT TO INTEGRATE:
+${trimmedContent}`
 }
 
 /**
@@ -132,8 +137,11 @@ export function buildHybridSlidePrompt(
   visualCue: string = '',
   _layout: string = 'Centered',
   isTitleSlide: boolean = false,
-  isCustomStyle: boolean = false
+  isCustomStyle: boolean = false,
+  aspectRatio: string = '16:9'
 ): string {
+  const fillRule = `COMPOSITION: The image MUST fill the entire ${aspectRatio} frame edge-to-edge with NO empty space, NO borders, NO margins, NO letterboxing. Full-bleed artwork that extends to every edge.`
+
   if (isTitleSlide) {
     if (isCustomStyle) {
       return `MANDATORY VISUAL STYLE — follow this EXACTLY, do not deviate:
@@ -141,21 +149,24 @@ ${styleDescription}
 
 Generate a stunning, cinematic background image that looks like it belongs in the same art series as described above. This is a dramatic, atmospheric full-bleed background for a title card.
 
+${fillRule}
+
 ${visualCue ? `THEME: ${visualCue}` : ''}
 
 CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography in the image.
-Make it visually striking with depth and mood. Match the described rendering medium, color palette, saturation level, lighting, and texture PRECISELY. The entire image should be rich and immersive.`
+Make it visually striking with depth and mood. Match the described rendering medium, color palette, saturation level, lighting, and texture PRECISELY.`
     }
 
     return `VISUAL STYLE (you MUST follow this precisely): ${styleDescription}.
 
 Generate a stunning, cinematic presentation TITLE SLIDE background image in EXACTLY the style described above.
 
+${fillRule}
+
 ${visualCue ? `THEME: ${visualCue}` : ''}
 
 CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography in the image.
-This is a dramatic, atmospheric full-bleed background for the opening title slide of a presentation.
-Make it visually striking with depth and mood. The entire image should be rich and immersive — a centered subject or abstract composition works best.`
+This is a dramatic, atmospheric full-bleed background. Make it visually striking with depth and mood — a centered subject or abstract composition works best.`
   }
 
   if (isCustomStyle) {
@@ -163,6 +174,8 @@ Make it visually striking with depth and mood. The entire image should be rich a
 ${styleDescription}
 
 Generate a RICH, CINEMATIC illustration that belongs in the same art series as described above. This image is the primary storytelling element — it should visually communicate the entire concept.
+
+${fillRule}
 
 ${visualCue ? `VISUAL NARRATIVE (tell the story through this scene):\n${visualCue}` : ''}
 
@@ -175,18 +188,20 @@ CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography. Match
 
 Generate a RICH, CINEMATIC presentation slide illustration in EXACTLY the style described above. This image is the primary storytelling element — it should visually communicate the entire concept to the viewer.
 
+${fillRule}
+
 ${visualCue ? `VISUAL NARRATIVE (tell the story through this scene):\n${visualCue}` : ''}
 
 LAYOUT: The visual should be expansive and immersive, covering the full slide. Keep a subtle area on the LEFT (~30%) slightly less busy for a light text overlay, but the illustration should still feel full and cinematic — not a split-screen with a blank half.
 
-CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography in the image. This is the visual storytelling layer — text will be overlaid separately as a subtle secondary element.`
+CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography in the image. This is the visual storytelling layer — text will be overlaid separately.`
 }
 
 export class ImagenService {
   async generateSlideImage(
     prompt: string,
     config: {
-      aspectRatio: '16:9' | '4:3'
+      aspectRatio: string
       contentId: string
       slideNumber: number
       referenceImagePath?: string
@@ -242,23 +257,22 @@ export class ImagenService {
 
             let refPromptText: string
             if (config.slideTextContent && attempt === 0) {
-              // Attempt 0: full text on image
+              // Attempt 0: text integrated into the image
+              const trimmedText = config.slideTextContent.length > 180
+                ? config.slideTextContent.split('\n').filter(l => l.trim()).slice(0, 3).join('\n').slice(0, 180)
+                : config.slideTextContent
               refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}.
 
-The visual illustration should be the DOMINANT element — rich, cinematic, covering most of the image. It should visually tell the story.
+Integrate the following text into the image as part of the visual composition — as stylized display typography that belongs in the scene, not a floating overlay. The text should be bold and readable but woven into the art.
 
-TEXT OVERLAY (secondary, subtle):
-Render the following text on the image in a clean, elegant, understated style. Use a thin/light-weight font. The text should NOT dominate — it is a light supporting layer. Position it so it does not obscure the main visual.
-
-TEXT:
-${config.slideTextContent.length > 250 ? config.slideTextContent.split('\n').filter(l => l.trim()).slice(0, 3).join('\n') : config.slideTextContent}`
+TEXT: ${trimmedText}`
             } else if (config.slideTextContent && attempt === 1) {
-              // Attempt 1: title only, no bullets
+              // Attempt 1: title only integrated into scene
               const titleOnly = (config.slideTextContent.split('\n').find(l => l.trim()) || subject).slice(0, 60)
-              refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. Add a subtle title "${titleOnly}" at the top in elegant sans-serif. No other text.`
+              refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. Integrate the title "${titleOnly}" as bold display text that is part of the visual composition.`
             } else {
               // Attempt 2+ or no-text mode: visual only, no text
-              refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. Make the visual rich, cinematic, and immersive — it is the primary storytelling element. No text in the image.`
+              refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. Make the visual rich, cinematic, and immersive. No text in the image.`
             }
 
             contents = [

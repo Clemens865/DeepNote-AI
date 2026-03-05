@@ -3,6 +3,26 @@ import { createPortal } from 'react-dom'
 import { X, Upload, Loader2, Check, Palette } from 'lucide-react'
 import { IMAGE_MODELS, type ImageModelId } from '../../../../shared/types'
 
+type InfographicFormat = 'infographic' | 'advertisement' | 'social-post'
+
+const FORMAT_OPTIONS: { id: InfographicFormat; name: string; description: string }[] = [
+  {
+    id: 'infographic',
+    name: 'Infographic',
+    description: 'Data visualization with icons, charts, and key metrics.',
+  },
+  {
+    id: 'advertisement',
+    name: 'Advertisement',
+    description: 'Product marketing asset with bold headline and call-to-action.',
+  },
+  {
+    id: 'social-post',
+    name: 'Social Post',
+    description: 'Shareable visual with hero image, bold statement, and minimal text.',
+  },
+]
+
 interface StyleOption {
   id: string
   name: string
@@ -56,9 +76,10 @@ interface InfographicWizardProps {
 }
 
 export function InfographicWizard({ notebookId, onComplete, onClose }: InfographicWizardProps) {
+  const [format, setFormat] = useState<InfographicFormat>('infographic')
   const [selectedStyle, setSelectedStyle] = useState('neon-circuit')
   const [customStylePath, setCustomStylePath] = useState<string | null>(null)
-  const [aspectRatio, setAspectRatio] = useState<'16:9' | '4:3' | '1:1'>('4:3')
+  const [aspectRatio, setAspectRatio] = useState<'16:9' | '4:3' | '1:1' | '9:16' | '3:4'>('4:3')
   const [renderMode, setRenderMode] = useState<'full-image' | 'hybrid'>('full-image')
   const [userInstructions, setUserInstructions] = useState('')
   const [imageModel, setImageModel] = useState<ImageModelId>('nano-banana-pro')
@@ -127,6 +148,7 @@ export function InfographicWizard({ notebookId, onComplete, onClose }: Infograph
     try {
       const result = await window.api.infographicStart({
         notebookId,
+        format,
         stylePresetId: selectedStyle === 'custom' ? 'neon-circuit' : selectedStyle,
         aspectRatio,
         renderMode,
@@ -135,7 +157,7 @@ export function InfographicWizard({ notebookId, onComplete, onClose }: Infograph
         imageModel,
         ...(selectedStyle === 'custom-builder' ? {
           customStyleColors: customColors,
-          customStyleDescription: customStyleDesc.trim() || 'modern, clean, professional infographic with icons and data visualization elements',
+          customStyleDescription: customStyleDesc.trim() || 'modern, clean, professional design with bold visual elements',
         } : {}),
       })
       setGeneratedContentId(result.generatedContentId)
@@ -160,6 +182,34 @@ export function InfographicWizard({ notebookId, onComplete, onClose }: Infograph
         </div>
 
         <div className="p-6 space-y-5 overflow-y-auto">
+          {/* Format */}
+          <div>
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
+              Format
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {FORMAT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setFormat(opt.id)}
+                  className={`text-left p-2.5 rounded-xl border-2 transition-all ${
+                    format === opt.id
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10'
+                      : 'border-black/[0.06] dark:border-white/[0.06] hover:border-zinc-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-100">{opt.name}</span>
+                    {format === opt.id && <Check size={12} className="text-indigo-500" />}
+                  </div>
+                  <p className="text-[10px] leading-tight text-zinc-500 dark:text-zinc-400">
+                    {opt.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Visual Style */}
           <div>
             <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
@@ -274,18 +324,24 @@ export function InfographicWizard({ notebookId, onComplete, onClose }: Infograph
               Aspect Ratio
             </label>
             <div className="flex rounded-lg border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
-              {(['4:3', '16:9', '1:1'] as const).map((opt) => (
+              {([
+                { value: '16:9', label: '16:9' },
+                { value: '4:3', label: '4:3' },
+                { value: '1:1', label: '1:1' },
+                { value: '3:4', label: '3:4' },
+                { value: '9:16', label: '9:16' },
+              ] as const).map((opt) => (
                 <button
-                  key={opt}
-                  onClick={() => setAspectRatio(opt)}
+                  key={opt.value}
+                  onClick={() => setAspectRatio(opt.value)}
                   className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                    aspectRatio === opt
+                    aspectRatio === opt.value
                       ? 'bg-black/[0.04] dark:bg-white/[0.04] text-zinc-800 dark:text-zinc-100'
                       : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
                   }`}
                 >
-                  {aspectRatio === opt && <Check size={12} />}
-                  {opt}
+                  {aspectRatio === opt.value && <Check size={12} />}
+                  {opt.label}
                 </button>
               ))}
             </div>

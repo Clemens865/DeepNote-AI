@@ -643,11 +643,11 @@ Output ONLY valid JSON, no markdown fences.`
 
     // For hybrid mode: ask the AI to design element positions
     const hybridLayoutSection = renderMode === 'hybrid' ? `
-6.  **Element Layout (REQUIRED)**: For slides 2+, you must include an "elementLayout" array that positions the text panel. Follow the bold-label format from rule 3.
+6.  **Element Layout (REQUIRED)**: For slides 2+, you must include an "elementLayout" array that positions the text overlay panel.
     - The slide canvas is 100% x 100%. Text goes in the LEFT ~30% (0-30%). The visual illustration covers the full slide but is less busy on the left side.
     - Each element has: type ("title"|"bullet"|"text"), content (the text), x (% from left), y (% from top), width (% of slide), fontSize (px), align ("left"|"center"|"right").
     - Title: place at top-left, moderate font (18-22px).
-    - Bullets: use "Bold Label: Explanation sentence" format. Font size 12-13px. Space evenly (at least 8% vertical gap).
+    - Bullets: short keyword phrases or data points. Font size 12-13px. Space evenly (at least 8% vertical gap).
     - Slide 1 (title slide) does NOT need elementLayout — it renders as a full image.
 ` : ''
 
@@ -655,13 +655,12 @@ Output ONLY valid JSON, no markdown fences.`
     "elementLayout": [
       {"type": "title", "content": "How Models Learn", "x": 4, "y": 12, "width": 28, "fontSize": 20, "align": "left"},
       {"type": "text", "content": "---", "x": 4, "y": 22, "width": 8, "fontSize": 10, "align": "left"},
-      {"type": "bullet", "content": "Supervised: Models train on labeled data to learn patterns", "x": 4, "y": 29, "width": 28, "fontSize": 12, "align": "left"},
-      {"type": "bullet", "content": "Loss Functions: Error is measured to guide improvements", "x": 4, "y": 40, "width": 28, "fontSize": 12, "align": "left"},
-      {"type": "bullet", "content": "Gradient Descent: Weights adjust iteratively to reduce error", "x": 4, "y": 51, "width": 28, "fontSize": 12, "align": "left"}
+      {"type": "bullet", "content": "Labeled Data → Pattern Recognition", "x": 4, "y": 29, "width": 28, "fontSize": 12, "align": "left"},
+      {"type": "bullet", "content": "Error Measurement → Weight Adjustment", "x": 4, "y": 40, "width": 28, "fontSize": 12, "align": "left"},
+      {"type": "bullet", "content": "Iterative Optimization", "x": 4, "y": 51, "width": 28, "fontSize": 12, "align": "left"}
     ]` : ''
 
-    const prompt = `You are a professional presentation designer planning a ${slideCount}-slide deck based on the source material.
-Target Audience: General Professional/Educational.
+    const prompt = `You are a visual presentation designer planning a ${slideCount}-slide deck. Every slide is generated as a single AI image — the text is PART OF the image, not a separate overlay.
 
 SOURCE MATERIAL:
 ${combinedText}
@@ -669,45 +668,46 @@ ${combinedText}
 ${formatDirective}${userDirective}
 
 CRITICAL RULES:
-1.  **Slide Count**: You MUST output EXACTLY ${slideCount} slides. Not ${slideCount - 1}, not ${slideCount + 1}. Exactly ${slideCount}.
-2.  **VISUAL + TEXT BALANCE**: Each slide combines a rich illustration with concise explanatory text. The visual is the hero (~2/3 of the slide), but the text must provide enough context. A slide with only a title and keywords is NOT acceptable (except title and closing slides).
-3.  **Text format — keep text MINIMAL**: The image model will render this text on the slide, and too much text causes generation failures. For slides 2+, use this structure in the content field:
-    - A clear TITLE (2-4 words MAX) on the first line
-    - Then 2-3 KEY POINTS, each following the pattern: **Bold Label (2-6 words):** One short sentence (8-15 words max).
-    - The ENTIRE content field must be under 200 characters and under 4 lines.
-    - Example content: "How Models Learn\\n\\nSupervised: Train on labeled data to learn patterns.\\nLoss Functions: Measure error to guide improvements.\\nGradient Descent: Adjust weights iteratively to reduce error."
-    - Do NOT write full paragraphs — each point should be ONE short sentence.
-    - Do NOT use only bare keywords like "Fast" or "Secure" — always include a brief explanation.
-4.  **Visuals**: For each slide, write a RICH visual description in visualCue. Be specific — describe scene, metaphors, colors, mood, composition. The visual should complement the text. For technical topics, prefer architectural diagrams, layered visualizations, or annotated schematics.
-5.  **Content Field**: The content field is rendered as text ON the slide image. Use \\n for line breaks. STRICT LIMIT: max 200 characters total, max 4 lines. Keep text compact to prevent image generation failures.
+1.  **Slide Count**: You MUST output EXACTLY ${slideCount} slides.
+2.  **VISUAL-FIRST PHILOSOPHY**: Each slide is a cinematic image where text is woven into the visual composition. Think of it like a movie poster, editorial magazine spread, or infographic — the typography is part of the art, not a layer on top. The image model generates the entire slide as one image including any text.
+3.  **Text in the content field**: This text will be rendered BY THE IMAGE MODEL as part of the image. Keep it extremely concise — the image model struggles with too much text.
+    - A short TITLE (2-5 words) on the first line.
+    - Then at most 2-3 short keyword phrases or single-line points. Only include these if they genuinely add value — a powerful image with just a title is better than a cluttered slide.
+    - STRICT LIMIT: max 150 characters total, max 3 lines. Use \\n for line breaks.
+    - Prefer punchy keywords, numbers, or short phrases over full sentences.
+    - Example: "How Models Learn\\n\\nLabeled Data → Pattern Recognition\\nError Measurement → Weight Adjustment"
+    - Example (minimal): "The Attention Mechanism"
+    - Example (with data): "Market Growth\\n\\n$4.2B → $18.7B by 2028\\n42% CAGR"
+4.  **Visual Cue (MOST IMPORTANT)**: For each slide, write a RICH, SPECIFIC visual description in visualCue. Describe scene, metaphors, composition, mood, lighting, colors. This drives the entire image. The visualCue should describe how the text integrates into the scene — e.g. text emerging from surfaces, floating in the environment, etched into materials, displayed on screens within the scene.
+5.  **Content as part of the visual**: When writing the visualCue, describe how the title/keywords should be visually integrated — carved into stone, floating as holographic text, written on a whiteboard in the scene, appearing as signage, displayed on screens, etc. The text should feel like it belongs in the world of the image.
 ${hybridLayoutSection}
-SLIDE 1 REQUIREMENT (ATTENTION CATCHER): The first slide MUST be a "Title" layout slide — an attention-grabbing opener. Short, punchy title (2-4 words) and one subtitle line. The visualCue should describe a dramatic, atmospheric, cinematic scene that sets the tone for the entire deck. This slide grabs attention and makes the audience want to see more.
+SLIDE 1 REQUIREMENT: A "Title" layout — dramatic, atmospheric opener. Short punchy title + optional subtitle. The visualCue should describe a cinematic scene with the title naturally integrated into the imagery.
 
-SLIDE ${slideCount} REQUIREMENT (CLOSING SLIDE): The LAST slide MUST be a "Closing" layout slide — a strong finish. Use a memorable closing statement or call to action as the title (2-5 words, e.g. "The Future Starts Now", "Key Takeaways", "What's Next?"). Include 1-2 takeaway bullets or a call to action. The visualCue should describe a powerful, uplifting, or thought-provoking scene that leaves a lasting impression.
+SLIDE ${slideCount} REQUIREMENT: A "Closing" layout — strong finish. Memorable closing statement or call to action. The visualCue should describe an uplifting or thought-provoking scene.
 
 Output a JSON array with EXACTLY ${slideCount} objects (ONLY valid JSON, no markdown fences).
 
-Slide 1 example (title/opener — attention catcher):
+Slide 1 example:
 {
   "slideNumber": 1, "layout": "Title", "title": "Machine Learning", "bullets": ["A Visual Journey"],
-  "visualCue": "A vast cosmic neural network stretching across deep space — luminous nodes pulsing with warm golden light connected by flowing streams of data particles, set against a deep indigo nebula.",
+  "visualCue": "A vast cosmic neural network in deep space — luminous nodes pulsing with golden light connected by flowing data streams against an indigo nebula. The title 'Machine Learning' appears as massive luminous text integrated into the star field, with 'A Visual Journey' as a subtle subtitle trail of light particles beneath it.",
   "content": "Machine Learning\\nA Visual Journey",
   "speakerNotes": "Today we explore Machine Learning — how systems learn from data."${hybridLayoutExample}
 }
 
-Slide 2 to ${slideCount - 1} example (content slide — short bold-label format, under 200 chars):
+Content slide example (visual-first, minimal text):
 {
-  "slideNumber": 2, "layout": "Content", "title": "How Models Learn", "bullets": ["Supervised learning uses labeled examples", "Loss functions measure prediction errors", "Gradient descent adjusts weights iteratively"],
-  "visualCue": "A layered cross-section of a neural network, showing data flowing left to right through input, hidden, and output layers. Weights visualized as glowing connections of varying thickness. A gradient arrow curves back through the layers, colored in warm-to-cool spectrum.",
-  "content": "How Models Learn\\n\\nSupervised: Train on labeled data to learn patterns.\\nLoss Functions: Measure error to guide improvements.\\nGradient Descent: Adjust weights to reduce error.",
-  "speakerNotes": "The three pillars of model training: labeled data, error measurement, and iterative weight adjustment."
+  "slideNumber": 2, "layout": "Content", "title": "How Models Learn", "bullets": ["Pattern recognition from data", "Iterative weight adjustment"],
+  "visualCue": "A layered cross-section of a neural network with data flowing through glowing connections of varying thickness. The title 'How Models Learn' is etched into a translucent panel at the top. Key concepts appear as floating holographic labels next to their visual representations — 'Labeled Data' near input nodes, 'Error Signal' near a pulsing red feedback loop.",
+  "content": "How Models Learn\\n\\nLabeled Data → Pattern Recognition\\nError → Weight Adjustment",
+  "speakerNotes": "Model training relies on labeled data, error measurement, and iterative weight adjustment."
 }
 
-Slide ${slideCount} example (closing slide — strong finish):
+Closing slide example:
 {
   "slideNumber": ${slideCount}, "layout": "Closing", "title": "The Future Is Learning", "bullets": ["AI transforms how we solve problems"],
-  "visualCue": "A sunrise over a futuristic city skyline with neural pathways woven into the architecture, warm golden light breaking through clouds, hopeful and forward-looking atmosphere.",
-  "content": "The Future Is Learning\\n\\nAI is reshaping every industry — the question is how you'll use it.",
+  "visualCue": "A sunrise over a futuristic city with neural pathways woven into the architecture, golden light breaking through clouds. The text 'The Future Is Learning' appears as glowing typography integrated into the skyline, as if projected onto the buildings.",
+  "content": "The Future Is Learning",
   "speakerNotes": "Thank you. The future of AI is in your hands."
 }
 
@@ -729,14 +729,14 @@ Output the full array with EXACTLY ${slideCount} slides:`
       // Ensure every slide has a non-empty content field, and enforce length limits
       for (const plan of plans) {
         if (!plan.content || !plan.content.trim()) {
-          plan.content = [plan.title || '', '', ...(plan.bullets || [])].join('\n')
+          plan.content = plan.title || ''
         }
 
         // Safety net: truncate overly long content to prevent image model failures
-        if (plan.content.length > 250) {
+        if (plan.content.length > 180) {
           const lines = plan.content.split('\n').filter((l: string) => l.trim())
-          // Keep title + first 2 bullet points only
-          plan.content = lines.slice(0, 3).join('\n')
+          // Keep title + at most 2 short lines
+          plan.content = lines.slice(0, 3).join('\n').slice(0, 180)
         }
       }
 
@@ -795,18 +795,20 @@ Respond with ONLY valid JSON (no markdown fences):
   ): Promise<string> {
     const ai = getClient()
 
-    const prompt = `You are a presentation design expert. Convert the user's casual description into a precise content directive for an AI slide planner.
+    const prompt = `You are a visual presentation designer. Convert the user's description into a precise directive for an AI slide planner that generates slides as single cinematic images with integrated text.
 
 USER INSTRUCTION: "${userText}"
 ${styleContext ? `VISUAL STYLE CONTEXT: ${styleContext}` : ''}
 
-Output a concise, clear directive (2-4 sentences max) that tells the slide planner:
-- What kind of titles to write (length, tone)
-- What kind of bullet points to use (detail level, format)
-- What visual approach to take
+Output a concise directive (2-4 sentences max) that tells the slide planner:
+- What visual storytelling approach to use (metaphors, compositions, mood)
+- How text should integrate into the visuals (minimal keywords, data points, or short phrases)
+- What tone and aesthetic to aim for
 - Any content structure preferences
 
-Respond with ONLY the directive text, no JSON, no markdown, no quotes. Keep it under 200 characters.`
+Remember: each slide is ONE AI-generated image — text is part of the image, not an overlay. Less text = better results.
+
+Respond with ONLY the directive text, no JSON, no markdown, no quotes. Keep it under 250 characters.`
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
@@ -1417,7 +1419,8 @@ Output ONLY valid JSON, no markdown fences.`,
   }
 
   async planInfographic(
-    sourceTexts: string[]
+    sourceTexts: string[],
+    format: 'infographic' | 'advertisement' | 'social-post' = 'infographic'
   ): Promise<{
     title: string
     subtitle: string
@@ -1435,6 +1438,45 @@ Output ONLY valid JSON, no markdown fences.`,
     const ai = getClient()
     const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 60000)
 
+    const formatRules: Record<string, string> = {
+      'infographic': `You are a data-visualization designer. Plan a VISUAL-FIRST infographic — the image tells the story through icons, diagrams, and data-viz. Text is only short labels integrated into the visual.
+
+Rules:
+- DISTILL, don't reproduce. Extract the most striking numbers, comparisons, and insights.
+- heroStat: pick the single most impactful number/percentage/metric. Set null if nothing quantitative.
+- Include 4-6 sections covering key insights.
+- Each "annotation" must be ≤6 words: a terse bullet point. Think Post-It note, NOT sentence.
+- Each "stat" should be a concrete number with a label. Set null if no data point fits.
+- "visualNarrative" should describe a coherent visual scene with data-viz elements (charts, diagrams, flow arrows, metric badges).
+- "visualDescription" per section: describe how the text integrates into the visual — on screens, badges, floating labels, etc.`,
+
+      'advertisement': `You are a creative director at an advertising agency. Plan a bold, attention-grabbing marketing asset. Think magazine ad, billboard, or product launch visual.
+
+Rules:
+- Extract the most compelling value proposition, benefit, or differentiator from the source material.
+- heroStat: pick the most impressive metric that sells the product/idea. Set null if not applicable.
+- Include 2-4 sections MAX — ads are simple. Focus on: headline hook, key benefit, social proof, and CTA.
+- Each "annotation" must be ≤6 words: punchy, persuasive copy. Think tagline, NOT description.
+- "visualNarrative" should describe an aspirational, lifestyle, or product-focused scene that sells the concept.
+- "visualDescription" per section: describe how text integrates into the ad — as bold display type, signage, labels on products, etc.
+- Title should be a punchy headline (3-6 words) that grabs attention.
+- Subtitle should be a compelling tagline or value prop.`,
+
+      'social-post': `You are a social media creative strategist. Plan a viral, shareable visual that stops the scroll. Think Instagram carousel cover, LinkedIn hero post, or Twitter visual.
+
+Rules:
+- Extract the single most surprising, provocative, or shareable insight from the source material.
+- heroStat: pick the number that makes people stop scrolling. Set null if a quote or statement works better.
+- Include 1-3 sections MAX — social posts are ultra-minimal. One bold statement beats three weak ones.
+- Each "annotation" must be ≤4 words: punchy, quotable. Think meme caption, NOT explanation.
+- "visualNarrative" should describe a bold, high-contrast, eye-catching scene optimized for small screens.
+- "visualDescription" per section: describe how the minimal text integrates as bold centered typography or as part of the visual scene.
+- Title should be a provocative statement or question (3-6 words).
+- Subtitle should be a one-line hook that makes people want to read more.`,
+    }
+
+    const formatRule = formatRules[format] || formatRules['infographic']
+
     const infographicResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [
@@ -1442,7 +1484,7 @@ Output ONLY valid JSON, no markdown fences.`,
           role: 'user',
           parts: [
             {
-              text: `You are a data-visualization designer. Analyze the source material and plan a VISUAL-FIRST infographic. The image should tell the story — text is only a thin annotation layer on top.
+              text: `${formatRule}
 
 Source material:
 ${combinedText}
@@ -1454,26 +1496,18 @@ Output a JSON object with this structure:
   "heroStat": { "value": "47%", "label": "of developers", "context": "prefer TypeScript" } | null,
   "sections": [
     {
-      "heading": "2-4 word label (e.g., 'Signal Retrieval', 'Memory Buffer')",
-      "annotation": "2-6 word bullet point (e.g., '5 weighted scoring signals', '3× faster than RAG')",
-      "body": "Optional 1-2 sentence explanation for tooltip only — never shown on the infographic itself (20-40 words)",
+      "heading": "2-4 word label",
+      "annotation": "2-6 word bullet point",
+      "body": "Optional 1-2 sentence explanation for tooltip only (20-40 words)",
       "stat": { "value": "125ms", "label": "boot time" } | null,
-      "visualDescription": "Visual metaphor or scene element for the image model"
+      "visualDescription": "How this element appears in the visual — describe integration of text into the scene"
     }
   ],
-  "visualNarrative": "One sentence describing the overall visual story/scene the image should depict",
-  "colorScheme": "Description of recommended color scheme (e.g., 'warm earth tones with teal accents')"
+  "visualNarrative": "One sentence describing the overall visual scene and how text weaves into it",
+  "colorScheme": "Description of recommended color scheme"
 }
 
-Rules:
-- DISTILL, don't reproduce. Extract the most striking numbers, comparisons, and insights — never copy sentences from the source.
-- heroStat: pick the single most impactful number/percentage/metric from the sources. Set null if nothing quantitative stands out.
-- Include 4-6 sections covering the key insights.
-- Each "annotation" must be ≤6 words: a terse bullet point like "5 weighted scoring signals" or "Episodic + Semantic stores". Think Post-It note, NOT sentence.
-- Each "stat" should be a concrete number with a label. Set null if no data point fits that section.
 - "body" is optional supplementary detail shown only on hover — keep it factual, 20-40 words max.
-- "visualNarrative" should describe a coherent visual scene or metaphor that ties all sections together (e.g., "A futuristic control room with holographic dashboards showing performance metrics").
-- "visualDescription" per section should describe a specific element within that narrative.
 Output ONLY valid JSON, no markdown fences.`,
             },
           ],

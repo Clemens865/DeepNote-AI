@@ -230,8 +230,9 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.INFOGRAPHIC_START]: {
     args: [{
       notebookId: string
+      format?: 'infographic' | 'advertisement' | 'social-post'
       stylePresetId: string
-      aspectRatio: '16:9' | '4:3' | '1:1'
+      aspectRatio: '16:9' | '4:3' | '1:1' | '9:16' | '3:4'
       renderMode?: 'full-image' | 'hybrid'
       userInstructions?: string
       customStyleImagePath?: string
@@ -299,7 +300,7 @@ export interface IpcHandlerMap {
       format: 'presentation' | 'pitch' | 'report'
       length?: 'test' | 'short' | 'default'
       slideCount?: number
-      aspectRatio: '16:9' | '4:3'
+      aspectRatio: '16:9' | '4:3' | '1:1' | '9:16' | '3:4'
       userInstructions?: string
       customStyleImagePath?: string
       renderMode?: SlideRenderMode
@@ -366,7 +367,7 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.STUDIO_EXPORT_PDF]: {
     args: [{
       imagePaths: string[]
-      aspectRatio: '16:9' | '4:3'
+      aspectRatio: string
       defaultName: string
       textOverlays?: Array<{
         elements: Array<{
