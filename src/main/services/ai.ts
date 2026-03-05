@@ -660,55 +660,68 @@ Output ONLY valid JSON, no markdown fences.`
       {"type": "bullet", "content": "Iterative Optimization", "x": 4, "y": 51, "width": 28, "fontSize": 12, "align": "left"}
     ]` : ''
 
-    const prompt = `You are a visual presentation designer planning a ${slideCount}-slide deck. Every slide is generated as a single AI image — the text is PART OF the image, not a separate overlay.
+    const prompt = `You are an expert infographic and presentation designer. You are planning a ${slideCount}-slide deck where each slide will be generated as a single AI-generated image — combining visuals, text, icons, diagrams, and data into one cohesive infographic-style slide.
 
 SOURCE MATERIAL:
 ${combinedText}
 
 ${formatDirective}${userDirective}
 
-CRITICAL RULES:
-1.  **Slide Count**: You MUST output EXACTLY ${slideCount} slides.
-2.  **VISUAL-FIRST PHILOSOPHY**: Each slide is a cinematic image where text is woven into the visual composition. Think of it like a movie poster, editorial magazine spread, or infographic — the typography is part of the art, not a layer on top. The image model generates the entire slide as one image including any text.
-3.  **Text in the content field**: This text will be rendered BY THE IMAGE MODEL as part of the image. Keep it extremely concise — the image model struggles with too much text.
-    - A short TITLE (2-5 words) on the first line.
-    - Then at most 2-3 short keyword phrases or single-line points. Only include these if they genuinely add value — a powerful image with just a title is better than a cluttered slide.
-    - STRICT LIMIT: max 150 characters total, max 3 lines. Use \\n for line breaks.
-    - Prefer punchy keywords, numbers, or short phrases over full sentences.
-    - Example: "How Models Learn\\n\\nLabeled Data → Pattern Recognition\\nError Measurement → Weight Adjustment"
-    - Example (minimal): "The Attention Mechanism"
-    - Example (with data): "Market Growth\\n\\n$4.2B → $18.7B by 2028\\n42% CAGR"
-4.  **Visual Cue (MOST IMPORTANT)**: For each slide, write a RICH, SPECIFIC visual description in visualCue. Describe scene, metaphors, composition, mood, lighting, colors. This drives the entire image. The visualCue should describe how the text integrates into the scene — e.g. text emerging from surfaces, floating in the environment, etched into materials, displayed on screens within the scene.
-5.  **Content as part of the visual**: When writing the visualCue, describe how the title/keywords should be visually integrated — carved into stone, floating as holographic text, written on a whiteboard in the scene, appearing as signage, displayed on screens, etc. The text should feel like it belongs in the world of the image.
-${hybridLayoutSection}
-SLIDE 1 REQUIREMENT: A "Title" layout — dramatic, atmospheric opener. Short punchy title + optional subtitle. The visualCue should describe a cinematic scene with the title naturally integrated into the imagery.
+YOUR ROLE:
+You decide the best way to visualize each slide's message. You can use ANY combination of:
+- Informational text (headlines, labels, callouts, key numbers)
+- Diagrams (flowcharts, process flows, architecture diagrams)
+- Comparisons (side-by-side, before/after, bar charts, scales)
+- Icons and illustrations
+- Data visualizations (charts, tables, meters, gauges)
+- Metaphorical imagery combined with data
 
-SLIDE ${slideCount} REQUIREMENT: A "Closing" layout — strong finish. Memorable closing statement or call to action. The visualCue should describe an uplifting or thought-provoking scene.
+The image generation AI is GOOD at rendering text, numbers, labels, and infographic layouts. You should include meaningful text on every slide — not just a title, but the key information that makes the slide self-explanatory.
+
+RULES:
+1. **Slide Count**: Output EXACTLY ${slideCount} slides.
+2. **Self-Explanatory**: Each slide must be fully understandable on its own, without a presenter. A viewer looking at the slide image alone should grasp the key message and supporting evidence.
+3. **content field**: This is the text that will appear on the slide. Include:
+   - A clear headline/title (first line)
+   - Key data points, comparisons, or takeaways (2-5 lines)
+   - Use \\n for line breaks
+   - Max 250 characters, max 5 lines — but use what you need to make the slide self-explanatory
+   - Numbers, stats, and comparisons are highly effective
+4. **visualCue**: Describe the LAYOUT and VISUAL APPROACH for this slide. Focus on:
+   - What type of visualization (diagram, comparison, flowchart, icon grid, data chart, etc.)
+   - The overall composition and spatial arrangement
+   - Color mood and style direction
+   - Do NOT micro-direct every pixel — describe the concept and let the image AI design it
+   - Keep it 30-60 words — concise direction, not a screenplay
+5. **bullets**: The key points this slide communicates (used for metadata/speaker notes context)
+6. **speakerNotes**: 2-3 sentences expanding on the slide with additional context
+${hybridLayoutSection}
+SLIDE 1: Title slide — bold headline, subtitle, and a strong thematic visual
+SLIDE ${slideCount}: Closing slide — key takeaway or call to action with memorable visual
 
 Output a JSON array with EXACTLY ${slideCount} objects (ONLY valid JSON, no markdown fences).
 
-Slide 1 example:
+Example slides:
+
 {
-  "slideNumber": 1, "layout": "Title", "title": "Machine Learning", "bullets": ["A Visual Journey"],
-  "visualCue": "A vast cosmic neural network in deep space — luminous nodes pulsing with golden light connected by flowing data streams against an indigo nebula. The title 'Machine Learning' appears as massive luminous text integrated into the star field, with 'A Visual Journey' as a subtle subtitle trail of light particles beneath it.",
-  "content": "Machine Learning\\nA Visual Journey",
-  "speakerNotes": "Today we explore Machine Learning — how systems learn from data."${hybridLayoutExample}
+  "slideNumber": 1, "layout": "Title", "title": "Machine Learning", "bullets": ["A Visual Journey Through AI"],
+  "visualCue": "Bold title card with geometric AI-themed background. Neural network pattern with gradient colors. Clean modern typography. Subtitle below title.",
+  "content": "Machine Learning\\nA Visual Journey Through AI",
+  "speakerNotes": "Today we explore Machine Learning — how systems learn from data to make predictions."${hybridLayoutExample}
 }
 
-Content slide example (visual-first, minimal text):
 {
-  "slideNumber": 2, "layout": "Content", "title": "How Models Learn", "bullets": ["Pattern recognition from data", "Iterative weight adjustment"],
-  "visualCue": "A layered cross-section of a neural network with data flowing through glowing connections of varying thickness. The title 'How Models Learn' is etched into a translucent panel at the top. Key concepts appear as floating holographic labels next to their visual representations — 'Labeled Data' near input nodes, 'Error Signal' near a pulsing red feedback loop.",
-  "content": "How Models Learn\\n\\nLabeled Data → Pattern Recognition\\nError → Weight Adjustment",
-  "speakerNotes": "Model training relies on labeled data, error measurement, and iterative weight adjustment."
+  "slideNumber": 2, "layout": "Content", "title": "How Models Learn", "bullets": ["Three-step training loop", "Data in, predictions out"],
+  "visualCue": "Process flow diagram with 3 connected steps shown as a cycle. Each step has an icon and label. Clean infographic style with arrows connecting the steps.",
+  "content": "How Models Learn\\n\\n1. Feed labeled data\\n2. Measure prediction error\\n3. Adjust weights & repeat\\n\\n→ Each cycle improves accuracy",
+  "speakerNotes": "Training is an iterative loop: data goes in, the model predicts, errors are measured, and weights are adjusted. Thousands of cycles produce a capable model."
 }
 
-Closing slide example:
 {
-  "slideNumber": ${slideCount}, "layout": "Closing", "title": "The Future Is Learning", "bullets": ["AI transforms how we solve problems"],
-  "visualCue": "A sunrise over a futuristic city with neural pathways woven into the architecture, golden light breaking through clouds. The text 'The Future Is Learning' appears as glowing typography integrated into the skyline, as if projected onto the buildings.",
-  "content": "The Future Is Learning",
-  "speakerNotes": "Thank you. The future of AI is in your hands."
+  "slideNumber": 3, "layout": "Content", "title": "Cost Comparison", "bullets": ["10x cheaper than alternatives"],
+  "visualCue": "Horizontal bar chart comparing 3 options by cost. Dramatic scale difference. The cheapest option is highlighted in accent color. Key number callout.",
+  "content": "Cost Comparison\\n\\nOur Solution: $500\\nCompetitor A: $5,000\\nCompetitor B: $15,000+\\n\\n10× more affordable",
+  "speakerNotes": "At $500, our solution costs a fraction of established alternatives while covering 80% of use cases."
 }
 
 Output the full array with EXACTLY ${slideCount} slides:`
@@ -733,10 +746,10 @@ Output the full array with EXACTLY ${slideCount} slides:`
         }
 
         // Safety net: truncate overly long content to prevent image model failures
-        if (plan.content.length > 180) {
+        if (plan.content.length > 280) {
           const lines = plan.content.split('\n').filter((l: string) => l.trim())
-          // Keep title + at most 2 short lines
-          plan.content = lines.slice(0, 3).join('\n').slice(0, 180)
+          // Keep title + at most 5 lines
+          plan.content = lines.slice(0, 6).join('\n').slice(0, 280)
         }
       }
 
@@ -744,6 +757,89 @@ Output the full array with EXACTLY ${slideCount} slides:`
     } catch {
       throw new Error('Failed to parse slide content plan from AI response')
     }
+  }
+
+  async reviseImageSlide(
+    currentSlide: { title: string; bullets: string[]; content: string; visualCue: string; speakerNotes: string; layout: string },
+    context: { prevSlideTitle?: string; nextSlideTitle?: string; sourceExcerpt: string },
+    instruction?: string,
+    renderMode: 'full-image' | 'hybrid' = 'full-image'
+  ): Promise<{ title: string; bullets: string[]; content: string; visualCue: string; speakerNotes: string }> {
+    const ai = getClient()
+
+    const neighborCtx = [
+      context.prevSlideTitle ? `Previous slide: "${context.prevSlideTitle}"` : '',
+      context.nextSlideTitle ? `Next slide: "${context.nextSlideTitle}"` : '',
+    ].filter(Boolean).join('. ')
+
+    const modeRules = renderMode === 'hybrid'
+      ? 'The image is a background-only visual (no text baked in). The "content" field is overlaid as HTML text, so visualCue should describe ONLY the background scene/mood.'
+      : 'This is an infographic-style slide where text is part of the image. Include meaningful, self-explanatory text in the content field (max 250 chars, max 5 lines). The visualCue should describe the layout approach (diagram type, chart style, icon arrangement).'
+
+    const prompt = `You are revising a single slide in an infographic-style presentation deck.
+
+CURRENT SLIDE:
+- Title: ${currentSlide.title}
+- Content: ${currentSlide.content}
+- Visual Approach: ${currentSlide.visualCue}
+- Speaker Notes: ${currentSlide.speakerNotes}
+- Bullets: ${JSON.stringify(currentSlide.bullets)}
+
+CONTEXT:
+${neighborCtx}
+Source material (excerpt):
+${context.sourceExcerpt.slice(0, 10000)}
+
+${instruction ? `USER INSTRUCTION: ${instruction}` : 'Generate a fresh alternative for this slide — improve content, clarity, and visual impact.'}
+
+${modeRules}
+
+Return ONLY a JSON object with these fields:
+{
+  "title": "...",
+  "bullets": ["..."],
+  "content": "...",
+  "visualCue": "...",
+  "speakerNotes": "..."
+}
+
+Rules:
+- "content" max 250 characters, max 5 lines — include key data, numbers, comparisons
+- "visualCue" is a concise layout direction (30-60 words) — describe the type of visualization, not every pixel
+- "bullets" is an array of 2-4 key points
+- "speakerNotes" should be 2-3 sentences expanding on the slide content
+- The slide must be self-explanatory — a viewer should understand it without a presenter
+- Keep the same general topic/position in the deck
+- No markdown fences. No explanation. JSON only.`
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'studio:regen-image-slide')
+
+    let text = response.text ?? ''
+    text = text.replace(/^```json\n?/i, '').replace(/```\n?$/i, '').trim()
+
+    let result: { title: string; bullets: string[]; content: string; visualCue: string; speakerNotes: string }
+    try {
+      result = JSON.parse(text)
+    } catch {
+      const objMatch = text.match(/\{[\s\S]*\}/)
+      if (objMatch) {
+        result = JSON.parse(objMatch[0])
+      } else {
+        throw new Error('AI did not return valid JSON for revised slide')
+      }
+    }
+
+    // Enforce content length limit
+    if (result.content && result.content.length > 280) {
+      const lines = result.content.split('\n').filter((l: string) => l.trim())
+      result.content = lines.slice(0, 6).join('\n').slice(0, 280)
+    }
+
+    return result
   }
 
   async suggestSlideCount(

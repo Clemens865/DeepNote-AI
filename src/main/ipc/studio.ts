@@ -1630,6 +1630,9 @@ CRITICAL RULES:
             ...(args.stylePresetId === 'custom-builder' && args.customStyleColors
               ? { customPalette: args.customStyleColors }
               : {}),
+            ...(args.customStyleImagePath ? { customStyleImagePath: args.customStyleImagePath } : {}),
+            ...(args.customStyleDescription ? { customStyleDescription: args.customStyleDescription } : {}),
+            ...(args.imageModel ? { imageModel: args.imageModel } : {}),
           }
           if (renderMode === 'hybrid') {
             dbData.hybridSlides = hybridSlides
@@ -1705,6 +1708,161 @@ CRITICAL RULES:
         .update(schema.generatedContent)
         .set({ data: data as unknown as string })
         .where(eq(schema.generatedContent.id, args.generatedContentId))
+    }
+  )
+
+  // Image Slides — revise/regenerate a single slide
+  ipcMain.handle(
+    IPC_CHANNELS.IMAGE_SLIDES_REGEN_SLIDE,
+    async (_event, args: { generatedContentId: string; slideNumber: number; instruction?: string }) => {
+      const db = getDatabase()
+      const rows = await db
+        .select()
+        .from(schema.generatedContent)
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      const record = rows[0]
+      if (!record) throw new Error('Generated content not found')
+
+      const data = (typeof record.data === 'string' ? JSON.parse(record.data) : record.data) as Record<string, unknown>
+      const renderMode = (data.renderMode as string) || 'full-image'
+      const isHybrid = renderMode === 'hybrid'
+      const slidesArray = isHybrid
+        ? (data.hybridSlides as { slideNumber: number; title: string; bullets: string[]; imagePath: string; speakerNotes: string; layout: string; elementLayout?: unknown[] }[])
+        : (data.slides as { slideNumber: number; title: string; bullets: string[]; imagePath: string; speakerNotes: string }[])
+
+      if (!slidesArray || slidesArray.length === 0) throw new Error('No slides data found')
+
+      const slideIdx = slidesArray.findIndex((s) => s.slideNumber === args.slideNumber)
+      if (slideIdx === -1) throw new Error(`Slide ${args.slideNumber} not found`)
+
+      const currentSlide = slidesArray[slideIdx]
+      const contentPlan = (data.contentPlan || []) as { slideNumber: number; title: string; bullets: string[]; content: string; visualCue: string; speakerNotes: string; layout: string }[]
+      const planEntry = contentPlan.find((p) => p.slideNumber === args.slideNumber)
+
+      // Get source context
+      const sourceIdsRaw = typeof record.sourceIds === 'string' ? JSON.parse(record.sourceIds) : record.sourceIds
+      const sources = await db.select().from(schema.sources).where(eq(schema.sources.notebookId, record.notebookId))
+      const sourceExcerpt = sources
+        .filter((s) => (sourceIdsRaw as string[]).includes(s.id))
+        .map((s) => s.content).join('\n\n---\n\n').slice(0, 20000)
+
+      // Neighbor context
+      const prevSlideTitle = slideIdx > 0 ? slidesArray[slideIdx - 1].title : undefined
+      const nextSlideTitle = slideIdx < slidesArray.length - 1 ? slidesArray[slideIdx + 1].title : undefined
+
+      // Revise slide content via AI
+      const currentPlan = planEntry || {
+        title: currentSlide.title,
+        bullets: currentSlide.bullets,
+        content: currentSlide.title + '\n' + (currentSlide.bullets || []).join('\n'),
+        visualCue: '',
+        speakerNotes: currentSlide.speakerNotes || '',
+        layout: (currentSlide as { layout?: string }).layout || 'Centered',
+      }
+
+      const revised = await aiService.reviseImageSlide(
+        currentPlan,
+        { prevSlideTitle, nextSlideTitle, sourceExcerpt },
+        args.instruction,
+        renderMode as 'full-image' | 'hybrid'
+      )
+
+      // Resolve style description for image generation
+      const stylePresetId = data.style as string
+      const aspectRatio = (data.aspectRatio as string) || '16:9'
+      const customStyleImagePath = data.customStyleImagePath as string | undefined
+      const customStyleDescription = data.customStyleDescription as string | undefined
+      const customStyleColors = data.customPalette as string[] | undefined
+      const imageModel = data.imageModel as import('../../shared/types').ImageModelId | undefined
+      const isCustomStyle = !!customStyleImagePath
+
+      let styleDescription: string
+      if (stylePresetId === 'custom-builder' && customStyleColors && customStyleDescription) {
+        const [bg, primary, accent, text] = customStyleColors
+        styleDescription = `with a ${bg} background, ${primary} as the primary accent color, ${accent} as the secondary accent color, ${text} for body text. ${customStyleDescription}. All slides share this exact same color scheme and visual style consistently`
+      } else if (customStyleImagePath) {
+        styleDescription = await aiService.describeImageStyle(customStyleImagePath)
+      } else {
+        const preset = STYLE_PRESETS.find((p) => p.id === stylePresetId)
+        styleDescription = preset?.promptSuffix || ''
+      }
+
+      // Build image prompt
+      const slideContent = (revised.content && revised.content.trim())
+        ? revised.content
+        : [revised.title, '', ...(revised.bullets || [])].join('\n')
+
+      const isTitleSlide = args.slideNumber === 1
+      const layout = currentPlan.layout || 'Centered'
+      let prompt: string
+
+      if (isHybrid) {
+        if (isTitleSlide) {
+          prompt = buildSlidePrompt(slideContent, styleDescription, layout, revised.visualCue, isCustomStyle, aspectRatio)
+        } else {
+          prompt = buildHybridSlidePrompt(styleDescription, revised.visualCue, layout, false, isCustomStyle, aspectRatio)
+        }
+      } else {
+        prompt = buildSlidePrompt(slideContent, styleDescription, layout, revised.visualCue, isCustomStyle, aspectRatio)
+      }
+
+      // Generate new image (overwrites existing file at same path)
+      const needsTextOnImage = !isHybrid || isTitleSlide
+      const imagePath = await imagenService.generateSlideImage(prompt, {
+        aspectRatio,
+        contentId: args.generatedContentId,
+        slideNumber: args.slideNumber,
+        referenceImagePath: customStyleImagePath,
+        shortSubject: revised.visualCue || revised.title,
+        styleHint: isCustomStyle ? styleDescription : undefined,
+        slideTextContent: needsTextOnImage ? slideContent : undefined,
+        imageModel,
+      })
+
+      // Update slide in data
+      slidesArray[slideIdx] = {
+        ...currentSlide,
+        title: revised.title,
+        bullets: revised.bullets,
+        speakerNotes: revised.speakerNotes,
+        imagePath,
+      }
+      if (isHybrid) {
+        data.hybridSlides = slidesArray
+      } else {
+        data.slides = slidesArray
+      }
+
+      // Update content plan
+      if (planEntry) {
+        const planIdx = contentPlan.findIndex((p) => p.slideNumber === args.slideNumber)
+        if (planIdx !== -1) {
+          contentPlan[planIdx] = {
+            ...contentPlan[planIdx],
+            title: revised.title,
+            bullets: revised.bullets,
+            content: revised.content,
+            visualCue: revised.visualCue,
+            speakerNotes: revised.speakerNotes,
+          }
+          data.contentPlan = contentPlan
+        }
+      }
+
+      // Save to DB
+      await db
+        .update(schema.generatedContent)
+        .set({ data: data as unknown as string })
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      return {
+        imagePath,
+        title: revised.title,
+        bullets: revised.bullets,
+        speakerNotes: revised.speakerNotes,
+        visualCue: revised.visualCue,
+      }
     }
   )
 

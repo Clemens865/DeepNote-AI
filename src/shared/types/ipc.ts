@@ -33,6 +33,7 @@ export const IPC_CHANNELS = {
   // Image Slides
   IMAGE_SLIDES_START: 'image-slides:start',
   IMAGE_SLIDES_UPDATE_TEXT: 'image-slides:update-text',
+  IMAGE_SLIDES_REGEN_SLIDE: 'image-slides:regen-slide',
   IMAGE_SLIDES_SUGGEST_COUNT: 'image-slides:suggest-count',
 
   // Slide Prompt Templates
@@ -315,6 +316,14 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.IMAGE_SLIDES_UPDATE_TEXT]: {
     args: [{ generatedContentId: string; slideNumber: number; title: string; bullets: string[]; elements?: SlideTextElement[] }]
     return: void
+  }
+  [IPC_CHANNELS.IMAGE_SLIDES_REGEN_SLIDE]: {
+    args: [{
+      generatedContentId: string
+      slideNumber: number
+      instruction?: string
+    }]
+    return: { imagePath: string; title: string; bullets: string[]; speakerNotes: string; visualCue?: string }
   }
   [IPC_CHANNELS.IMAGE_SLIDES_SUGGEST_COUNT]: {
     args: [{ notebookId: string; format: 'presentation' | 'pitch' | 'report' }]

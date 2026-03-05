@@ -91,39 +91,27 @@ export function buildSlidePrompt(
   isCustomStyle: boolean = false,
   aspectRatio: string = '16:9'
 ): string {
-  const trimmedContent = slideContent.length > 180
-    ? slideContent.split('\n').filter(l => l.trim()).slice(0, 3).join('\n').slice(0, 180)
+  const trimmedContent = slideContent.length > 280
+    ? slideContent.split('\n').filter(l => l.trim()).slice(0, 6).join('\n').slice(0, 280)
     : slideContent
 
-  const fillRule = `COMPOSITION: The image MUST fill the entire ${aspectRatio} frame edge-to-edge with NO empty space, NO borders, NO margins, NO letterboxing. Full-bleed artwork that extends to every edge.`
+  const fillRule = `COMPOSITION: Fill the entire ${aspectRatio} frame edge-to-edge. No empty borders or margins.`
 
-  if (isCustomStyle) {
-    return `MANDATORY VISUAL STYLE — follow this EXACTLY, do not deviate:
-${styleDescription}
+  const styleDirective = isCustomStyle
+    ? `VISUAL STYLE — match this precisely:\n${styleDescription}`
+    : `VISUAL STYLE: ${styleDescription}.`
 
-Generate a single CINEMATIC presentation slide image that belongs in the same art series as described above. Match the rendering medium, color palette, saturation level, lighting, and texture PRECISELY.
+  return `Generate an infographic-style presentation slide image. This is a single slide in a professional deck — combine text, visuals, icons, and data into one clear, self-explanatory composition.
 
-${fillRule}
-
-${visualCue ? `SCENE AND COMPOSITION:\n${visualCue}` : ''}
-
-INTEGRATED TEXT — the following text must be part of the image composition, not a separate overlay. Render it as typography that belongs in the scene — integrated into surfaces, environments, or as stylized display text that complements the visual. Use the style's typography aesthetic. Keep it bold and readable but woven into the art.
-
-TEXT TO INTEGRATE:
-${trimmedContent}`
-  }
-
-  return `Generate a single CINEMATIC presentation slide image where the visual and text form one unified composition — like a movie poster, editorial spread, or infographic.
-
-VISUAL STYLE (follow precisely): ${styleDescription}.
+${styleDirective}
 
 ${fillRule}
 
-${visualCue ? `SCENE AND COMPOSITION:\n${visualCue}` : ''}
+${visualCue ? `LAYOUT DIRECTION:\n${visualCue}` : ''}
 
-INTEGRATED TEXT — render the following text as part of the image composition. The text should feel like it belongs in the scene — as stylized display typography, integrated into the environment, or as bold graphic text that is part of the visual design. NOT a floating overlay — part of the art.
+The slide must display the following text clearly and legibly as part of the design. Use good typography hierarchy — the headline should be prominent, supporting points should be smaller but readable. You have creative freedom for layout, icons, diagrams, and visual elements.
 
-TEXT TO INTEGRATE:
+SLIDE CONTENT:
 ${trimmedContent}`
 }
 
@@ -140,61 +128,36 @@ export function buildHybridSlidePrompt(
   isCustomStyle: boolean = false,
   aspectRatio: string = '16:9'
 ): string {
-  const fillRule = `COMPOSITION: The image MUST fill the entire ${aspectRatio} frame edge-to-edge with NO empty space, NO borders, NO margins, NO letterboxing. Full-bleed artwork that extends to every edge.`
+  const fillRule = `COMPOSITION: Fill the entire ${aspectRatio} frame edge-to-edge. No empty borders or margins.`
+
+  const styleDirective = isCustomStyle
+    ? `VISUAL STYLE — match this precisely:\n${styleDescription}`
+    : `VISUAL STYLE: ${styleDescription}.`
 
   if (isTitleSlide) {
-    if (isCustomStyle) {
-      return `MANDATORY VISUAL STYLE — follow this EXACTLY, do not deviate:
-${styleDescription}
+    return `${styleDirective}
 
-Generate a stunning, cinematic background image that looks like it belongs in the same art series as described above. This is a dramatic, atmospheric full-bleed background for a title card.
+Generate a visually striking background image for a presentation title slide.
 
 ${fillRule}
 
 ${visualCue ? `THEME: ${visualCue}` : ''}
 
 CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography in the image.
-Make it visually striking with depth and mood. Match the described rendering medium, color palette, saturation level, lighting, and texture PRECISELY.`
-    }
-
-    return `VISUAL STYLE (you MUST follow this precisely): ${styleDescription}.
-
-Generate a stunning, cinematic presentation TITLE SLIDE background image in EXACTLY the style described above.
-
-${fillRule}
-
-${visualCue ? `THEME: ${visualCue}` : ''}
-
-CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography in the image.
-This is a dramatic, atmospheric full-bleed background. Make it visually striking with depth and mood — a centered subject or abstract composition works best.`
+This is a background image — atmospheric, with depth and mood.`
   }
 
-  if (isCustomStyle) {
-    return `MANDATORY VISUAL STYLE — follow this EXACTLY, do not deviate:
-${styleDescription}
+  return `${styleDirective}
 
-Generate a RICH, CINEMATIC illustration that belongs in the same art series as described above. This image is the primary storytelling element — it should visually communicate the entire concept.
+Generate an illustration for a presentation slide background. This image supports the slide's content visually — it should communicate the concept through imagery.
 
 ${fillRule}
 
-${visualCue ? `VISUAL NARRATIVE (tell the story through this scene):\n${visualCue}` : ''}
+${visualCue ? `VISUAL CONCEPT:\n${visualCue}` : ''}
 
-LAYOUT: The visual should be expansive and immersive. Keep a subtle area on the LEFT (~30%) slightly less busy for a light text overlay, but the illustration should still feel full and cinematic — not a split-screen with an empty half.
+LAYOUT: Keep the LEFT ~30% of the image slightly less busy (text will be overlaid there), but the illustration should feel complete and immersive — not a split-screen.
 
-CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography. Match the described rendering medium, color palette, saturation level, lighting, and texture PRECISELY.`
-  }
-
-  return `VISUAL STYLE (you MUST follow this precisely): ${styleDescription}.
-
-Generate a RICH, CINEMATIC presentation slide illustration in EXACTLY the style described above. This image is the primary storytelling element — it should visually communicate the entire concept to the viewer.
-
-${fillRule}
-
-${visualCue ? `VISUAL NARRATIVE (tell the story through this scene):\n${visualCue}` : ''}
-
-LAYOUT: The visual should be expansive and immersive, covering the full slide. Keep a subtle area on the LEFT (~30%) slightly less busy for a light text overlay, but the illustration should still feel full and cinematic — not a split-screen with a blank half.
-
-CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography in the image. This is the visual storytelling layer — text will be overlaid separately.`
+CRITICAL: Do NOT include ANY text, letters, numbers, words, or typography in the image.`
 }
 
 export class ImagenService {

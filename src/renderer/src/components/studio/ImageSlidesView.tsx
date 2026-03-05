@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronLeft, ChevronRight, StickyNote, Download, Maximize2, X, Pencil, FileDown, Check, Loader2, Save } from 'lucide-react'
+import { ChevronLeft, ChevronRight, StickyNote, Download, Maximize2, X, Pencil, FileDown, Check, Loader2, Save, Wand2 } from 'lucide-react'
 import type { ImageSlidesGeneratedData, ImageSlideData, HybridSlideData, SlideTextElement } from '@shared/types'
 import { DraggableTextElement } from './DraggableTextElement'
 import { SlideEditorToolbar } from './SlideEditorToolbar'
@@ -398,10 +398,47 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
   const slidesData = data as unknown as ImageSlidesGeneratedData
   const renderMode = slidesData.renderMode || 'full-image'
   const isHybrid = renderMode === 'hybrid'
-  const slides = isHybrid ? (slidesData.hybridSlides || []) : (slidesData.slides || [])
+  const initialSlides = isHybrid ? (slidesData.hybridSlides || []) : (slidesData.slides || [])
+  const [slides, setSlides] = useState(initialSlides)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [showNotes, setShowNotes] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [reviseInstruction, setReviseInstruction] = useState('')
+  const [isRevising, setIsRevising] = useState(false)
+  const [imageCacheBust, setImageCacheBust] = useState(0)
+
+  // Sync slides when data changes externally (e.g. after initial generation completes)
+  useEffect(() => {
+    const updated = isHybrid ? (slidesData.hybridSlides || []) : (slidesData.slides || [])
+    setSlides(updated)
+  }, [slidesData.hybridSlides, slidesData.slides, isHybrid])
+
+  const handleReviseSlide = async () => {
+    if (isRevising || !contentId) return
+    setIsRevising(true)
+    try {
+      const result = await window.api.imageSlidesRegenSlide({
+        generatedContentId: contentId,
+        slideNumber: slides[currentSlide].slideNumber,
+        instruction: reviseInstruction || undefined,
+      })
+      const updated = [...slides]
+      updated[currentSlide] = {
+        ...updated[currentSlide],
+        title: result.title,
+        bullets: result.bullets,
+        speakerNotes: result.speakerNotes,
+        imagePath: result.imagePath,
+      }
+      setSlides(updated)
+      setReviseInstruction('')
+      setImageCacheBust(Date.now())
+    } catch (err) {
+      console.error('Failed to revise slide:', err)
+    } finally {
+      setIsRevising(false)
+    }
+  }
 
   const goNext = useCallback(() => {
     setCurrentSlide((s) => Math.min(slides.length - 1, s + 1))
@@ -466,7 +503,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
         ) : (
           <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: slidesData.aspectRatio === '4:3' ? '4/3' : '16/9' }}>
             <img
-              src={`local-file://${imagePath}`}
+              src={`local-file://${imagePath}${imageCacheBust ? `?t=${imageCacheBust}` : ''}`}
               alt={(slide as ImageSlideData).title}
               className="w-full h-full object-contain cursor-pointer"
               onClick={() => setIsFullscreen(true)}
@@ -557,6 +594,39 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
           </div>
         </div>
 
+        {/* Revision Input */}
+        {contentId && (
+          <div className="border-t border-black/[0.06] dark:border-white/[0.06] pt-3">
+            <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5 block">
+              Revise Slide {currentSlide + 1}
+            </label>
+            <div className="flex gap-2">
+              <textarea
+                value={reviseInstruction}
+                onChange={(e) => setReviseInstruction(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleReviseSlide()
+                  }
+                }}
+                placeholder="e.g. 'Make the title bolder' or 'Add more visual detail'"
+                rows={2}
+                className="flex-1 text-sm rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-white/50 dark:bg-white/[0.03] px-3 py-2 text-zinc-700 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500/30 resize-none"
+                disabled={isRevising}
+              />
+              <button
+                onClick={handleReviseSlide}
+                disabled={isRevising}
+                className="px-4 py-2 text-xs font-medium rounded-lg bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5 self-end"
+              >
+                {isRevising ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+                {isRevising ? 'Revising...' : 'Revise'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Thumbnail strip */}
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {slides.map((s, i) => {
@@ -572,7 +642,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
                 }`}
               >
                 <img
-                  src={`local-file://${thumbPath}`}
+                  src={`local-file://${thumbPath}${imageCacheBust ? `?t=${imageCacheBust}` : ''}`}
                   alt={`Slide ${i + 1}`}
                   className="w-full h-full object-cover"
                 />
@@ -649,7 +719,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
                 </div>
               ) : (
                 <img
-                  src={`local-file://${imagePath}`}
+                  src={`local-file://${imagePath}${imageCacheBust ? `?t=${imageCacheBust}` : ''}`}
                   alt={slide.title}
                   className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
                 />
@@ -689,7 +759,7 @@ export function ImageSlidesView({ data, contentId }: ImageSlidesViewProps) {
                     }`}
                   >
                     <img
-                      src={`local-file://${thumbPath}`}
+                      src={`local-file://${thumbPath}${imageCacheBust ? `?t=${imageCacheBust}` : ''}`}
                       alt={`Slide ${i + 1}`}
                       className="w-full aspect-video object-cover"
                     />

@@ -303,6 +303,11 @@ const api = {
     promptTemplateId?: string
     promptOverride?: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.IMAGE_SLIDES_START, args),
+  imageSlidesRegenSlide: (args: {
+    generatedContentId: string
+    slideNumber: number
+    instruction?: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.IMAGE_SLIDES_REGEN_SLIDE, args),
   imageSlidesSuggestCount: (args: { notebookId: string; format: 'presentation' | 'pitch' | 'report' }) =>
     ipcRenderer.invoke(IPC_CHANNELS.IMAGE_SLIDES_SUGGEST_COUNT, args),
 
