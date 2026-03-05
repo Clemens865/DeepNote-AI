@@ -1,4 +1,4 @@
-import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, TokenUsageSummary, ImageModelId, StructuredSlide, PresentationTheme } from './index'
+import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, TokenUsageSummary, ImageModelId, StyleInfluence, StructuredSlide, PresentationTheme } from './index'
 
 export const IPC_CHANNELS = {
   // Notebooks
@@ -240,6 +240,7 @@ export interface IpcHandlerMap {
       customStyleColors?: string[]
       customStyleDescription?: string
       imageModel?: ImageModelId
+      styleInfluence?: StyleInfluence
     }]
     return: { generatedContentId: string }
   }
@@ -262,6 +263,7 @@ export interface IpcHandlerMap {
       customStyleColors?: string[]
       customStyleDescription?: string
       imageModel?: ImageModelId
+      styleInfluence?: StyleInfluence
     }]
     return: { generatedContentId: string }
   }
@@ -310,6 +312,7 @@ export interface IpcHandlerMap {
       imageModel?: ImageModelId
       promptTemplateId?: string
       promptOverride?: string
+      styleInfluence?: StyleInfluence
     }]
     return: { generatedContentId: string }
   }
@@ -598,6 +601,7 @@ export interface IpcHandlerMap {
       customStyleImagePath?: string
       customStyleColors?: string[]
       customStyleDescription?: string
+      styleInfluence?: StyleInfluence
     }]
     return: { generatedContentId: string }
   }

@@ -520,6 +520,7 @@ export function registerStudioHandlers() {
       customStyleImagePath?: string
       customStyleColors?: string[]
       customStyleDescription?: string
+      styleInfluence?: import('../../shared/types').StyleInfluence
     }) => {
       const db = getDatabase()
       const now = new Date().toISOString()
@@ -916,6 +917,7 @@ export function registerStudioHandlers() {
       customStyleColors?: string[]
       customStyleDescription?: string
       imageModel?: import('../../shared/types').ImageModelId
+      styleInfluence?: import('../../shared/types').StyleInfluence
     }) => {
       const db = getDatabase()
       const now = new Date().toISOString()
@@ -1077,6 +1079,7 @@ CRITICAL RULES:
             styleHint: args.customStyleImagePath ? styleDescription : undefined,
             slideTextContent: renderMode === 'full-image' ? slideTextContent : undefined,
             imageModel: args.imageModel,
+            styleInfluence: args.styleInfluence,
           })
 
           const currentDb = getDatabase()
@@ -1213,6 +1216,7 @@ CRITICAL RULES:
       customStyleColors?: string[]
       customStyleDescription?: string
       imageModel?: import('../../shared/types').ImageModelId
+      styleInfluence?: import('../../shared/types').StyleInfluence
     }) => {
       const db = getDatabase()
       const now = new Date().toISOString()
@@ -1295,6 +1299,7 @@ CRITICAL RULES:
               shortSubject: `abstract cover for ${plan.title}`,
               styleHint: args.customStyleImagePath ? styleDescription : undefined,
               imageModel: args.imageModel,
+              styleInfluence: args.styleInfluence,
             })
           } catch (err) {
             console.warn('Cover image generation failed, continuing without:', err)
@@ -1324,6 +1329,7 @@ CRITICAL RULES:
                 shortSubject: section.imageDescription.slice(0, 100),
                 styleHint: args.customStyleImagePath ? styleDescription : undefined,
                 imageModel: args.imageModel,
+                styleInfluence: args.styleInfluence,
               })
             } catch (err) {
               console.warn(`Section ${i + 1} image failed, continuing without:`, err)
@@ -1406,6 +1412,7 @@ CRITICAL RULES:
       imageModel?: import('../../shared/types').ImageModelId
       promptTemplateId?: string
       promptOverride?: string
+      styleInfluence?: import('../../shared/types').StyleInfluence
     }) => {
       const renderMode = args.renderMode || 'full-image'
       const db = getDatabase()
@@ -1576,6 +1583,7 @@ CRITICAL RULES:
                 styleHint: isCustomStyle ? styleDescription : undefined,
                 slideTextContent: needsTextOnImage ? slideContent : undefined,
                 imageModel: args.imageModel,
+                styleInfluence: args.styleInfluence,
               })
 
               if (renderMode === 'hybrid') {
@@ -1633,6 +1641,7 @@ CRITICAL RULES:
             ...(args.customStyleImagePath ? { customStyleImagePath: args.customStyleImagePath } : {}),
             ...(args.customStyleDescription ? { customStyleDescription: args.customStyleDescription } : {}),
             ...(args.imageModel ? { imageModel: args.imageModel } : {}),
+            ...(args.styleInfluence ? { styleInfluence: args.styleInfluence } : {}),
           }
           if (renderMode === 'hybrid') {
             dbData.hybridSlides = hybridSlides
@@ -1775,6 +1784,7 @@ CRITICAL RULES:
       const customStyleDescription = data.customStyleDescription as string | undefined
       const customStyleColors = data.customPalette as string[] | undefined
       const imageModel = data.imageModel as import('../../shared/types').ImageModelId | undefined
+      const styleInfluence = data.styleInfluence as import('../../shared/types').StyleInfluence | undefined
       const isCustomStyle = !!customStyleImagePath
 
       let styleDescription: string
@@ -1818,6 +1828,7 @@ CRITICAL RULES:
         styleHint: isCustomStyle ? styleDescription : undefined,
         slideTextContent: needsTextOnImage ? slideContent : undefined,
         imageModel,
+        styleInfluence,
       })
 
       // Update slide in data

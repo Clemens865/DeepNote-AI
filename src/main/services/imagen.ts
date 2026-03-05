@@ -3,7 +3,7 @@ import { join } from 'path'
 import { mkdirSync, existsSync, writeFileSync, readFileSync } from 'fs'
 import { GoogleGenAI } from '@google/genai'
 import { configService } from './config'
-import type { SlideStylePreset, ImageModelId } from '../../shared/types'
+import type { SlideStylePreset, ImageModelId, StyleInfluence } from '../../shared/types'
 import { IMAGE_MODELS } from '../../shared/types'
 
 function getMimeType(filePath: string): string {
@@ -176,6 +176,8 @@ export class ImagenService {
       slideTextContent?: string
       /** Which image model to use. Defaults to 'nano-banana-pro' (gemini-3-pro-image-preview). */
       imageModel?: ImageModelId
+      /** How strongly the reference image influences the output. Defaults to 'full-match'. */
+      styleInfluence?: StyleInfluence
     }
   ): Promise<string> {
     const apiKey = configService.getApiKey()
@@ -218,13 +220,24 @@ export class ImagenService {
               .replace(/\s{2,}/g, ' ')
               .trim()
 
+            // Build reference preamble based on style influence level
+            const influence = config.styleInfluence || 'full-match'
+            let refPreamble: string
+            if (influence === 'style-only') {
+              refPreamble = `Use the same visual style as this reference image — match its colors, rendering technique, typography style, and artistic treatment. Do NOT copy the subject, theme, or composition. Create a completely new image showing: ${subject}.`
+            } else if (influence === 'style-mood') {
+              refPreamble = `Use the same visual style and mood as this reference image — match its colors, rendering technique, atmosphere, and lighting. Do NOT copy the subject or composition. Create a new image showing: ${subject}.`
+            } else {
+              refPreamble = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}.`
+            }
+
             let refPromptText: string
             if (config.slideTextContent && attempt === 0) {
               // Attempt 0: text integrated into the image
               const trimmedText = config.slideTextContent.length > 180
                 ? config.slideTextContent.split('\n').filter(l => l.trim()).slice(0, 3).join('\n').slice(0, 180)
                 : config.slideTextContent
-              refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}.
+              refPromptText = `${refPreamble}
 
 Integrate the following text into the image as part of the visual composition — as stylized display typography that belongs in the scene, not a floating overlay. The text should be bold and readable but woven into the art.
 
@@ -232,10 +245,10 @@ TEXT: ${trimmedText}`
             } else if (config.slideTextContent && attempt === 1) {
               // Attempt 1: title only integrated into scene
               const titleOnly = (config.slideTextContent.split('\n').find(l => l.trim()) || subject).slice(0, 60)
-              refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. Integrate the title "${titleOnly}" as bold display text that is part of the visual composition.`
+              refPromptText = `${refPreamble} Integrate the title "${titleOnly}" as bold display text that is part of the visual composition.`
             } else {
               // Attempt 2+ or no-text mode: visual only, no text
-              refPromptText = `Generate another image like this one. Same style, same theme, same world, same atmosphere. The scene should show: ${subject}. Make the visual rich, cinematic, and immersive. No text in the image.`
+              refPromptText = `${refPreamble} Make the visual rich, cinematic, and immersive. No text in the image.`
             }
 
             contents = [

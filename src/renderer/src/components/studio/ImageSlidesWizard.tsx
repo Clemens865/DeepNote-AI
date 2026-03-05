@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Upload, Loader2, Check, Palette, Sparkles, Save, Trash2 } from 'lucide-react'
-import { IMAGE_MODELS, type ImageModelId, type SlidePromptTemplate } from '../../../../shared/types'
+import { IMAGE_MODELS, type ImageModelId, type SlidePromptTemplate, type StyleInfluence } from '../../../../shared/types'
 
 interface StyleOption {
   id: string
@@ -85,6 +85,7 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '4:3' | '1:1' | '9:16' | '3:4'>('16:9')
   const [userInstructions, setUserInstructions] = useState('')
   const [imageModel, setImageModel] = useState<ImageModelId>('nano-banana-pro')
+  const [styleInfluence, setStyleInfluence] = useState<StyleInfluence>('style-mood')
 
   // Template state
   const [templates, setTemplates] = useState<SlidePromptTemplate[]>([])
@@ -238,6 +239,7 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
         customStyleImagePath: customStylePath ?? undefined,
         renderMode,
         imageModel,
+        styleInfluence: customStylePath ? styleInfluence : undefined,
         promptTemplateId,
         promptOverride,
         ...(selectedStyle === 'custom-builder' ? {
@@ -438,6 +440,41 @@ export function ImageSlidesWizard({ notebookId, onComplete, onClose }: ImageSlid
                 {customStylePath ? 'Reference image selected' : 'Upload style reference image'}
               </span>
             </button>
+
+            {/* Style Influence — only shown when reference image is selected */}
+            {customStylePath && (
+              <div className="mt-2 p-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-lg">
+                <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 mb-1.5 block">
+                  Reference Influence
+                </label>
+                <div className="flex rounded-lg border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
+                  {([
+                    { value: 'style-only' as const, label: 'Style Only', desc: 'Colors & technique' },
+                    { value: 'style-mood' as const, label: 'Style + Mood', desc: '+ atmosphere & lighting' },
+                    { value: 'full-match' as const, label: 'Full Match', desc: '+ theme & composition' },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setStyleInfluence(opt.value)}
+                      className={`flex-1 py-1.5 text-center transition-colors ${
+                        styleInfluence === opt.value
+                          ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
+                      }`}
+                    >
+                      <span className="text-[10px] font-medium block">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[9px] text-zinc-400 dark:text-zinc-500 mt-1">
+                  {styleInfluence === 'style-only'
+                    ? 'Only use the reference for colors and rendering technique'
+                    : styleInfluence === 'style-mood'
+                      ? 'Match the visual style, atmosphere, and lighting'
+                      : 'Closely replicate the reference style, theme, and composition'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Slide Count + Aspect Ratio row */}

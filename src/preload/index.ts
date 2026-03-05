@@ -81,6 +81,7 @@ const api = {
     customStyleColors?: string[]
     customStyleDescription?: string
     imageModel?: string
+    styleInfluence?: 'style-only' | 'style-mood' | 'full-match'
   }) => ipcRenderer.invoke(IPC_CHANNELS.INFOGRAPHIC_START, args),
   onInfographicProgress: (
     callback: (data: { generatedContentId: string; stage: string; message: string }) => void
@@ -146,6 +147,7 @@ const api = {
     customStyleColors?: string[]
     customStyleDescription?: string
     imageModel?: string
+    styleInfluence?: 'style-only' | 'style-mood' | 'full-match'
   }) => ipcRenderer.invoke(IPC_CHANNELS.WHITEPAPER_START, args),
   onWhitepaperProgress: (
     callback: (data: { generatedContentId: string; stage: string; currentSection?: number; totalSections?: number; message: string }) => void
@@ -199,6 +201,7 @@ const api = {
     customStyleImagePath?: string
     customStyleColors?: string[]
     customStyleDescription?: string
+    styleInfluence?: 'style-only' | 'style-mood' | 'full-match'
   }) => ipcRenderer.invoke(IPC_CHANNELS.HTML_PRESENTATION_START, args),
   htmlPresentationUpdateSlide: (args: {
     generatedContentId: string
@@ -302,6 +305,7 @@ const api = {
     imageModel?: string
     promptTemplateId?: string
     promptOverride?: string
+    styleInfluence?: 'style-only' | 'style-mood' | 'full-match'
   }) => ipcRenderer.invoke(IPC_CHANNELS.IMAGE_SLIDES_START, args),
   imageSlidesRegenSlide: (args: {
     generatedContentId: string

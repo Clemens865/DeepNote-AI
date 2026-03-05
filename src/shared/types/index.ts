@@ -173,6 +173,9 @@ export interface ImageSlideData {
 
 export type SlideRenderMode = 'full-image' | 'hybrid'
 
+// How strongly a reference image influences the generated output
+export type StyleInfluence = 'style-only' | 'style-mood' | 'full-match'
+
 // Image generation model options ("Nano Banana" family)
 export type ImageModelId = 'nano-banana' | 'nano-banana-2' | 'nano-banana-pro'
 
