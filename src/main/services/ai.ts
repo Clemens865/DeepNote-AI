@@ -1755,6 +1755,97 @@ Structure your response with clear headings and sections. Be thorough and detail
 
     return response.text ?? 'No research results generated.'
   }
+
+  async planVideoScenes(
+    sourceTexts: string[],
+    params: {
+      mode: 'overview' | 'music-video'
+      targetDurationSec: number
+      narrativeStyle: 'explain' | 'present' | 'storytell' | 'documentary'
+      moodDescription: string
+      audioFilePath?: string
+      lyricsText?: string
+      userInstructions?: string
+    }
+  ): Promise<{
+    title: string
+    totalDurationSec: number
+    narrativeStyle: 'explain' | 'present' | 'storytell' | 'documentary'
+    mood: string
+    scenes: {
+      sceneNumber: number
+      durationSec: number
+      imagePrompt: string
+      animationPrompt: string
+      narrationText: string
+      transitionType: 'cut' | 'crossfade' | 'fade-black'
+    }[]
+  }> {
+    const ai = getClient()
+    const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 60000)
+
+    const sceneCount = Math.max(3, Math.round(params.targetDurationSec / 6))
+    const sceneDuration = Math.round(params.targetDurationSec / sceneCount)
+
+    const modeInstructions = params.mode === 'music-video'
+      ? `MODE: Music Video. The user has provided audio (duration: ${params.targetDurationSec}s).${params.lyricsText ? `\nLyrics:\n${params.lyricsText}` : ''}\nCreate visuals that match the mood and rhythm of the music. narrationText should be EMPTY for all scenes.`
+      : `MODE: Video Overview (explainer). Create narrated educational content.\nNarrative style: ${params.narrativeStyle}\nIMPORTANT: Each scene's narrationText MUST be SHORT enough to fit the scene's durationSec. Speaking pace is ~2 words/second, so a ${sceneDuration}s scene needs AT MOST ${Math.round(sceneDuration * 2)} words of narration. Err on the side of fewer words — silence between sentences is better than rushing. Count your words carefully!\nThe narration should ${params.narrativeStyle === 'documentary' ? 'be factual and authoritative' : params.narrativeStyle === 'storytell' ? 'be engaging and narrative-driven' : params.narrativeStyle === 'present' ? 'be direct and professional' : 'clearly explain concepts'}.`
+
+    const userInstr = params.userInstructions ? `\nUser instructions: ${params.userInstructions}` : ''
+
+    const prompt = `You are a video director and storyboard artist. Plan a video from the source material below.
+
+${modeInstructions}
+
+Target duration: ${params.targetDurationSec} seconds
+Number of scenes: ${sceneCount}
+Scene duration: ~${sceneDuration}s each (Veo generates 5-8s clips)
+Mood/style: ${params.moodDescription}
+${userInstr}
+
+Source material:
+${combinedText}
+
+Output a JSON object with this structure:
+{
+  "title": "Short descriptive title for the video",
+  "totalDurationSec": ${params.targetDurationSec},
+  "narrativeStyle": "${params.narrativeStyle}",
+  "mood": "${params.moodDescription}",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "durationSec": ${sceneDuration},
+      "imagePrompt": "Detailed image generation prompt for this scene — describe the visual composition, subjects, lighting, colors. Must include the mood/style description.",
+      "animationPrompt": "Camera movement and animation description for Veo — e.g., 'Slow zoom in with gentle parallax, light particles floating'",
+      "narrationText": "The spoken narration for this scene (empty string for music video mode)",
+      "transitionType": "crossfade"
+    }
+  ]
+}
+
+Rules:
+- Each imagePrompt should be self-contained and detailed (50-100 words)
+- Each animationPrompt should describe camera movement (pan, zoom, dolly) and element motion (2-3 sentences)
+- Scenes should tell a coherent visual story from beginning to end
+- Use "crossfade" for most transitions, "fade-black" for dramatic scene changes, "cut" for fast pacing
+- Apply the mood "${params.moodDescription}" consistently across all image prompts
+- For the LAST scene: write shorter narration (~50% of normal word count) to create a natural fade-out ending. The last scene should feel like a conclusion, not an abrupt stop.
+- Output ONLY valid JSON, no markdown fences`
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: 'application/json',
+      },
+    })
+    trackGeminiResponse(response, 'gemini-3-flash-preview', 'video-scene-plan')
+
+    const text = response.text || ''
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    return JSON.parse(cleaned)
+  }
 }
 
 export const aiService = new AiService()

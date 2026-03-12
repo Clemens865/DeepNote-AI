@@ -7,6 +7,7 @@ import { ReportFormatDialog } from './ReportFormatDialog'
 import { InfographicWizard } from './InfographicWizard'
 import { WhitePaperWizard } from './WhitePaperWizard'
 import { HtmlPresentationWizard } from './HtmlPresentationWizard'
+import { VideoOverviewWizard } from './VideoOverviewWizard'
 import { useNotebookStore } from '../../stores/notebookStore'
 import {
   PanelRightOpen,
@@ -37,6 +38,7 @@ const TYPE_LABELS: Record<string, string> = {
   'citation-graph': 'Citation Graph',
   whitepaper: 'White Paper',
   'html-presentation': 'Web Deck',
+  video: 'Video',
 }
 
 interface StudioPanelProps {
@@ -56,6 +58,7 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
   const [showInfographicWizard, setShowInfographicWizard] = useState(false)
   const [showWhitePaperWizard, setShowWhitePaperWizard] = useState(false)
   const [showHtmlPresentationWizard, setShowHtmlPresentationWizard] = useState(false)
+  const [showVideoOverviewWizard, setShowVideoOverviewWizard] = useState(false)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -194,6 +197,15 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
     }
   }
 
+  const handleVideoOverviewComplete = async (contentId: string) => {
+    setShowVideoOverviewWizard(false)
+    const content = (await window.api.studioStatus(contentId)) as GeneratedContent | null
+    if (content) {
+      setGeneratedItems((prev) => [content, ...prev])
+      setViewing(content)
+    }
+  }
+
   const handleCustomizeGenerate = async (options: StudioToolOptions) => {
     if (!currentNotebook || !customizeTool) return
 
@@ -288,6 +300,7 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
               onStartInfographic={() => setShowInfographicWizard(true)}
               onStartWhitePaper={() => setShowWhitePaperWizard(true)}
               onStartHtmlPresentation={() => setShowHtmlPresentationWizard(true)}
+              onStartVideoOverview={() => setShowVideoOverviewWizard(true)}
             />
 
             {generatedItems.length > 0 && (
@@ -479,6 +492,14 @@ export function StudioPanel({ collapsed, onToggle }: StudioPanelProps) {
           notebookId={currentNotebook.id}
           onComplete={handleHtmlPresentationComplete}
           onClose={() => setShowHtmlPresentationWizard(false)}
+        />
+      )}
+
+      {showVideoOverviewWizard && currentNotebook && (
+        <VideoOverviewWizard
+          notebookId={currentNotebook.id}
+          onComplete={handleVideoOverviewComplete}
+          onClose={() => setShowVideoOverviewWizard(false)}
         />
       )}
 

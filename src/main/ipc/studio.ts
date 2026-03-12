@@ -34,6 +34,7 @@ const TYPE_TITLES: Record<string, string> = {
   'citation-graph': 'Citation Graph',
   whitepaper: 'White Paper',
   'html-presentation': 'HTML Presentation',
+  video: 'Video Overview',
 }
 
 function hexToRgbTuple(hex: string): string {
@@ -1222,6 +1223,248 @@ CRITICAL RULES:
             generatedContentId: args.generatedContentId,
             success: false,
             error: err instanceof Error ? err.message : 'Animation generation failed',
+          })
+        }
+      })()
+
+      return { generatedContentId: args.generatedContentId }
+    }
+  )
+
+  // Video Overview — Phase 1: Plan + generate images → storyboard
+  ipcMain.handle(
+    IPC_CHANNELS.VIDEO_OVERVIEW_START,
+    async (_event, args: {
+      notebookId: string
+      mode: 'overview' | 'music-video'
+      targetDurationSec: number
+      narrativeStyle?: 'explain' | 'present' | 'storytell' | 'documentary'
+      narrationEnabled?: boolean
+      moodMode: 'auto' | 'custom' | 'reference'
+      moodPrompt?: string
+      referenceImagePath?: string
+      styleInfluence?: import('../../shared/types').StyleInfluence
+      stylePresetId: string
+      customStyleColors?: string[]
+      customStyleDescription?: string
+      imageModel?: import('../../shared/types').ImageModelId
+      veoModel?: string
+      veoResolution?: string
+      audioFilePath?: string
+      lyricsText?: string
+      userInstructions?: string
+    }) => {
+      const db = getDatabase()
+      const now = new Date().toISOString()
+      const generatedContentId = randomUUID()
+
+      const sources = await db
+        .select()
+        .from(schema.sources)
+        .where(eq(schema.sources.notebookId, args.notebookId))
+
+      const selectedSources = sources.filter((s) => s.isSelected)
+      if (selectedSources.length === 0) {
+        throw new Error('No sources selected. Please add and select at least one source.')
+      }
+
+      const sourceIds = selectedSources.map((s) => s.id)
+      const sourceTexts = selectedSources.map((s) => s.content)
+
+      await db.insert(schema.generatedContent).values({
+        id: generatedContentId,
+        notebookId: args.notebookId,
+        type: 'video' as const,
+        title: `Video Overview - ${new Date().toLocaleDateString()}`,
+        data: {} as unknown as string,
+        sourceIds: JSON.stringify(sourceIds),
+        status: 'generating' as const,
+        createdAt: now,
+      })
+
+      ;(async () => {
+        try {
+          const { generateStoryboard } = await import('../services/videoOverview')
+
+          const storyboard = await generateStoryboard(
+            { ...args, sourceTexts, narrativeStyle: args.narrativeStyle || 'explain' },
+            (progress) => {
+              broadcastToWindows('video-overview:progress', {
+                generatedContentId,
+                stage: progress.stage,
+                message: progress.message,
+                currentScene: progress.currentScene,
+                totalScenes: progress.totalScenes,
+              })
+            }
+          )
+
+          // Save storyboard data for review — status stays 'generating' until animation
+          const currentDb = getDatabase()
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              title: storyboard.assetName,
+              data: {
+                mode: args.mode,
+                storyboard: storyboard,
+                narrationEnabled: args.narrationEnabled,
+                narrativeStyle: args.narrativeStyle,
+                audioFilePath: args.audioFilePath,
+                veoModel: args.veoModel,
+                veoResolution: args.veoResolution,
+                assetName: storyboard.assetName,
+              } as unknown as string,
+              // Keep status 'generating' — storyboard is ready but video not yet
+            })
+            .where(eq(schema.generatedContent.id, generatedContentId))
+
+          broadcastToWindows('video-overview:storyboard-ready', {
+            generatedContentId,
+            scenes: storyboard.scenes,
+            assetName: storyboard.assetName,
+          })
+        } catch (err) {
+          const currentDb = getDatabase()
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              data: { error: err instanceof Error ? err.message : 'Video storyboard generation failed' } as unknown as string,
+              status: 'failed',
+            })
+            .where(eq(schema.generatedContent.id, generatedContentId))
+
+          broadcastToWindows('video-overview:complete', {
+            generatedContentId,
+            success: false,
+            error: err instanceof Error ? err.message : 'Video storyboard generation failed',
+          })
+        }
+      })()
+
+      return { generatedContentId }
+    }
+  )
+
+  // Video Overview — Regenerate a single scene image
+  ipcMain.handle(
+    IPC_CHANNELS.VIDEO_OVERVIEW_REGEN_SCENE,
+    async (_event, args: { generatedContentId: string; sceneNumber: number; instruction?: string }) => {
+      const { regenerateSceneImage } = await import('../services/videoOverview')
+      const db = getDatabase()
+
+      const [content] = await db
+        .select()
+        .from(schema.generatedContent)
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      if (!content) throw new Error('Generated content not found')
+      const data = content.data as unknown as Record<string, unknown>
+      const storyboard = data.storyboard as { scenes: { sceneNumber: number; imagePath: string; imagePrompt: string; animationPrompt: string; narrationText: string; durationSec: number }[]; styleDescription: string; moodDescription: string; contentDir: string; plan: unknown; assetName: string }
+      if (!storyboard) throw new Error('No storyboard data found')
+
+      const sceneIndex = storyboard.scenes.findIndex((s) => s.sceneNumber === args.sceneNumber)
+      if (sceneIndex === -1) throw new Error(`Scene ${args.sceneNumber} not found`)
+
+      const scene = storyboard.scenes[sceneIndex]
+      const newImagePath = await regenerateSceneImage(
+        scene,
+        storyboard.styleDescription,
+        args.instruction,
+        {
+          notebookId: content.notebookId,
+          imageModel: undefined,
+        }
+      )
+
+      // Update the storyboard in DB
+      storyboard.scenes[sceneIndex] = { ...scene, imagePath: newImagePath }
+      const currentDb = getDatabase()
+      await currentDb
+        .update(schema.generatedContent)
+        .set({ data: { ...data, storyboard } as unknown as string })
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      return { imagePath: newImagePath }
+    }
+  )
+
+  // Video Overview — Phase 2: Animate storyboard → final video
+  ipcMain.handle(
+    IPC_CHANNELS.VIDEO_OVERVIEW_ANIMATE,
+    async (_event, args: { generatedContentId: string }) => {
+      const db = getDatabase()
+      const [content] = await db
+        .select()
+        .from(schema.generatedContent)
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      if (!content) throw new Error('Generated content not found')
+      const data = content.data as unknown as Record<string, unknown>
+      const storyboard = data.storyboard as import('../services/videoOverview').StoryboardResult
+      if (!storyboard) throw new Error('No storyboard data found')
+
+      ;(async () => {
+        try {
+          const { animateStoryboard } = await import('../services/videoOverview')
+
+          const result = await animateStoryboard(
+            storyboard,
+            {
+              mode: (data.mode as 'overview' | 'music-video') || 'overview',
+              narrationEnabled: data.narrationEnabled as boolean | undefined,
+              narrativeStyle: data.narrativeStyle as string | undefined,
+              audioFilePath: data.audioFilePath as string | undefined,
+              notebookId: content.notebookId,
+              veoModel: data.veoModel as string | undefined,
+              veoResolution: data.veoResolution as string | undefined,
+            },
+            (progress) => {
+              broadcastToWindows('video-overview:progress', {
+                generatedContentId: args.generatedContentId,
+                stage: progress.stage,
+                message: progress.message,
+                currentScene: progress.currentScene,
+                totalScenes: progress.totalScenes,
+              })
+            }
+          )
+
+          const currentDb = getDatabase()
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              data: {
+                videoPath: result.videoPath,
+                mode: result.mode,
+                totalDurationSec: result.totalDurationSec,
+                narrativeStyle: result.narrativeStyle,
+                moodDescription: result.moodDescription,
+                scenes: result.scenes,
+                assetName: result.assetName,
+              } as unknown as string,
+              status: 'completed',
+            })
+            .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+          broadcastToWindows('video-overview:complete', {
+            generatedContentId: args.generatedContentId,
+            success: true,
+          })
+        } catch (err) {
+          const currentDb = getDatabase()
+          await currentDb
+            .update(schema.generatedContent)
+            .set({
+              data: { error: err instanceof Error ? err.message : 'Video animation failed' } as unknown as string,
+              status: 'failed',
+            })
+            .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+          broadcastToWindows('video-overview:complete', {
+            generatedContentId: args.generatedContentId,
+            success: false,
+            error: err instanceof Error ? err.message : 'Video animation failed',
           })
         }
       })()

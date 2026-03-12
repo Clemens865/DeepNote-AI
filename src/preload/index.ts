@@ -254,6 +254,79 @@ const api = {
     }
   },
 
+  // Video Overview
+  videoOverviewStart: (args: {
+    notebookId: string
+    mode: 'overview' | 'music-video'
+    targetDurationSec: number
+    narrativeStyle?: 'explain' | 'present' | 'storytell' | 'documentary'
+    narrationEnabled?: boolean
+    moodMode: 'auto' | 'custom' | 'reference'
+    moodPrompt?: string
+    referenceImagePath?: string
+    styleInfluence?: 'style-only' | 'style-mood' | 'full-match'
+    stylePresetId: string
+    customStyleColors?: string[]
+    customStyleDescription?: string
+    imageModel?: string
+    veoModel?: string
+    veoResolution?: string
+    audioFilePath?: string
+    lyricsText?: string
+    userInstructions?: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.VIDEO_OVERVIEW_START, args),
+  videoOverviewRegenScene: (args: {
+    generatedContentId: string
+    sceneNumber: number
+    instruction?: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.VIDEO_OVERVIEW_REGEN_SCENE, args),
+  videoOverviewAnimate: (args: { generatedContentId: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.VIDEO_OVERVIEW_ANIMATE, args),
+  onVideoOverviewStoryboardReady: (
+    callback: (data: {
+      generatedContentId: string
+      scenes: { sceneNumber: number; imagePath: string; narrationText: string; durationSec: number }[]
+      assetName: string
+    }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: {
+        generatedContentId: string
+        scenes: { sceneNumber: number; imagePath: string; narrationText: string; durationSec: number }[]
+        assetName: string
+      }
+    ) => callback(data)
+    ipcRenderer.on('video-overview:storyboard-ready', handler)
+    return () => {
+      ipcRenderer.removeListener('video-overview:storyboard-ready', handler)
+    }
+  },
+  onVideoOverviewProgress: (
+    callback: (data: { generatedContentId: string; stage: string; message: string; currentScene?: number; totalScenes?: number }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; stage: string; message: string; currentScene?: number; totalScenes?: number }
+    ) => callback(data)
+    ipcRenderer.on('video-overview:progress', handler)
+    return () => {
+      ipcRenderer.removeListener('video-overview:progress', handler)
+    }
+  },
+  onVideoOverviewComplete: (
+    callback: (data: { generatedContentId: string; success: boolean; error?: string }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { generatedContentId: string; success: boolean; error?: string }
+    ) => callback(data)
+    ipcRenderer.on('video-overview:complete', handler)
+    return () => {
+      ipcRenderer.removeListener('video-overview:complete', handler)
+    }
+  },
+
   // Config
   getApiKey: () => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_GET_API_KEY),
   setApiKey: (key: string) => ipcRenderer.invoke(IPC_CHANNELS.CONFIG_SET_API_KEY, key),

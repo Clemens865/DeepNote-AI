@@ -105,6 +105,55 @@ export class TtsService {
 
     return { audioPath: outputPath, duration }
   }
+
+  async generateNarrationClip(
+    text: string,
+    voice?: string,
+    style?: string
+  ): Promise<{ audioPath: string; duration: number }> {
+    const apiKey = configService.getApiKey()
+    if (!apiKey) throw new Error('Gemini API key not configured. Please set it in Settings.')
+
+    const ai = new GoogleGenAI({ apiKey })
+
+    // Default voice based on style
+    const voiceName = voice || (style === 'documentary' ? 'Kore' : 'Aoede')
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-preview-tts',
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text }],
+        },
+      ],
+      config: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName,
+            },
+          },
+        },
+      },
+    })
+
+    const part = response.candidates?.[0]?.content?.parts?.[0]
+    if (!part?.inlineData?.data) {
+      throw new Error('No audio data returned from TTS API')
+    }
+
+    const pcmBuffer = Buffer.from(part.inlineData.data, 'base64')
+    const sampleRate = 24000
+    const outputPath = join(getAudioCacheDir(), `narr-${randomUUID()}.wav`)
+
+    writeWavFile(pcmBuffer, sampleRate, outputPath)
+
+    const duration = pcmBuffer.length / (sampleRate * 2)
+
+    return { audioPath: outputPath, duration }
+  }
 }
 
 export const ttsService = new TtsService()

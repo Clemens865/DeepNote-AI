@@ -19,6 +19,7 @@ import {
   CitationGraphView,
   WhitePaperView,
   HtmlPresentationView,
+  VideoOverviewView,
 } from './viewers'
 
 interface GeneratedContentViewProps {
@@ -114,6 +115,7 @@ export function GeneratedContentView({ content, onBack }: GeneratedContentViewPr
       {content.type === 'citation-graph' && <CitationGraphView {...viewerProps} />}
       {content.type === 'whitepaper' && <WhitePaperView {...viewerProps} />}
       {content.type === 'html-presentation' && <HtmlPresentationView {...viewerProps} contentId={content.id} />}
+      {content.type === 'video' && <VideoOverviewView {...viewerProps} />}
       {data.raw != null && (
         <pre className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap bg-black/[0.02] dark:bg-white/[0.02] rounded-lg p-4 border border-black/[0.06] dark:border-white/[0.06]">
           {String(data.raw)}

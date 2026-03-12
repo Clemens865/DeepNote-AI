@@ -13,6 +13,8 @@ extraResources: []
 asarUnpack:
   - resources/**
   - node_modules/better-sqlite3/**
+  - "**/node_modules/@ffmpeg-installer/**"
+  - "**/node_modules/@ffprobe-installer/**"
 win:
   executableName: DeepNote-AI
 nsis:

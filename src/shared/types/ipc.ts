@@ -62,6 +62,11 @@ export const IPC_CHANNELS = {
   INFOGRAPHIC_START: 'infographic:start',
   INFOGRAPHIC_ANIMATE: 'infographic:animate',
 
+  // Studio (video overview)
+  VIDEO_OVERVIEW_START: 'video-overview:start',
+  VIDEO_OVERVIEW_REGEN_SCENE: 'video-overview:regen-scene',
+  VIDEO_OVERVIEW_ANIMATE: 'video-overview:animate',
+
   // Studio (white paper)
   WHITEPAPER_START: 'whitepaper:start',
   WHITEPAPER_EXPORT_PDF: 'whitepaper:exportPdf',
@@ -242,6 +247,47 @@ export interface IpcHandlerMap {
       imageModel?: ImageModelId
       styleInfluence?: StyleInfluence
     }]
+    return: { generatedContentId: string }
+  }
+
+  // Video Overview
+  [IPC_CHANNELS.VIDEO_OVERVIEW_START]: {
+    args: [{
+      notebookId: string
+      mode: 'overview' | 'music-video'
+      targetDurationSec: number
+      narrativeStyle?: 'explain' | 'present' | 'storytell' | 'documentary'
+      narrationEnabled?: boolean
+      moodMode: 'auto' | 'custom' | 'reference'
+      moodPrompt?: string
+      referenceImagePath?: string
+      styleInfluence?: StyleInfluence
+      stylePresetId: string
+      customStyleColors?: string[]
+      customStyleDescription?: string
+      imageModel?: ImageModelId
+      veoModel?: string
+      veoResolution?: string
+      audioFilePath?: string
+      lyricsText?: string
+      userInstructions?: string
+    }]
+    return: { generatedContentId: string }
+  }
+
+  // Video Overview — regenerate scene image
+  [IPC_CHANNELS.VIDEO_OVERVIEW_REGEN_SCENE]: {
+    args: [{
+      generatedContentId: string
+      sceneNumber: number
+      instruction?: string
+    }]
+    return: { imagePath: string }
+  }
+
+  // Video Overview — animate storyboard
+  [IPC_CHANNELS.VIDEO_OVERVIEW_ANIMATE]: {
+    args: [{ generatedContentId: string }]
     return: { generatedContentId: string }
   }
 
