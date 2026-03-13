@@ -56,7 +56,7 @@ export interface StoryboardResult {
   plan: VideoScenePlan
   scenes: {
     sceneNumber: number
-    imagePath: string
+    imagePath: string | null  // null = failed, user can regenerate in review
     imagePrompt: string
     animationPrompt: string
     narrationText: string
@@ -158,6 +158,7 @@ export async function generateStoryboard(
   const IMAGE_MAX_RETRIES = 3
 
   let imagesCompleted = 0
+  let imagesFailed = 0
   await Promise.all(
     plan.scenes.map(async (scene, i) => {
       await imageSem.acquire()
@@ -185,6 +186,8 @@ export async function generateStoryboard(
             ])
             break
           } catch (err) {
+            const errMsg = err instanceof Error ? err.message : String(err)
+            console.error(`[Image] Scene ${scene.sceneNumber} attempt ${attempt} failed:`, errMsg)
             if (attempt < IMAGE_MAX_RETRIES) {
               onProgress({
                 stage: 'images',
@@ -192,30 +195,38 @@ export async function generateStoryboard(
                 currentScene: imagesCompleted,
                 totalScenes,
               })
-              await new Promise((r) => setTimeout(r, 3000)) // wait 3s before retry
-            } else {
-              throw err
+              await new Promise((r) => setTimeout(r, 3000))
             }
+            // Don't throw on last attempt — we'll set imagePath: null
           }
         }
 
-        if (!imagePath) throw new Error(`Failed to generate image for scene ${scene.sceneNumber}`)
-
         scenes[i] = {
           sceneNumber: scene.sceneNumber,
-          imagePath,
+          imagePath,  // null if all retries failed — user can regenerate in storyboard review
           imagePrompt: scene.imagePrompt,
           animationPrompt: scene.animationPrompt,
           narrationText: scene.narrationText,
           durationSec: scene.durationSec,
         }
-        imagesCompleted++
-        onProgress({
-          stage: 'images',
-          message: `Generated image ${imagesCompleted}/${totalScenes}`,
-          currentScene: imagesCompleted,
-          totalScenes,
-        })
+
+        if (imagePath) {
+          imagesCompleted++
+          onProgress({
+            stage: 'images',
+            message: `Generated image ${imagesCompleted}/${totalScenes}${imagesFailed > 0 ? ` (${imagesFailed} failed)` : ''}`,
+            currentScene: imagesCompleted,
+            totalScenes,
+          })
+        } else {
+          imagesFailed++
+          onProgress({
+            stage: 'images',
+            message: `Scene ${scene.sceneNumber} failed — ${imagesCompleted}/${totalScenes} done, ${imagesFailed} failed (regenerate in review)`,
+            currentScene: imagesCompleted,
+            totalScenes,
+          })
+        }
       } finally {
         imageSem.release()
       }
@@ -232,7 +243,10 @@ export async function generateStoryboard(
   const date = new Date().toISOString().split('T')[0]
   const assetName = `${slug}-${params.mode === 'music-video' ? 'MusicVideo' : 'VideoOverview'}-${date}`
 
-  onProgress({ stage: 'storyboard', message: 'Storyboard ready for review' })
+  const readyMsg = imagesFailed > 0
+    ? `Storyboard ready — ${imagesFailed} scene${imagesFailed > 1 ? 's' : ''} failed, regenerate in review`
+    : 'Storyboard ready for review'
+  onProgress({ stage: 'storyboard', message: readyMsg })
 
   return { contentDir, plan, scenes, moodDescription, styleDescription, assetName }
 }
@@ -279,12 +293,18 @@ export async function animateStoryboard(
   },
   onProgress: (progress: VideoProgress) => void
 ): Promise<VideoOverviewResult> {
-  const { contentDir, plan, scenes } = storyboard
+  const { contentDir, plan } = storyboard
+  // Filter out scenes with no image (failed during storyboard generation)
+  const scenes = storyboard.scenes.filter((s) => s.imagePath !== null)
   const totalScenes = scenes.length
+
+  if (totalScenes === 0) {
+    throw new Error('No scenes with images to animate. Regenerate failed scenes in the storyboard review.')
+  }
 
   const sceneResults: VideoOverviewResult['scenes'] = scenes.map((s) => ({
     sceneNumber: s.sceneNumber,
-    imagePath: s.imagePath,
+    imagePath: s.imagePath!,
     videoClipPath: '',
     narrationText: s.narrationText,
     durationSec: s.durationSec,
@@ -342,14 +362,14 @@ export async function animateStoryboard(
             currentScene: animCompleted + 1,
             totalScenes,
           })
-          await imageToVideoClip(scene.imagePath, outputPath, scene.durationSec)
+          await imageToVideoClip(scene.imagePath!, outputPath, scene.durationSec)
         } else {
           const VEO_MAX_RETRIES = 3
           let veoSuccess = false
           for (let attempt = 1; attempt <= VEO_MAX_RETRIES; attempt++) {
             try {
               await animateImage(
-                scene.imagePath,
+                scene.imagePath!,
                 scene.animationPrompt,
                 outputPath,
                 (msg) => onProgress({
@@ -392,7 +412,7 @@ export async function animateStoryboard(
               currentScene: animCompleted + 1,
               totalScenes,
             })
-            await imageToVideoClip(scene.imagePath, outputPath, scene.durationSec)
+            await imageToVideoClip(scene.imagePath!, outputPath, scene.durationSec)
           }
         }
 

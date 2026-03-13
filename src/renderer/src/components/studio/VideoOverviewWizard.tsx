@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Upload, Loader2, Check, Palette, Film, Music, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { X, Upload, Loader2, Check, Palette, Film, Music, ChevronLeft, ChevronRight, RefreshCw, AlertTriangle } from 'lucide-react'
 import { IMAGE_MODELS, VEO_MODELS, VEO_RESOLUTIONS, type ImageModelId, type StyleInfluence, type VeoModelId, type VeoResolution } from '../../../../shared/types'
 
 type VideoMode = 'overview' | 'music-video'
@@ -71,7 +71,7 @@ export function VideoOverviewWizard({ notebookId, onComplete, onClose }: VideoOv
 
   // Storyboard review state
   const [storyboardScenes, setStoryboardScenes] = useState<
-    { sceneNumber: number; imagePath: string; narrationText: string; durationSec: number }[]
+    { sceneNumber: number; imagePath: string | null; narrationText: string; durationSec: number }[]
   >([])
   const [regeneratingScene, setRegeneratingScene] = useState<number | null>(null)
   const [regenInstruction, setRegenInstruction] = useState<Record<number, string>>({})
@@ -630,12 +630,17 @@ export function VideoOverviewWizard({ notebookId, onComplete, onClose }: VideoOv
                         <div className="absolute inset-0 flex items-center justify-center">
                           <Loader2 size={20} className="animate-spin text-indigo-500" />
                         </div>
-                      ) : (
+                      ) : scene.imagePath ? (
                         <img
                           src={`local-file://${scene.imagePath}`}
                           alt={`Scene ${scene.sceneNumber}`}
                           className="w-full h-full object-cover"
                         />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 gap-1.5">
+                          <AlertTriangle size={20} className="text-amber-500" />
+                          <span className="text-[10px] font-medium">Image failed — click Regenerate</span>
+                        </div>
                       )}
                       <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/60 text-white">
                         #{scene.sceneNumber} · {scene.durationSec}s
@@ -747,11 +752,13 @@ export function VideoOverviewWizard({ notebookId, onComplete, onClose }: VideoOv
             ) : (
               <button
                 onClick={handleAnimate}
-                disabled={regeneratingScene !== null}
+                disabled={regeneratingScene !== null || storyboardScenes.some((s) => !s.imagePath)}
                 className="flex items-center gap-1 px-4 py-2 text-xs font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
               >
                 <Film size={14} />
-                Animate Video
+                {storyboardScenes.some((s) => !s.imagePath)
+                  ? `Regenerate ${storyboardScenes.filter((s) => !s.imagePath).length} failed scene${storyboardScenes.filter((s) => !s.imagePath).length > 1 ? 's' : ''} first`
+                  : 'Animate Video'}
               </button>
             )}
           </div>
