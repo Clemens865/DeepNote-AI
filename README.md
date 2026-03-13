@@ -2,7 +2,7 @@
 
 > **Beta Release** — This is the first public beta. Expect rough edges, evolving APIs, and occasional AI generation failures. We welcome bug reports and feedback via [GitHub Issues](https://github.com/Clemens865/DeepNote-AI/issues).
 
-A feature-rich, open-source desktop application inspired by Google's NotebookLM. Built with Electron, React, and powered by multi-provider AI (Gemini, Claude, OpenAI, Groq). Upload documents, chat with your sources, and generate studio-quality content — AI podcasts, HTML presentation decks with a structured slide editor, image slide decks with drag-and-drop editing, PPTX export, whitepapers, infographics with video animation, flashcards, quizzes, mind maps, dashboards, literature reviews, competitive analyses, reports, and more — with agentic RAG, multi-agent generation pipelines, voice Q&A, cross-session memory, Knowledge Hub with file connectors and knowledge graph, and local embeddings.
+A feature-rich, open-source desktop application inspired by Google's NotebookLM. Built with Electron, React, and powered by multi-provider AI (Gemini, Claude, OpenAI, Groq). Upload documents, chat with your sources, and generate studio-quality content — AI video overviews & music videos (Veo 3.1), AI podcasts, HTML presentation decks with a structured slide editor, image slide decks with drag-and-drop editing, PPTX export, whitepapers, infographics with video animation, flashcards, quizzes, mind maps, dashboards, literature reviews, competitive analyses, reports, and more — with agentic RAG, multi-agent generation pipelines, voice Q&A, cross-session memory, Knowledge Hub with file connectors and knowledge graph, and local embeddings.
 
 <!-- TODO: Add hero screenshot -->
 
@@ -31,6 +31,7 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
   - [Deep Research](#deep-research)
   - [Notes](#notes)
   - [Studio](#studio)
+    - [Video Overview & Music Video](#video-overview--music-video)
     - [Audio Overview](#audio-overview)
     - [Image Slide Deck](#image-slide-deck)
     - [HTML Presentation](#html-presentation)
@@ -63,6 +64,8 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | **Source Ingestion** | PDF, DOCX, TXT, Markdown, Website URLs, YouTube transcripts, Audio files (MP3/WAV/M4A/OGG/FLAC), Paste text |
 | **AI Chat** | Streaming responses, source-grounded citations, conversation history, suggested prompts, 6 interactive artifact types (Table, Chart, Mermaid, Kanban, KPI, Timeline), one-click artifact shortcut chips, voice Q&A |
 | **Deep Research** | Multi-step AI analysis with real-time progress updates |
+| **Video Overview** | AI-planned narrated explainer videos from notebook sources — scene planning, image generation, Veo animation (5 models), narration sync, Ken Burns fallback, ffmpeg assembly |
+| **Music Video** | Upload MP3/WAV + optional lyrics — AI generates visuals timed to your audio with automatic duration detection |
 | **Audio Overview** | Multi-speaker AI podcast with 4 format styles (Deep Dive, Brief, Critical Analysis, Debate) |
 | **HTML Presentations** | Structured slide editor with slide navigator, layout picker (title, content, two-column, card-grid, stat-row, quote, closing), per-slide AI regeneration, Nano Banana image generation for slide blocks, live preview, PPTX export with embedded images, prompt templates |
 | **Image Slides** | AI-generated slide decks with 6 visual styles + custom style builder, 3 image models (Nano Banana Pro / 2 / Classic), 2 render modes (full-image / hybrid editable), 5 aspect ratios (16:9, 4:3, 1:1, 3:4 portrait, 9:16 portrait), visual-first approach with text integrated into imagery, fullscreen presenter, rich text drag-and-drop editor, Save button with feedback, PDF export with text overlays, prompt customization, AI-recommended slide count |
@@ -86,7 +89,8 @@ This beta includes 20+ major features transforming DeepNote AI from a notebook t
 
 | Feature | Description |
 |---------|-------------|
-| **16 Studio Tools** | Audio, Image Slides, HTML Presentations, Flashcards, Quiz, Report, Mind Map, Data Table, Dashboard, Literature Review, Competitive Analysis, Document Comparison, Citation Graph, Infographic, White Paper, and Deep Research |
+| **17 Studio Tools** | Video Overview, Music Video, Audio, Image Slides, HTML Presentations, Flashcards, Quiz, Report, Mind Map, Data Table, Dashboard, Literature Review, Competitive Analysis, Document Comparison, Citation Graph, Infographic, White Paper, and Deep Research |
+| **Video Overview & Music Video** | Two-phase pipeline (storyboard review → animation) with 5 Veo models (3.1/3.1 Fast/3/3 Fast/2), narration sync, mood/style control, resolution picker (720p–4K), quota-aware fallback, ffmpeg assembly |
 | **HTML Presentation System** | Structured slide editor with 7 layout types, per-slide editing and AI regeneration, slide navigator with drag-and-drop reordering, Nano Banana image generation for individual slide blocks, live preview with instant refresh, and PPTX export with embedded images |
 | **Prompt Templates** | Create, save, and manage custom prompt templates for slide deck generation — reuse your best prompts across notebooks |
 | **Slide Deck Enhancements** | Visual-first approach (text integrated into imagery), 5 aspect ratios including portrait (3:4, 9:16), AI-recommended page count (up to 20 slides), prompt customization, improved generation reliability |
@@ -115,6 +119,7 @@ This beta includes 20+ major features transforming DeepNote AI from a notebook t
 | Layer | Technology |
 |-------|-----------|
 | **Framework** | Electron 39 via electron-vite |
+| **Video** | fluent-ffmpeg, @ffmpeg-installer/ffmpeg, @ffprobe-installer/ffprobe |
 | **Frontend** | React 19, TypeScript 5, Tailwind CSS v4 |
 | **State** | Zustand |
 | **Routing** | react-router-dom v7 |
@@ -134,7 +139,7 @@ This beta includes 20+ major features transforming DeepNote AI from a notebook t
 - `llama-3.3-70b-versatile` — Groq chat provider
 - `gemini-2.5-flash-preview-tts` — Multi-speaker text-to-speech (Kore & Puck voices)
 - `gemini-3-pro-image-preview` (Nano Banana Pro) / `gemini-3.1-flash-image-preview` (Nano Banana 2) / `gemini-2.5-flash-image` (Nano Banana) — AI image generation for slides, infographics, whitepapers — selectable per creation
-- `veo-3.1-generate-preview` — Video generation from infographic images (4-8s clips, up to 4K)
+- `veo-3.1-fast-generate-preview` (default) / `veo-3.1-generate-preview` / `veo-3-fast-generate` / `veo-3-generate` / `veo-2-generate` — Video generation (image-to-video animation, 4-8s clips, up to 4K)
 - `text-embedding-004` — Text embeddings for RAG (Gemini cloud tier)
 - `all-MiniLM-L6-v2` — Local ONNX embeddings (offline tier, 384-dim)
 
@@ -327,7 +332,7 @@ The **Notes Panel** provides a scratchpad for your own thoughts alongside AI-gen
 
 ### Studio
 
-The **Studio Panel** contains 15 AI-powered content generation tools. Each tool transforms your selected sources into a different output format.
+The **Studio Panel** contains 17 AI-powered content generation tools. Each tool transforms your selected sources into a different output format.
 
 All studio tools support:
 - **Custom instructions** - Guide the AI's focus and audience
@@ -337,6 +342,49 @@ All studio tools support:
 - **Generation history** - All past outputs are accessible
 - **Search & filter** - Find generated items by title, filter by type, sort by newest/oldest/title/type
 - **Multi-agent pipeline** - Complex types (report, whitepaper, literature review) use a Research → Write → Review pipeline with real-time progress indicators
+
+---
+
+#### Video Overview & Music Video
+
+Generate AI-powered narrated videos or music videos from your notebook sources.
+
+**Two Modes:**
+
+| Mode | Description |
+|------|-------------|
+| **Video Overview** | AI plans scenes from your sources, generates narrated explainer video with images, animation, and voiceover |
+| **Music Video** | Upload an MP3/WAV file (+ optional lyrics), AI generates visuals timed to the music duration |
+
+**Two-Phase Pipeline:**
+
+1. **Storyboard** (Phase 1) — AI plans scenes → generates images (4 parallel) → presents storyboard for review
+2. **Animation** (Phase 2) — After approval, generates narration (TTS) → animates scenes (Veo) → assembles final MP4 (ffmpeg)
+
+**Storyboard Review:**
+- Visual grid of all scene thumbnails
+- Per-scene regeneration with custom instructions
+- Approve and proceed to animation, or regenerate individual scenes
+
+**5 Veo Video Models:**
+
+| Model | Price/sec | Resolution | Audio | Duration |
+|-------|-----------|------------|-------|----------|
+| **Veo 3.1 Fast** | $0.15 | 720p/1080p/4K | Yes | 4-8s |
+| **Veo 3.1** | $0.40 | 720p/1080p/4K | Yes | 4-8s |
+| **Veo 3 Fast** | $0.15 | 720p/1080p | Yes | 8s |
+| **Veo 3** | $0.40 | 720p/1080p | Yes | 8s |
+| **Veo 2** | $0.35 | 720p | Silent | 5-8s |
+
+**Video Features:**
+- **Narrative styles** — Explain, Present, Storytell, Documentary
+- **Narration sync** — TTS audio fitted to match each video clip duration
+- **Mood control** — Auto, custom prompt, or reference image style
+- **Style presets** — 6 visual presets + custom style builder with color picker
+- **Quota-aware** — Auto-fallback between Veo model variants on 429; Ken Burns fallback on full exhaustion
+- **Music video auto-detection** — Detects audio file duration via ffprobe, generates exact scene count
+- **Resolution selector** — 720p, 1080p, 4K (filtered by model capability)
+- **Progress tracking** — Per-scene progress with retry status and fallback indicators
 
 ---
 
@@ -730,8 +778,11 @@ src/
       tray.ts           # System tray icon & clipboard quick-capture
       pptxRenderer.ts   # PPTX generation with embedded images
       pptxTemplateParser.ts  # PPTX template parsing for theme extraction
+      tokenTracker.ts   # API cost tracking (LLM tokens, Veo per-second, image gen)
       tts.ts            # Multi-speaker text-to-speech
-      veo.ts            # Veo 3.1 video generation (image-to-video animation)
+      ffmpegAssembler.ts # Video assembly, Ken Burns fallback, narration sync
+      veo.ts            # Veo video generation (5 models, quota-aware fallback)
+      videoOverview.ts  # Video Overview pipeline orchestrator (storyboard + animation)
       vectorStore.ts    # In-memory vector similarity search
       voiceSession.ts   # Voice Q&A session management
       webScraper.ts     # URL content extraction

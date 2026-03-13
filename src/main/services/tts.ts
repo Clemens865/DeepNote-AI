@@ -4,6 +4,7 @@ import { mkdirSync, existsSync, writeFileSync } from 'fs'
 import { randomUUID } from 'crypto'
 import { GoogleGenAI } from '@google/genai'
 import { configService } from './config'
+import { trackGeminiResponse } from './tokenTracker'
 
 function getAudioCacheDir(): string {
   const dir = join(app.getPath('userData'), 'audio-cache')
@@ -88,6 +89,9 @@ export class TtsService {
       },
     })
 
+    // Track TTS cost
+    trackGeminiResponse(response, 'gemini-2.5-flash-preview-tts', 'tts-dialogue')
+
     // Extract audio data from response
     const part = response.candidates?.[0]?.content?.parts?.[0]
     if (!part?.inlineData?.data) {
@@ -138,6 +142,9 @@ export class TtsService {
         },
       },
     })
+
+    // Track TTS cost
+    trackGeminiResponse(response, 'gemini-2.5-flash-preview-tts', 'tts-narration')
 
     const part = response.candidates?.[0]?.content?.parts?.[0]
     if (!part?.inlineData?.data) {

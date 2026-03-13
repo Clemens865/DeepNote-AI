@@ -47,6 +47,7 @@ export function VideoOverviewWizard({ notebookId, onComplete, onClose }: VideoOv
   const [narrativeStyle, setNarrativeStyle] = useState<NarrativeStyle>('explain')
   const [narrationEnabled, setNarrationEnabled] = useState(true)
   const [audioFilePath, setAudioFilePath] = useState<string | null>(null)
+  const [audioDurationSec, setAudioDurationSec] = useState<number | null>(null)
   const [lyricsText, setLyricsText] = useState('')
 
   // Step 3 — Mood & Style
@@ -131,7 +132,15 @@ export function VideoOverviewWizard({ notebookId, onComplete, onClose }: VideoOv
     const filePath = await window.api.showOpenDialog({
       filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'ogg', 'm4a'] }],
     })
-    if (filePath) setAudioFilePath(filePath)
+    if (filePath) {
+      setAudioFilePath(filePath)
+      try {
+        const { durationSec } = await window.api.getAudioDuration({ filePath })
+        setAudioDurationSec(durationSec)
+      } catch {
+        setAudioDurationSec(null)
+      }
+    }
   }
 
   const handleUploadReference = async () => {
@@ -153,7 +162,7 @@ export function VideoOverviewWizard({ notebookId, onComplete, onClose }: VideoOv
       const result = await window.api.videoOverviewStart({
         notebookId,
         mode,
-        targetDurationSec: targetDuration,
+        targetDurationSec: mode === 'music-video' && audioDurationSec ? audioDurationSec : targetDuration,
         narrativeStyle: mode === 'overview' ? narrativeStyle : undefined,
         narrationEnabled: mode === 'overview' ? narrationEnabled : false,
         moodMode,
@@ -343,6 +352,11 @@ export function VideoOverviewWizard({ notebookId, onComplete, onClose }: VideoOv
                     {audioFilePath && (
                       <p className="text-[10px] text-green-500 mt-1 flex items-center gap-1">
                         <Check size={10} /> Audio loaded
+                        {audioDurationSec && (
+                          <span className="text-zinc-400 ml-1">
+                            ({Math.floor(audioDurationSec / 60)}:{String(audioDurationSec % 60).padStart(2, '0')} — {Math.ceil(audioDurationSec / 8)} scenes)
+                          </span>
+                        )}
                       </p>
                     )}
                   </div>

@@ -1,4 +1,4 @@
-import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, TokenUsageSummary, ImageModelId, StyleInfluence, StructuredSlide, PresentationTheme } from './index'
+import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, TokenUsageSummary, ImageModelId, StyleInfluence, StructuredSlide, PresentationTheme, VeoModelId, VeoResolution } from './index'
 
 export const IPC_CHANNELS = {
   // Notebooks
@@ -66,6 +66,7 @@ export const IPC_CHANNELS = {
   VIDEO_OVERVIEW_START: 'video-overview:start',
   VIDEO_OVERVIEW_REGEN_SCENE: 'video-overview:regen-scene',
   VIDEO_OVERVIEW_ANIMATE: 'video-overview:animate',
+  GET_AUDIO_DURATION: 'get-audio-duration',
 
   // Studio (white paper)
   WHITEPAPER_START: 'whitepaper:start',
@@ -266,8 +267,8 @@ export interface IpcHandlerMap {
       customStyleColors?: string[]
       customStyleDescription?: string
       imageModel?: ImageModelId
-      veoModel?: string
-      veoResolution?: string
+      veoModel?: VeoModelId
+      veoResolution?: VeoResolution
       audioFilePath?: string
       lyricsText?: string
       userInstructions?: string
@@ -289,6 +290,11 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.VIDEO_OVERVIEW_ANIMATE]: {
     args: [{ generatedContentId: string }]
     return: { generatedContentId: string }
+  }
+
+  [IPC_CHANNELS.GET_AUDIO_DURATION]: {
+    args: [{ filePath: string }]
+    return: { durationSec: number }
   }
 
   // Infographic Animate

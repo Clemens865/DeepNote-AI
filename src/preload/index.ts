@@ -275,6 +275,8 @@ const api = {
     lyricsText?: string
     userInstructions?: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.VIDEO_OVERVIEW_START, args),
+  getAudioDuration: (args: { filePath: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GET_AUDIO_DURATION, args) as Promise<{ durationSec: number }>,
   videoOverviewRegenScene: (args: {
     generatedContentId: string
     sceneNumber: number

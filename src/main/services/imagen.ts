@@ -3,6 +3,7 @@ import { join } from 'path'
 import { mkdirSync, existsSync, writeFileSync, readFileSync } from 'fs'
 import { GoogleGenAI } from '@google/genai'
 import { configService } from './config'
+import { trackGeminiImageResponse } from './tokenTracker'
 import type { SlideStylePreset, ImageModelId, StyleInfluence } from '../../shared/types'
 import { IMAGE_MODELS } from '../../shared/types'
 
@@ -291,6 +292,9 @@ TEXT: ${trimmedText}`
               httpOptions: { timeout: 120_000 },
             },
           })
+
+          // Track token usage with image-specific output pricing
+          trackGeminiImageResponse(response, modelEntry.geminiModel, 'image-generation')
 
           const parts = response.candidates?.[0]?.content?.parts
           if (!parts) {

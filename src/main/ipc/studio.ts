@@ -15,7 +15,7 @@ import { configService } from '../services/config'
 import { renderSlidesToHtml } from '../services/htmlRenderer'
 import { renderSlidesToPptx } from '../services/pptxRenderer'
 import { parsePptxTemplate } from '../services/pptxTemplateParser'
-import type { StructuredSlide, PresentationTheme } from '../../shared/types'
+import type { StructuredSlide, PresentationTheme, VeoModelId, VeoResolution } from '../../shared/types'
 
 const TYPE_TITLES: Record<string, string> = {
   report: 'Report',
@@ -1248,8 +1248,8 @@ CRITICAL RULES:
       customStyleColors?: string[]
       customStyleDescription?: string
       imageModel?: import('../../shared/types').ImageModelId
-      veoModel?: string
-      veoResolution?: string
+      veoModel?: import('../../shared/types').VeoModelId
+      veoResolution?: import('../../shared/types').VeoResolution
       audioFilePath?: string
       lyricsText?: string
       userInstructions?: string
@@ -1389,6 +1389,16 @@ CRITICAL RULES:
     }
   )
 
+  // Get audio file duration via ffprobe
+  ipcMain.handle(
+    IPC_CHANNELS.GET_AUDIO_DURATION,
+    async (_event, args: { filePath: string }) => {
+      const { getMediaDuration } = await import('../services/ffmpegAssembler')
+      const durationSec = await getMediaDuration(args.filePath)
+      return { durationSec: Math.ceil(durationSec) }
+    }
+  )
+
   // Video Overview — Phase 2: Animate storyboard → final video
   ipcMain.handle(
     IPC_CHANNELS.VIDEO_OVERVIEW_ANIMATE,
@@ -1416,8 +1426,8 @@ CRITICAL RULES:
               narrativeStyle: data.narrativeStyle as string | undefined,
               audioFilePath: data.audioFilePath as string | undefined,
               notebookId: content.notebookId,
-              veoModel: data.veoModel as string | undefined,
-              veoResolution: data.veoResolution as string | undefined,
+              veoModel: data.veoModel as VeoModelId | undefined,
+              veoResolution: data.veoResolution as VeoResolution | undefined,
             },
             (progress) => {
               broadcastToWindows('video-overview:progress', {

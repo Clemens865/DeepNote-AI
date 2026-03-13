@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto'
 import { aiService } from './ai'
 import { imagenService } from './imagen'
 import { ttsService } from './tts'
-import { animateImage } from './veo'
+import { animateImage, VeoQuotaExhaustedError } from './veo'
 import { assembleVideo, getVideoCacheDir, imageToVideoClip, getMediaDuration, fitAudioToDuration } from './ffmpegAssembler'
 import type { ImageModelId, StyleInfluence, VeoModelId, VeoResolution } from '../../shared/types'
 
@@ -132,11 +132,15 @@ export async function generateStoryboard(
 
   // Plan scenes
   onProgress({ stage: 'planning', message: 'Planning video scenes with AI...' })
+  // Determine clip duration: 1080p/4K forces 8s, 720p defaults to 8s for consistency
+  const clipDurationSec = 8
+
   const plan = await aiService.planVideoScenes(params.sourceTexts, {
     mode: params.mode,
     targetDurationSec: params.targetDurationSec,
     narrativeStyle: params.narrativeStyle || 'explain',
     moodDescription,
+    clipDurationSec,
     audioFilePath: params.audioFilePath,
     lyricsText: params.lyricsText,
     userInstructions: params.userInstructions,
@@ -145,10 +149,13 @@ export async function generateStoryboard(
   const totalScenes = plan.scenes.length
   onProgress({ stage: 'planning', message: `Planned ${totalScenes} scenes`, totalScenes })
 
-  // Generate images (4 parallel)
-  onProgress({ stage: 'images', message: 'Generating scene images...', totalScenes })
+  // Generate images (4 parallel to avoid rate limits on large batches)
+  onProgress({ stage: 'images', message: `Generating ${totalScenes} scene images...`, totalScenes })
   const imageSem = new Semaphore(4)
   const scenes: StoryboardResult['scenes'] = new Array(totalScenes)
+
+  const IMAGE_TIMEOUT_MS = 60_000 // 60s per image
+  const IMAGE_MAX_RETRIES = 3
 
   let imagesCompleted = 0
   await Promise.all(
@@ -156,8 +163,8 @@ export async function generateStoryboard(
       await imageSem.acquire()
       try {
         const prompt = `${scene.imagePrompt}\n\nVisual style: ${styleDescription}`
-        const imagePath = await imagenService.generateSlideImage(prompt, {
-          aspectRatio: '16:9',
+        const imageOpts = {
+          aspectRatio: '16:9' as const,
           contentId: params.notebookId,
           slideNumber: scene.sceneNumber,
           referenceImagePath: params.referenceImagePath,
@@ -165,7 +172,35 @@ export async function generateStoryboard(
           styleHint: params.referenceImagePath ? styleDescription : undefined,
           imageModel: params.imageModel,
           styleInfluence: params.styleInfluence,
-        })
+        }
+
+        let imagePath: string | null = null
+        for (let attempt = 1; attempt <= IMAGE_MAX_RETRIES; attempt++) {
+          try {
+            imagePath = await Promise.race([
+              imagenService.generateSlideImage(prompt, imageOpts),
+              new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Image generation timed out')), IMAGE_TIMEOUT_MS)
+              ),
+            ])
+            break
+          } catch (err) {
+            if (attempt < IMAGE_MAX_RETRIES) {
+              onProgress({
+                stage: 'images',
+                message: `Scene ${scene.sceneNumber}: retry ${attempt + 1}/${IMAGE_MAX_RETRIES}...`,
+                currentScene: imagesCompleted,
+                totalScenes,
+              })
+              await new Promise((r) => setTimeout(r, 3000)) // wait 3s before retry
+            } else {
+              throw err
+            }
+          }
+        }
+
+        if (!imagePath) throw new Error(`Failed to generate image for scene ${scene.sceneNumber}`)
+
         scenes[i] = {
           sceneNumber: scene.sceneNumber,
           imagePath,
@@ -291,40 +326,84 @@ export async function animateStoryboard(
   const veoSem = new Semaphore(2)
   let animCompleted = 0
   let veoFallbacks = 0
+  let quotaExhausted = false // When true, skip Veo entirely for remaining scenes
   await Promise.all(
     scenes.map(async (scene, i) => {
       await veoSem.acquire()
       try {
         const outputPath = join(contentDir, `scene-${scene.sceneNumber}.mp4`)
-        try {
-          await animateImage(
-            scene.imagePath,
-            scene.animationPrompt,
-            outputPath,
-            (msg) => onProgress({
-              stage: 'animation',
-              message: `Scene ${scene.sceneNumber}: ${msg}`,
-              currentScene: animCompleted + 1,
-              totalScenes,
-            }),
-            params.veoModel,
-            params.veoResolution
-          )
-        } catch {
+
+        // If quota is exhausted, go straight to Ken Burns
+        if (quotaExhausted) {
           veoFallbacks++
           onProgress({
             stage: 'animation',
-            message: `Scene ${scene.sceneNumber}: Veo unavailable, using Ken Burns fallback...`,
+            message: `Scene ${scene.sceneNumber}: Veo quota exhausted, using Ken Burns...`,
             currentScene: animCompleted + 1,
             totalScenes,
           })
           await imageToVideoClip(scene.imagePath, outputPath, scene.durationSec)
+        } else {
+          const VEO_MAX_RETRIES = 3
+          let veoSuccess = false
+          for (let attempt = 1; attempt <= VEO_MAX_RETRIES; attempt++) {
+            try {
+              await animateImage(
+                scene.imagePath,
+                scene.animationPrompt,
+                outputPath,
+                (msg) => onProgress({
+                  stage: 'animation',
+                  message: `Scene ${scene.sceneNumber}${attempt > 1 ? ` (retry ${attempt}/${VEO_MAX_RETRIES})` : ''}: ${msg}`,
+                  currentScene: animCompleted + 1,
+                  totalScenes,
+                }),
+                params.veoModel,
+                params.veoResolution
+              )
+              veoSuccess = true
+              break
+            } catch (err) {
+              // On quota error, don't retry — mark exhausted so remaining scenes skip Veo
+              if (err instanceof VeoQuotaExhaustedError) {
+                console.error(`[Veo] Quota exhausted for scene ${scene.sceneNumber}:`, err.message)
+                quotaExhausted = true
+                break
+              }
+              const errMsg = err instanceof Error ? err.message : String(err)
+              console.error(`[Veo] Scene ${scene.sceneNumber} attempt ${attempt} failed:`, errMsg)
+              if (attempt < VEO_MAX_RETRIES) {
+                onProgress({
+                  stage: 'animation',
+                  message: `Scene ${scene.sceneNumber}: attempt ${attempt} failed (${errMsg.slice(0, 80)}), retrying...`,
+                  currentScene: animCompleted + 1,
+                  totalScenes,
+                })
+                await new Promise((r) => setTimeout(r, 2000))
+              }
+            }
+          }
+          if (!veoSuccess) {
+            veoFallbacks++
+            const reason = quotaExhausted ? 'quota exhausted' : `failed after ${VEO_MAX_RETRIES} attempts`
+            onProgress({
+              stage: 'animation',
+              message: `Scene ${scene.sceneNumber}: Veo ${reason}, Ken Burns fallback...`,
+              currentScene: animCompleted + 1,
+              totalScenes,
+            })
+            await imageToVideoClip(scene.imagePath, outputPath, scene.durationSec)
+          }
         }
+
         sceneResults[i].videoClipPath = outputPath
         animCompleted++
+        const statusParts = [`Animated ${animCompleted}/${totalScenes}`]
+        if (veoFallbacks > 0) statusParts.push(`${veoFallbacks} Ken Burns`)
+        if (quotaExhausted) statusParts.push('quota exhausted')
         onProgress({
           stage: 'animation',
-          message: `Animated ${animCompleted}/${totalScenes} scenes${veoFallbacks > 0 ? ` (${veoFallbacks} fallback)` : ''}`,
+          message: statusParts.join(' · '),
           currentScene: animCompleted,
           totalScenes,
         })

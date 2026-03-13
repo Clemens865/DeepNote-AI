@@ -1763,6 +1763,7 @@ Structure your response with clear headings and sections. Be thorough and detail
       targetDurationSec: number
       narrativeStyle: 'explain' | 'present' | 'storytell' | 'documentary'
       moodDescription: string
+      clipDurationSec?: number
       audioFilePath?: string
       lyricsText?: string
       userInstructions?: string
@@ -1784,8 +1785,12 @@ Structure your response with clear headings and sections. Be thorough and detail
     const ai = getClient()
     const combinedText = sourceTexts.join('\n\n---\n\n').slice(0, 60000)
 
-    const sceneCount = Math.max(3, Math.round(params.targetDurationSec / 6))
-    const sceneDuration = Math.round(params.targetDurationSec / sceneCount)
+    const clipDuration = params.clipDurationSec || 8
+    // Music video mode: always generate enough scenes to cover the full audio
+    // Overview mode: cap at 30 scenes to keep generation time reasonable
+    const rawSceneCount = Math.max(3, Math.ceil(params.targetDurationSec / clipDuration))
+    const sceneCount = params.mode === 'music-video' ? rawSceneCount : Math.min(30, rawSceneCount)
+    const sceneDuration = clipDuration
 
     const modeInstructions = params.mode === 'music-video'
       ? `MODE: Music Video. The user has provided audio (duration: ${params.targetDurationSec}s).${params.lyricsText ? `\nLyrics:\n${params.lyricsText}` : ''}\nCreate visuals that match the mood and rhythm of the music. narrationText should be EMPTY for all scenes.`
@@ -1799,7 +1804,7 @@ ${modeInstructions}
 
 Target duration: ${params.targetDurationSec} seconds
 Number of scenes: ${sceneCount}
-Scene duration: ~${sceneDuration}s each (Veo generates 5-8s clips)
+Scene duration: exactly ${sceneDuration}s each (Veo clip length)
 Mood/style: ${params.moodDescription}
 ${userInstr}
 

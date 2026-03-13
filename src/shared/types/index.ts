@@ -209,36 +209,41 @@ export const VEO_RESOLUTIONS: { id: VeoResolution; label: string; note: string; 
   { id: '4k', label: '4K', note: '8s clips, slower', models: ['veo-3.1', 'veo-3.1-fast'] },
 ]
 
-export const VEO_MODELS: { id: VeoModelId; label: string; apiModel: string; description: string }[] = [
-  {
-    id: 'veo-3.1',
-    label: 'Veo 3.1',
-    apiModel: 'veo-3.1-generate-preview',
-    description: 'Best quality — 720p/1080p/4K, audio, 4-8s',
-  },
+export const VEO_MODELS: { id: VeoModelId; label: string; apiModel: string; description: string; pricePerSec: string }[] = [
   {
     id: 'veo-3.1-fast',
     label: 'Veo 3.1 Fast',
     apiModel: 'veo-3.1-fast-generate-preview',
-    description: 'Fast generation — 720p/1080p, audio, 4-8s',
+    description: 'Best value — $0.15/s, 720p/1080p/4K, audio, 4-8s',
+    pricePerSec: '$0.15',
   },
   {
-    id: 'veo-3',
-    label: 'Veo 3',
-    apiModel: 'veo-3-generate-preview',
-    description: 'Previous gen — 720p/1080p, audio, 8s',
+    id: 'veo-3.1',
+    label: 'Veo 3.1',
+    apiModel: 'veo-3.1-generate-preview',
+    description: 'Best quality — $0.40/s, 720p/1080p/4K, audio, 4-8s',
+    pricePerSec: '$0.40',
   },
   {
     id: 'veo-3-fast',
     label: 'Veo 3 Fast',
-    apiModel: 'veo-3-fast-generate-preview',
-    description: 'Previous gen fast — 720p/1080p, audio, 8s',
+    apiModel: 'veo-3-fast-generate',
+    description: 'Fast — $0.15/s, 720p/1080p, audio, 8s',
+    pricePerSec: '$0.15',
+  },
+  {
+    id: 'veo-3',
+    label: 'Veo 3',
+    apiModel: 'veo-3-generate',
+    description: 'High quality — $0.40/s, 720p/1080p, audio, 8s',
+    pricePerSec: '$0.40',
   },
   {
     id: 'veo-2',
     label: 'Veo 2',
-    apiModel: 'veo-2-generate-preview',
-    description: 'Legacy — 720p, silent, 5-8s',
+    apiModel: 'veo-2-generate',
+    description: 'Legacy — $0.35/s, 720p, silent, 5-8s',
+    pricePerSec: '$0.35',
   },
 ]
 
