@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Download, ChevronDown, ChevronRight, Clock, Film, Music, RefreshCw, Loader2, Play } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Download, ChevronDown, ChevronRight, Clock, Film, Music, RefreshCw, Loader2, Play, ExternalLink } from 'lucide-react'
 import { FullscreenWrapper } from './FullscreenWrapper'
 
 interface VideoOverviewViewProps {
@@ -10,12 +10,28 @@ interface VideoOverviewViewProps {
   contentId?: string
 }
 
+/**
+ * Load a local file as a blob URL via IPC.
+ * Returns a blob:// URL that works reliably in <video> elements.
+ */
+async function loadBlobUrl(filePath: string): Promise<string> {
+  const { buffer, mimeType } = await window.api.studioReadFile({ filePath })
+  const blob = new Blob([buffer], { type: mimeType })
+  return URL.createObjectURL(blob)
+}
+
 export function VideoOverviewView({ data, isFullscreen, onCloseFullscreen, title, contentId }: VideoOverviewViewProps) {
   const [showTimeline, setShowTimeline] = useState(false)
   const [playingScene, setPlayingScene] = useState<number | null>(null)
   const [regeneratingVideo, setRegeneratingVideo] = useState<number | null>(null)
   const [regenInstruction, setRegenInstruction] = useState<Record<number, string>>({})
   const [showRegenInput, setShowRegenInput] = useState<number | null>(null)
+
+  // Blob URL state for video playback
+  const [videoBlobUrl, setVideoBlobUrl] = useState<string | null>(null)
+  const [videoLoading, setVideoLoading] = useState(false)
+  const blobUrlsRef = useRef<string[]>([])
+
   const videoPath = data.videoPath as string | undefined
   const mode = data.mode as string | undefined
   const totalDurationSec = data.totalDurationSec as number | undefined
@@ -31,6 +47,55 @@ export function VideoOverviewView({ data, isFullscreen, onCloseFullscreen, title
   }[] | undefined
   const assetName = (data.assetName as string) || title
   const error = data.error as string | undefined
+
+  // Clean up blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [])
+
+  // Load the main video as blob URL when videoPath changes
+  useEffect(() => {
+    if (!videoPath) return
+    setVideoLoading(true)
+    loadBlobUrl(videoPath)
+      .then((url) => {
+        blobUrlsRef.current.push(url)
+        setVideoBlobUrl(url)
+      })
+      .catch(() => setVideoBlobUrl(null))
+      .finally(() => setVideoLoading(false))
+  }, [videoPath])
+
+  // Load scene video as blob URL when playingScene changes
+  const [sceneBlobUrl, setSceneBlobUrl] = useState<string | null>(null)
+  const [sceneLoading, setSceneLoading] = useState(false)
+
+  useEffect(() => {
+    if (playingScene === null || !scenes) {
+      setSceneBlobUrl(null)
+      return
+    }
+    const scene = scenes.find((s) => s.sceneNumber === playingScene)
+    if (!scene?.videoClipPath) return
+    setSceneLoading(true)
+    loadBlobUrl(scene.videoClipPath)
+      .then((url) => {
+        blobUrlsRef.current.push(url)
+        setSceneBlobUrl(url)
+      })
+      .catch(() => setSceneBlobUrl(null))
+      .finally(() => setSceneLoading(false))
+  }, [playingScene, scenes])
+
+  const handleOpenInPlayer = useCallback(() => {
+    if (videoPath) window.api.systemOpenFile({ filePath: videoPath })
+  }, [videoPath])
+
+  const handleOpenSceneInPlayer = useCallback((clipPath: string) => {
+    window.api.systemOpenFile({ filePath: clipPath })
+  }, [])
 
   if (error) {
     return (
@@ -73,7 +138,6 @@ export function VideoOverviewView({ data, isFullscreen, onCloseFullscreen, title
         sceneNumber,
         instruction: regenInstruction[sceneNumber]?.trim() || undefined,
       })
-      // Update local scene data
       if (scenes) {
         const idx = scenes.findIndex((s) => s.sceneNumber === sceneNumber)
         if (idx !== -1) {
@@ -83,7 +147,7 @@ export function VideoOverviewView({ data, isFullscreen, onCloseFullscreen, title
       setShowRegenInput(null)
       setRegenInstruction((prev) => { const next = { ...prev }; delete next[sceneNumber]; return next })
     } catch {
-      // Error is visible to user via the regenerating state clearing
+      // Error handled by UI state
     } finally {
       setRegeneratingVideo(null)
     }
@@ -95,51 +159,64 @@ export function VideoOverviewView({ data, isFullscreen, onCloseFullscreen, title
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
+  const activeVideoUrl = playingScene !== null ? sceneBlobUrl : videoBlobUrl
+  const isLoadingVideo = playingScene !== null ? sceneLoading : videoLoading
+
   const content = (
     <div className="space-y-4">
       {/* Video Player */}
-      <div className="rounded-xl overflow-hidden bg-black">
-        {playingScene !== null && scenes ? (
-          // Playing individual scene clip
-          (() => {
-            const scene = scenes.find((s) => s.sceneNumber === playingScene)
-            return scene?.videoClipPath ? (
-              <div className="relative">
-                <video
-                  key={scene.videoClipPath}
-                  src={`local-file://${scene.videoClipPath}`}
-                  controls
-                  autoPlay
-                  className="w-full"
-                  style={{ maxHeight: isFullscreen ? '70vh' : '400px' }}
-                  onEnded={() => setPlayingScene(null)}
-                />
-                <button
-                  onClick={() => setPlayingScene(null)}
-                  className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium rounded-md bg-black/70 text-white hover:bg-black/90 transition-colors"
-                >
-                  Back to full video
-                </button>
-              </div>
-            ) : null
-          })()
+      <div className="rounded-xl overflow-hidden bg-black flex items-center justify-center" style={{ minHeight: '200px' }}>
+        {isLoadingVideo ? (
+          <div className="flex flex-col items-center gap-2 py-8">
+            <Loader2 size={24} className="animate-spin text-indigo-400" />
+            <p className="text-xs text-zinc-400">Loading video...</p>
+          </div>
+        ) : activeVideoUrl ? (
+          <div className="relative w-full">
+            <video
+              key={activeVideoUrl}
+              src={activeVideoUrl}
+              controls
+              autoPlay={playingScene !== null}
+              className="w-full"
+              style={{ maxHeight: isFullscreen ? '70vh' : '400px' }}
+              onEnded={() => { if (playingScene !== null) setPlayingScene(null) }}
+            />
+            {playingScene !== null && (
+              <button
+                onClick={() => setPlayingScene(null)}
+                className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium rounded-md bg-black/70 text-white hover:bg-black/90 transition-colors"
+              >
+                Back to full video
+              </button>
+            )}
+          </div>
         ) : (
-          // Full assembled video
-          <video
-            key={videoPath}
-            src={`local-file://${videoPath}`}
-            controls
-            className="w-full"
-            style={{ maxHeight: isFullscreen ? '70vh' : '400px' }}
-          />
+          <div className="flex flex-col items-center gap-3 py-8">
+            <p className="text-xs text-zinc-400">Could not load video preview</p>
+            <button
+              onClick={handleOpenInPlayer}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            >
+              <ExternalLink size={14} />
+              Open in System Player
+            </button>
+          </div>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={handleOpenInPlayer}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+        >
+          <ExternalLink size={14} />
+          Open in Player
+        </button>
         <button
           onClick={handleDownload}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-black/[0.06] dark:border-white/[0.06] text-zinc-600 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors"
         >
           <Download size={14} />
           Download MP4
@@ -203,11 +280,8 @@ export function VideoOverviewView({ data, isFullscreen, onCloseFullscreen, title
               {scenes.map((scene) => (
                 <div key={scene.sceneNumber} className="px-4 py-3 space-y-2">
                   <div className="flex items-start gap-3">
-                    {/* Thumbnail — click to play scene video */}
-                    <div
-                      className="relative w-24 h-14 rounded overflow-hidden flex-shrink-0 bg-zinc-100 dark:bg-zinc-800 group cursor-pointer"
-                      onClick={() => scene.videoClipPath && setPlayingScene(scene.sceneNumber)}
-                    >
+                    {/* Thumbnail */}
+                    <div className="relative w-24 h-14 rounded overflow-hidden flex-shrink-0 bg-zinc-100 dark:bg-zinc-800 group">
                       {scene.imagePath && (
                         <img
                           src={`local-file://${scene.imagePath}`}
@@ -216,7 +290,10 @@ export function VideoOverviewView({ data, isFullscreen, onCloseFullscreen, title
                         />
                       )}
                       {scene.videoClipPath && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div
+                          className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          onClick={() => setPlayingScene(scene.sceneNumber)}
+                        >
                           <Play size={16} className="text-white" fill="white" />
                         </div>
                       )}
@@ -242,20 +319,26 @@ export function VideoOverviewView({ data, isFullscreen, onCloseFullscreen, title
                   </div>
 
                   {/* Scene video actions */}
-                  <div className="flex items-center gap-2 pl-[108px]">
+                  <div className="flex items-center gap-2 pl-[108px] flex-wrap">
                     {scene.videoClipPath && (
                       <>
                         <button
                           onClick={() => setPlayingScene(scene.sceneNumber)}
                           className="flex items-center gap-1 text-[10px] text-indigo-500 hover:text-indigo-600 font-medium"
                         >
-                          <Play size={10} /> Play
+                          <Play size={10} /> Preview
+                        </button>
+                        <button
+                          onClick={() => handleOpenSceneInPlayer(scene.videoClipPath)}
+                          className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 font-medium"
+                        >
+                          <ExternalLink size={10} /> Open
                         </button>
                         <button
                           onClick={() => handleDownloadScene(scene)}
                           className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 font-medium"
                         >
-                          <Download size={10} /> Download
+                          <Download size={10} /> Save
                         </button>
                       </>
                     )}
@@ -292,7 +375,7 @@ export function VideoOverviewView({ data, isFullscreen, onCloseFullscreen, title
                         disabled={regeneratingVideo !== null}
                         className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-indigo-500 disabled:opacity-50 font-medium"
                       >
-                        <RefreshCw size={10} /> Regenerate Video
+                        <RefreshCw size={10} /> Regenerate
                       </button>
                     )}
                   </div>
@@ -307,7 +390,7 @@ export function VideoOverviewView({ data, isFullscreen, onCloseFullscreen, title
 
   if (isFullscreen) {
     return (
-      <FullscreenWrapper isOpen={true} title={title} onClose={onCloseFullscreen}>
+      <FullscreenWrapper isOpen={true} title={title} onClose={onCloseFullscreen} wide>
         {content}
       </FullscreenWrapper>
     )

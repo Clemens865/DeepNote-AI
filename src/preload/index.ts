@@ -55,6 +55,8 @@ const api = {
   // Studio
   studioGenerate: (args: { notebookId: string; type: string; options?: Record<string, unknown> }) =>
     ipcRenderer.invoke(IPC_CHANNELS.STUDIO_GENERATE, args),
+  studioReadFile: (args: { filePath: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.STUDIO_READ_FILE, args) as Promise<{ buffer: ArrayBuffer; mimeType: string }>,
   studioSaveFile: (args: { sourcePath: string; defaultName: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.STUDIO_SAVE_FILE, args),
   studioExportPdf: (args: {

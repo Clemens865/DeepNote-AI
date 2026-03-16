@@ -91,6 +91,9 @@ export const IPC_CHANNELS = {
   CONFIG_GET_CHAT_CONFIG: 'config:getChatConfig',
   CONFIG_SET_CHAT_CONFIG: 'config:setChatConfig',
 
+  // Read file as buffer (for blob URLs in renderer)
+  STUDIO_READ_FILE: 'studio:readFile',
+
   // Save file (copy local file to user-chosen destination)
   STUDIO_SAVE_FILE: 'studio:saveFile',
   STUDIO_EXPORT_PDF: 'studio:exportPdf',
@@ -432,6 +435,12 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.CONFIG_SET_CHAT_CONFIG]: {
     args: [{ provider?: string; model?: string; geminiKey?: string; claudeKey?: string; openaiKey?: string; groqKey?: string }]
     return: void
+  }
+
+  // Read file as buffer
+  [IPC_CHANNELS.STUDIO_READ_FILE]: {
+    args: [{ filePath: string }]
+    return: { buffer: ArrayBuffer; mimeType: string }
   }
 
   // Save file

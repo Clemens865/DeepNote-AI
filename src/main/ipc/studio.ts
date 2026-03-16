@@ -473,6 +473,20 @@ export function registerStudioHandlers() {
       .where(eq(schema.generatedContent.id, id))
   })
 
+  // Read file as buffer — for blob URLs in renderer (video/audio playback)
+  ipcMain.handle(
+    IPC_CHANNELS.STUDIO_READ_FILE,
+    async (_event, args: { filePath: string }) => {
+      const buffer = await readFile(args.filePath)
+      const ext = extname(args.filePath).toLowerCase()
+      const mimeTypes: Record<string, string> = {
+        '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
+        '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4',
+      }
+      return { buffer: buffer.buffer, mimeType: mimeTypes[ext] || 'application/octet-stream' }
+    }
+  )
+
   // Save file — show save dialog and copy file to user-chosen destination
   ipcMain.handle(
     IPC_CHANNELS.STUDIO_SAVE_FILE,
