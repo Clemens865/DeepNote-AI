@@ -282,6 +282,11 @@ const api = {
     sceneNumber: number
     instruction?: string
   }) => ipcRenderer.invoke(IPC_CHANNELS.VIDEO_OVERVIEW_REGEN_SCENE, args),
+  videoOverviewRegenVideo: (args: {
+    generatedContentId: string
+    sceneNumber: number
+    instruction?: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.VIDEO_OVERVIEW_REGEN_VIDEO, args) as Promise<{ videoClipPath: string }>,
   videoOverviewAnimate: (args: { generatedContentId: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.VIDEO_OVERVIEW_ANIMATE, args),
   onVideoOverviewStoryboardReady: (

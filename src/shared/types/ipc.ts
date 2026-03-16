@@ -65,6 +65,7 @@ export const IPC_CHANNELS = {
   // Studio (video overview)
   VIDEO_OVERVIEW_START: 'video-overview:start',
   VIDEO_OVERVIEW_REGEN_SCENE: 'video-overview:regen-scene',
+  VIDEO_OVERVIEW_REGEN_VIDEO: 'video-overview:regen-video',
   VIDEO_OVERVIEW_ANIMATE: 'video-overview:animate',
   GET_AUDIO_DURATION: 'get-audio-duration',
 
@@ -284,6 +285,16 @@ export interface IpcHandlerMap {
       instruction?: string
     }]
     return: { imagePath: string }
+  }
+
+  // Video Overview — regenerate a single scene video clip
+  [IPC_CHANNELS.VIDEO_OVERVIEW_REGEN_VIDEO]: {
+    args: [{
+      generatedContentId: string
+      sceneNumber: number
+      instruction?: string
+    }]
+    return: { videoClipPath: string }
   }
 
   // Video Overview — animate storyboard

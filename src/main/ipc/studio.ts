@@ -1389,6 +1389,72 @@ CRITICAL RULES:
     }
   )
 
+  // Video Overview — Regenerate a single scene video clip
+  ipcMain.handle(
+    IPC_CHANNELS.VIDEO_OVERVIEW_REGEN_VIDEO,
+    async (_event, args: { generatedContentId: string; sceneNumber: number; instruction?: string }) => {
+      const { regenerateSceneVideo } = await import('../services/videoOverview')
+      const db = getDatabase()
+
+      const [content] = await db
+        .select()
+        .from(schema.generatedContent)
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      if (!content) throw new Error('Generated content not found')
+      const data = content.data as unknown as Record<string, unknown>
+      const scenes = data.scenes as {
+        sceneNumber: number
+        imagePath: string
+        videoClipPath: string
+        audioClipPath?: string
+        animationPrompt?: string
+        narrationText: string
+        durationSec: number
+      }[]
+      if (!scenes) throw new Error('No scene data found')
+
+      const sceneIndex = scenes.findIndex((s) => s.sceneNumber === args.sceneNumber)
+      if (sceneIndex === -1) throw new Error(`Scene ${args.sceneNumber} not found`)
+
+      const scene = scenes[sceneIndex]
+      if (!scene.imagePath) throw new Error('Scene has no image — regenerate the image first')
+
+      // Derive contentDir from the existing videoClipPath or videoPath
+      const { dirname } = await import('path')
+      const contentDir = scene.videoClipPath
+        ? dirname(scene.videoClipPath)
+        : data.videoPath
+          ? dirname(data.videoPath as string)
+          : dirname(scene.imagePath)
+
+      const newVideoClipPath = await regenerateSceneVideo(
+        {
+          sceneNumber: scene.sceneNumber,
+          imagePath: scene.imagePath,
+          animationPrompt: scene.animationPrompt || '',
+          durationSec: scene.durationSec,
+        },
+        contentDir,
+        args.instruction,
+        {
+          veoModel: data.veoModel as VeoModelId | undefined,
+          veoResolution: data.veoResolution as VeoResolution | undefined,
+        }
+      )
+
+      // Update the scene in DB
+      scenes[sceneIndex] = { ...scene, videoClipPath: newVideoClipPath }
+      const currentDb = getDatabase()
+      await currentDb
+        .update(schema.generatedContent)
+        .set({ data: { ...data, scenes } as unknown as string })
+        .where(eq(schema.generatedContent.id, args.generatedContentId))
+
+      return { videoClipPath: newVideoClipPath }
+    }
+  )
+
   // Get audio file duration via ffprobe
   ipcMain.handle(
     IPC_CHANNELS.GET_AUDIO_DURATION,
@@ -1440,6 +1506,12 @@ CRITICAL RULES:
             }
           )
 
+          // Merge animation prompts from storyboard into result scenes for later regeneration
+          const scenesWithPrompts = result.scenes.map((s) => {
+            const storyScene = storyboard.scenes.find((ss) => ss.sceneNumber === s.sceneNumber)
+            return { ...s, animationPrompt: storyScene?.animationPrompt || '' }
+          })
+
           const currentDb = getDatabase()
           await currentDb
             .update(schema.generatedContent)
@@ -1450,8 +1522,10 @@ CRITICAL RULES:
                 totalDurationSec: result.totalDurationSec,
                 narrativeStyle: result.narrativeStyle,
                 moodDescription: result.moodDescription,
-                scenes: result.scenes,
+                scenes: scenesWithPrompts,
                 assetName: result.assetName,
+                veoModel: data.veoModel,
+                veoResolution: data.veoResolution,
               } as unknown as string,
               status: 'completed',
             })

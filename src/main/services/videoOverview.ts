@@ -278,6 +278,36 @@ export async function regenerateSceneImage(
 }
 
 /**
+ * Regenerate a single scene's video clip with Veo (with Ken Burns fallback).
+ */
+export async function regenerateSceneVideo(
+  scene: { sceneNumber: number; imagePath: string; animationPrompt: string; durationSec: number },
+  contentDir: string,
+  instruction: string | undefined,
+  params: { veoModel?: VeoModelId; veoResolution?: VeoResolution }
+): Promise<string> {
+  const outputPath = join(contentDir, `scene-${scene.sceneNumber}-${Date.now()}.mp4`)
+  const prompt = instruction
+    ? `${scene.animationPrompt}\n\nAdditional instruction: ${instruction}`
+    : scene.animationPrompt
+
+  const VEO_MAX_RETRIES = 3
+  for (let attempt = 1; attempt <= VEO_MAX_RETRIES; attempt++) {
+    try {
+      await animateImage(scene.imagePath, prompt, outputPath, undefined, params.veoModel, params.veoResolution)
+      return outputPath
+    } catch (err) {
+      if (err instanceof VeoQuotaExhaustedError) break
+      if (attempt === VEO_MAX_RETRIES) break
+      await new Promise((r) => setTimeout(r, 2000))
+    }
+  }
+  // Fallback to Ken Burns
+  await imageToVideoClip(scene.imagePath, outputPath, scene.durationSec)
+  return outputPath
+}
+
+/**
  * Phase 2: Take approved storyboard → narration → animation → assembly.
  */
 export async function animateStoryboard(
