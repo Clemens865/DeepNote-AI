@@ -1,7 +1,7 @@
 import { app, shell, BrowserWindow, net, protocol } from 'electron'
 import { join, extname } from 'path'
 import { pathToFileURL } from 'url'
-import { createReadStream, statSync } from 'fs'
+import { openSync, readSync, closeSync, readFileSync, statSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { databaseService } from './services/database'
@@ -99,16 +99,18 @@ app.whenReady().then(() => {
           const match = rangeHeader.match(/bytes=(\d+)-(\d*)/)
           if (match) {
             const start = parseInt(match[1], 10)
-            const end = match[2] ? parseInt(match[2], 10) : fileSize - 1
-            const chunkSize = end - start + 1
-            const stream = createReadStream(filePath, { start, end })
+            const end = match[2] ? parseInt(match[2], 10) : Math.min(start + 1024 * 1024, fileSize - 1)
+            const chunk = Buffer.alloc(end - start + 1)
+            const fd = openSync(filePath, 'r')
+            readSync(fd, chunk, 0, chunk.length, start)
+            closeSync(fd)
 
-            return new Response(stream as unknown as ReadableStream, {
+            return new Response(chunk, {
               status: 206,
               headers: {
                 'Content-Range': `bytes ${start}-${end}/${fileSize}`,
                 'Accept-Ranges': 'bytes',
-                'Content-Length': String(chunkSize),
+                'Content-Length': String(chunk.length),
                 'Content-Type': mimeType,
               },
             })
@@ -116,8 +118,8 @@ app.whenReady().then(() => {
         }
 
         // No Range header — return full file with Accept-Ranges
-        const stream = createReadStream(filePath)
-        return new Response(stream as unknown as ReadableStream, {
+        const buffer = readFileSync(filePath)
+        return new Response(buffer, {
           status: 200,
           headers: {
             'Accept-Ranges': 'bytes',
