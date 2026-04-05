@@ -57,7 +57,7 @@ export function VideoOverviewWizard({ notebookId, onComplete, onClose }: VideoOv
   const [styleInfluence, setStyleInfluence] = useState<StyleInfluence>('style-mood')
   const [selectedStyle, setSelectedStyle] = useState('neon-circuit')
   const [imageModel, setImageModel] = useState<ImageModelId>('nano-banana-pro')
-  const [veoModel, setVeoModel] = useState<VeoModelId>('veo-3.1-fast')
+  const [veoModel, setVeoModel] = useState<VeoModelId>('veo-3.1-lite')
   const [veoResolution, setVeoResolution] = useState<VeoResolution>('720p')
   const [userInstructions, setUserInstructions] = useState('')
   const [customColors, setCustomColors] = useState(['#0a0a14', '#a855f7', '#22d3ee', '#e2e8f0'])
@@ -102,7 +102,10 @@ export function VideoOverviewWizard({ notebookId, onComplete, onClose }: VideoOv
         scenes: { sceneNumber: number; imagePath: string; narrationText: string; durationSec: number }[]
         assetName: string
       }) => {
+        console.log('[VideoWizard] storyboard-ready event', { dataContentId: data.generatedContentId, currentContentId: generatedContentId })
         if (generatedContentId && data.generatedContentId !== generatedContentId) return
+        setGeneratedContentId(data.generatedContentId)
+        console.log('[VideoWizard] generatedContentId set to', data.generatedContentId)
         setStoryboardScenes(data.scenes)
         setIsGenerating(false)
         setStep(5)
@@ -189,7 +192,12 @@ export function VideoOverviewWizard({ notebookId, onComplete, onClose }: VideoOv
   }
 
   const handleRegenerateScene = async (sceneNumber: number) => {
-    if (!generatedContentId) return
+    console.log('[VideoWizard] handleRegenerateScene called', { sceneNumber, generatedContentId })
+    if (!generatedContentId) {
+      console.error('[VideoWizard] generatedContentId is null — cannot regenerate')
+      setError('No content ID available. Please generate a storyboard first.')
+      return
+    }
     setRegeneratingScene(sceneNumber)
     try {
       const result = await window.api.videoOverviewRegenScene({

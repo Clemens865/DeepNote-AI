@@ -82,11 +82,9 @@ const PROVIDER_FALLBACK: Record<string, { input: number; output: number }> = {
 const VEO_PRICING: Record<string, { standard: number; fourK: number }> = {
   'veo-3.1-generate-preview':       { standard: 0.40, fourK: 0.60 },
   'veo-3.1-fast-generate-preview':  { standard: 0.15, fourK: 0.35 },
-  'veo-3.0-generate-001':           { standard: 0.40, fourK: 0.40 },
-  'veo-3-generate':                 { standard: 0.40, fourK: 0.40 },
-  'veo-3.0-fast-generate-001':      { standard: 0.15, fourK: 0.15 },
-  'veo-3-fast-generate':            { standard: 0.15, fourK: 0.15 },
-  'veo-2.0-generate-001':           { standard: 0.35, fourK: 0.35 },
+  'veo-3.1-lite-generate-preview':  { standard: 0.05, fourK: 0.05 },
+  'veo-3-generate-preview':         { standard: 0.40, fourK: 0.40 },
+  'veo-3-fast-generate-preview':    { standard: 0.15, fourK: 0.15 },
   'veo-2-generate':                 { standard: 0.35, fourK: 0.35 },
 }
 

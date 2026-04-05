@@ -200,16 +200,23 @@ export const IMAGE_MODELS: { id: ImageModelId; label: string; geminiModel: strin
   },
 ]
 
-export type VeoModelId = 'veo-3.1' | 'veo-3.1-fast' | 'veo-3' | 'veo-3-fast' | 'veo-2'
+export type VeoModelId = 'veo-3.1' | 'veo-3.1-fast' | 'veo-3.1-lite' | 'veo-3' | 'veo-3-fast' | 'veo-2'
 export type VeoResolution = '720p' | '1080p' | '4k'
 
 export const VEO_RESOLUTIONS: { id: VeoResolution; label: string; note: string; models: VeoModelId[] }[] = [
-  { id: '720p', label: '720p', note: 'Fast, all durations', models: ['veo-3.1', 'veo-3.1-fast', 'veo-3', 'veo-3-fast', 'veo-2'] },
-  { id: '1080p', label: '1080p', note: '8s clips only', models: ['veo-3.1', 'veo-3.1-fast', 'veo-3', 'veo-3-fast'] },
+  { id: '720p', label: '720p', note: 'Fast, all durations', models: ['veo-3.1', 'veo-3.1-fast', 'veo-3.1-lite', 'veo-3', 'veo-3-fast', 'veo-2'] },
+  { id: '1080p', label: '1080p', note: '8s clips only', models: ['veo-3.1', 'veo-3.1-fast', 'veo-3.1-lite', 'veo-3', 'veo-3-fast'] },
   { id: '4k', label: '4K', note: '8s clips, slower', models: ['veo-3.1', 'veo-3.1-fast'] },
 ]
 
 export const VEO_MODELS: { id: VeoModelId; label: string; apiModel: string; description: string; pricePerSec: string }[] = [
+  {
+    id: 'veo-3.1-lite',
+    label: 'Veo 3.1 Lite',
+    apiModel: 'veo-3.1-lite-generate-preview',
+    description: 'Cheapest — $0.05/s, 720p/1080p, audio, 4-8s',
+    pricePerSec: '$0.05',
+  },
   {
     id: 'veo-3.1-fast',
     label: 'Veo 3.1 Fast',
@@ -227,15 +234,15 @@ export const VEO_MODELS: { id: VeoModelId; label: string; apiModel: string; desc
   {
     id: 'veo-3-fast',
     label: 'Veo 3 Fast',
-    apiModel: 'veo-3-fast-generate',
-    description: 'Fast — $0.15/s, 720p/1080p, audio, 8s',
+    apiModel: 'veo-3-fast-generate-preview',
+    description: 'Fast — $0.15/s, 720p/1080p/4K, audio, 8s',
     pricePerSec: '$0.15',
   },
   {
     id: 'veo-3',
     label: 'Veo 3',
-    apiModel: 'veo-3-generate',
-    description: 'High quality — $0.40/s, 720p/1080p, audio, 8s',
+    apiModel: 'veo-3-generate-preview',
+    description: 'High quality — $0.40/s, 720p/1080p/4K, audio, 8s',
     pricePerSec: '$0.40',
   },
   {

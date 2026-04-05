@@ -22,16 +22,17 @@ function getClient(): GoogleGenAI {
 
 function resolveApiModel(modelId?: VeoModelId): string {
   const entry = VEO_MODELS.find((m) => m.id === modelId)
-  return entry?.apiModel ?? 'veo-3.1-fast-generate-preview'
+  return entry?.apiModel ?? 'veo-3.1-lite-generate-preview'
 }
 
 /** Get the fallback model API string for a given model (swap fast ↔ non-fast) */
 function getFallbackApiModel(apiModel: string): string | null {
   const fallbacks: Record<string, string> = {
-    'veo-3-fast-generate': 'veo-3-generate',
-    'veo-3-generate': 'veo-3-fast-generate',
+    'veo-3-fast-generate-preview': 'veo-3-generate-preview',
+    'veo-3-generate-preview': 'veo-3-fast-generate-preview',
     'veo-3.1-generate-preview': 'veo-3.1-fast-generate-preview',
     'veo-3.1-fast-generate-preview': 'veo-3.1-generate-preview',
+    'veo-3.1-lite-generate-preview': 'veo-3.1-fast-generate-preview',
   }
   return fallbacks[apiModel] ?? null
 }

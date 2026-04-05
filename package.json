@@ -27,7 +27,7 @@
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@ffprobe-installer/ffprobe": "^2.1.2",
     "@fontsource-variable/inter": "^5.2.8",
-    "@google/genai": "^1.0.0",
+    "@google/genai": "^1.48.0",
     "@tiptap/extension-color": "^3.19.0",
     "@tiptap/extension-link": "^3.19.0",
     "@tiptap/extension-placeholder": "^3.19.0",
