@@ -16,8 +16,14 @@ import Typography from '@tiptap/extension-typography'
 import Superscript from '@tiptap/extension-superscript'
 import Subscript from '@tiptap/extension-subscript'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import Color from '@tiptap/extension-color'
+import { TextStyle } from '@tiptap/extension-text-style'
 import { common, createLowlight } from 'lowlight'
 import { NoteEditorToolbar } from './NoteEditorToolbar'
+import { Callout } from './extensions/CalloutExtension'
+import { Details, DetailsSummary } from './extensions/ToggleExtension'
+import { SlashCommandExtension } from './extensions/SlashCommandExtension'
+import { SlashCommandMenu } from './SlashCommandMenu'
 
 const lowlight = createLowlight(common)
 
@@ -80,6 +86,12 @@ export function TiptapNoteEditor({ content, onContentChange, onNavigateToNote }:
       CodeBlockLowlight.configure({
         lowlight,
       }),
+      Color,
+      TextStyle,
+      Callout,
+      Details,
+      DetailsSummary,
+      SlashCommandExtension,
     ],
     content: htmlContent || '',
     editorProps: {
@@ -136,6 +148,7 @@ export function TiptapNoteEditor({ content, onContentChange, onNavigateToNote }:
       <NoteEditorToolbar editor={editor} />
       <div className="flex-1 overflow-auto">
         <EditorContent editor={editor} />
+        {editor && <SlashCommandMenu editor={editor} />}
       </div>
     </div>
   )

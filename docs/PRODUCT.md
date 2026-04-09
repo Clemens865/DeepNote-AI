@@ -1,6 +1,6 @@
 # DeepNote AI — Product Document
 
-**Version 1.4.0** | Desktop App for macOS, Windows, Linux
+**Version 1.4.1** | Desktop App for macOS, Windows, Linux
 **Built with** Electron + React + TypeScript
 
 ---

@@ -1,10 +1,12 @@
+import { useState, useRef, useEffect } from 'react'
 import type { Editor } from '@tiptap/react'
 import {
   Bold, Italic, Strikethrough, Code, Heading1, Heading2, Heading3,
   List, ListOrdered, ListChecks, Quote, Minus, Undo2, Redo2,
   Link as LinkIcon, Image, Table, Highlighter, Superscript, Subscript,
-  CodeSquare, Type
+  CodeSquare, Type, ChevronRight, MessageSquare, Palette
 } from 'lucide-react'
+import type { CalloutType } from './extensions/CalloutExtension'
 
 interface NoteEditorToolbarProps {
   editor: Editor | null
@@ -41,6 +43,116 @@ function ToolbarButton({
 
 function Divider() {
   return <div className="w-px h-5 bg-black/[0.08] dark:bg-white/[0.08] mx-0.5" />
+}
+
+const CALLOUT_TYPES: { type: CalloutType; label: string; color: string }[] = [
+  { type: 'note', label: 'Note', color: '#3b82f6' },
+  { type: 'tip', label: 'Tip', color: '#22c55e' },
+  { type: 'warning', label: 'Warning', color: '#f59e0b' },
+  { type: 'important', label: 'Important', color: '#ef4444' },
+  { type: 'caution', label: 'Caution', color: '#a855f7' },
+]
+
+const TEXT_COLORS = [
+  { label: 'Default', value: '' },
+  { label: 'Red', value: '#ef4444' },
+  { label: 'Orange', value: '#f97316' },
+  { label: 'Yellow', value: '#eab308' },
+  { label: 'Green', value: '#22c55e' },
+  { label: 'Blue', value: '#3b82f6' },
+  { label: 'Purple', value: '#a855f7' },
+  { label: 'Pink', value: '#ec4899' },
+  { label: 'Gray', value: '#6b7280' },
+]
+
+function CalloutDropdown({ editor }: { editor: Editor }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <ToolbarButton
+        onClick={() => setOpen(!open)}
+        active={editor.isActive('callout')}
+        title="Callout"
+      >
+        <MessageSquare size={14} />
+      </ToolbarButton>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 rounded-lg shadow-lg py-1 z-50 w-36">
+          {CALLOUT_TYPES.map((ct) => (
+            <button
+              key={ct.type}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
+              onClick={() => {
+                editor.chain().focus().setCallout({ type: ct.type }).run()
+                setOpen(false)
+              }}
+            >
+              <span
+                className="w-3 h-3 rounded-sm flex-shrink-0"
+                style={{ backgroundColor: ct.color }}
+              />
+              {ct.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ColorPickerButton({ editor }: { editor: Editor }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <ToolbarButton onClick={() => setOpen(!open)} title="Text color">
+        <Palette size={14} />
+      </ToolbarButton>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 rounded-lg shadow-lg py-1 z-50 w-36">
+          {TEXT_COLORS.map((c) => (
+            <button
+              key={c.label}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
+              onClick={() => {
+                if (c.value) {
+                  editor.chain().focus().setColor(c.value).run()
+                } else {
+                  editor.chain().focus().unsetColor().run()
+                }
+                setOpen(false)
+              }}
+            >
+              <span
+                className="w-3 h-3 rounded-full flex-shrink-0 border border-black/10 dark:border-white/10"
+                style={{ backgroundColor: c.value || 'currentColor' }}
+              />
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function NoteEditorToolbar({ editor }: NoteEditorToolbarProps) {
@@ -206,6 +318,18 @@ export function NoteEditorToolbar({ editor }: NoteEditorToolbarProps) {
       <ToolbarButton onClick={insertTable} title="Insert table">
         <Table size={14} />
       </ToolbarButton>
+
+      <Divider />
+
+      {/* Callout, Toggle, Color */}
+      <CalloutDropdown editor={editor} />
+      <ToolbarButton
+        onClick={() => editor.chain().focus().setDetails().run()}
+        title="Toggle block"
+      >
+        <ChevronRight size={14} />
+      </ToolbarButton>
+      <ColorPickerButton editor={editor} />
 
       <Divider />
 

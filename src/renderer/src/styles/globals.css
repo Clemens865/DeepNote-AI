@@ -187,6 +187,30 @@
   }
   .dark .ProseMirror mark { background-color: rgba(250, 204, 21, 0.3); color: inherit; }
 
+  /* Note editor: callout blocks */
+  .ProseMirror .callout {
+    border-left: 4px solid;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin: 0.5rem 0;
+  }
+  .ProseMirror .callout-note { border-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
+  .ProseMirror .callout-warning { border-color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
+  .ProseMirror .callout-tip { border-color: #22c55e; background: rgba(34, 197, 94, 0.05); }
+  .ProseMirror .callout-important { border-color: #ef4444; background: rgba(239, 68, 68, 0.05); }
+  .ProseMirror .callout-caution { border-color: #a855f7; background: rgba(168, 85, 247, 0.05); }
+
+  /* Note editor: toggle/details blocks */
+  .ProseMirror details { margin: 0.5rem 0; }
+  .ProseMirror details summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.25rem 0;
+    user-select: none;
+  }
+  .ProseMirror details summary:hover { color: #6366f1; }
+  .ProseMirror details > :not(summary) { padding-left: 1.25rem; }
+
   /* Note editor: images */
   .ProseMirror img {
     max-width: 100%;
