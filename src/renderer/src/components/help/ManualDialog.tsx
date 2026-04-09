@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   X, Search, BookOpen, MessageSquare, FolderOpen,
   Upload, FileText, Pencil, Sparkles, ChevronRight,
-  Globe, BarChart3, BookOpenCheck,
+  Globe, BarChart3, BookOpenCheck, GitBranch, BookMarked,
+  CheckSquare, Columns, Frame, Wand2,
 } from 'lucide-react'
 
 interface Section {
@@ -33,7 +34,7 @@ const SECTIONS: Section[] = [
       },
       {
         heading: 'Navigation',
-        body: 'The home screen lists all your notebooks. Click one to open it. Inside a notebook you\'ll find the Sources panel (left), Chat or Notes view (center), and Studio panel (right). Use the header buttons for global search, dark mode toggle, export, and settings.',
+        body: 'The home screen lists all your notebooks. Click one to open it. Inside a notebook you\'ll find the Sources panel (left) with navigation for 8 views: Chat, Notes, Graph, Wiki, Kanban, Tasks, Canvas, and Editor. The Studio panel (right) offers AI generation tools. Use Cmd+P for the command palette, Cmd+O for quick note switching, and Cmd+K for global search.',
       },
     ],
   },
@@ -116,16 +117,186 @@ const SECTIONS: Section[] = [
   },
   {
     id: 'notes',
-    title: 'Notes',
+    title: 'Notes & Rich Editor',
     Icon: Pencil,
     content: [
       {
-        heading: 'Creating Notes',
-        body: 'The Notes panel lets you create and edit free-form notes within a notebook. Each note has a title and rich text content.',
+        heading: 'Rich Text Editor',
+        body: 'Notes use a full rich text editor (Tiptap) with a formatting toolbar. Supports headings (H1-H3), bold, italic, strikethrough, inline code, highlight, superscript/subscript, bullet lists, ordered lists, task lists (checkboxes), blockquotes, code blocks with syntax highlighting, tables, images, links, and horizontal rules.',
       },
       {
-        heading: 'Note to Source',
-        body: 'You can convert any note into a source, making its content available to the AI for chat and studio generation. This is powerful for adding your own analysis or annotations to the knowledge base.',
+        heading: 'Wiki Links & Backlinks',
+        body: 'Type [[Note Title]] to create a wiki-style link to another note. The Backlinks panel at the bottom of each note shows all other notes that link to it, with context snippets. Click any backlink to navigate.',
+      },
+      {
+        heading: 'Tags',
+        body: 'Add #hashtags anywhere in your note content. Tags are auto-extracted and shown as chips. Use the Tag Browser above the note list to filter notes by tag. Nested tags like #parent/child are supported.',
+      },
+      {
+        heading: 'Folders',
+        body: 'Organize notes into folders using the folder tree in the sidebar. Create nested folders, drag notes between them, and right-click for rename/delete/new subfolder. Click "All Notes" to see everything.',
+      },
+      {
+        heading: 'Note Search (FTS5)',
+        body: 'Full-text search across all notes in a notebook using SQLite FTS5. Results show matched snippets with highlighted terms. Access via the search panel or Cmd+K global search.',
+      },
+      {
+        heading: 'Outline Panel',
+        body: 'The outline shows a table of contents extracted from your note\'s headings. Click any heading to scroll to it. Headings are nested (H2 under H1, H3 under H2).',
+      },
+      {
+        heading: 'Daily Notes',
+        body: 'Click the date button in the Notes header to create or open today\'s daily note. Daily notes use the "Daily Note" template with sections for Tasks, Notes, and Reflections. A green dot indicates today\'s note already exists.',
+      },
+      {
+        heading: 'Templates',
+        body: 'Click "New from Template" to create a note from a pre-built template. Three defaults are included: Daily Note, Meeting Notes, and Research Note. Templates support {{date}} and {{title}} placeholders. Create your own custom templates too.',
+      },
+      {
+        heading: 'Convert to Source',
+        body: 'Convert any note into a source, making its content available to the AI for chat and studio generation. This is powerful for adding your own analysis to the knowledge base.',
+      },
+    ],
+  },
+  {
+    id: 'graph',
+    title: 'Knowledge Graph',
+    Icon: GitBranch,
+    content: [
+      {
+        heading: 'What Is the Knowledge Graph?',
+        body: 'The graph visualizes all your notes as an interconnected network. Each note is a node; [[wiki links]] between notes create edges. The graph helps you discover connections and patterns across your research.',
+      },
+      {
+        heading: 'Navigating the Graph',
+        body: 'Scroll to zoom in/out, click and drag to pan, drag individual nodes to rearrange them. Hover over a node to see its title, connection count, and tags. Double-click a node to open that note.',
+      },
+      {
+        heading: 'Node Appearance',
+        body: 'Nodes are color-coded by their first tag. Larger nodes have more connections. The force-directed layout automatically clusters related notes together based on their link structure.',
+      },
+      {
+        heading: 'Graph Controls',
+        body: 'Use the zoom buttons (top right) to zoom in, zoom out, or reset the view. The header shows the total node and link count.',
+      },
+    ],
+  },
+  {
+    id: 'wiki',
+    title: 'Knowledge Wiki',
+    Icon: BookMarked,
+    content: [
+      {
+        heading: 'What Is the Knowledge Wiki?',
+        body: 'Inspired by Andrej Karpathy\'s LLM Wiki concept, the Knowledge Wiki is an AI-maintained layer of structured knowledge pages. When you add sources, the AI automatically generates entity pages, concept summaries, and topic overviews — building a persistent knowledge base that grows with every source.',
+      },
+      {
+        heading: 'How Ingestion Works',
+        body: 'Click "Ingest All" to trigger the AI to process your sources. For each source, the AI extracts entities, concepts, and topics, then creates or updates wiki pages with cross-references. A single source typically generates 5-10 wiki pages.',
+      },
+      {
+        heading: 'Wiki Page Types',
+        body: 'Six page types: Entity (people, organizations, products), Concept (abstract ideas, patterns), Topic (domain-specific articles), Comparison (cross-cutting analysis), Overview (high-level synthesis), and Source Summary (per-source digest).',
+      },
+      {
+        heading: 'Coverage & Confidence',
+        body: 'Each wiki page shows a coverage indicator (high/medium/low — based on how many sources contribute) and a confidence score (0-100%). High coverage means the AI has strong, multi-source evidence. Low coverage means the information comes from a single source.',
+      },
+      {
+        heading: 'Wiki Lint',
+        body: 'Click "Lint" to run health checks on your wiki. The linter detects orphan pages (no source references), low-coverage pages, and unlinked pages (not connected to other wiki pages). Fix suggestions help you improve wiki quality.',
+      },
+      {
+        heading: 'Activity Log',
+        body: 'Every ingest, update, and lint operation is logged chronologically. The log helps you track how your wiki evolves over time.',
+      },
+    ],
+  },
+  {
+    id: 'tasks',
+    title: 'Tasks',
+    Icon: CheckSquare,
+    content: [
+      {
+        heading: 'Task Extraction',
+        body: 'Tasks are automatically extracted from your notes when you use checkboxes (- [ ] or - [x] in markdown, or the task list button in the toolbar). Tasks sync every time you save a note.',
+      },
+      {
+        heading: 'Vault-Wide Task View',
+        body: 'The Tasks panel shows all tasks across all notes in your notebook. Filter by status (All/Incomplete/Completed/Overdue/Today) and priority (High/Medium/Low). Sort by due date, priority, or source note.',
+      },
+      {
+        heading: 'Due Dates & Priority',
+        body: 'Add due:2026-04-15 to a task line to set a due date. Add !high, !medium, or !low to set priority. Overdue tasks show a red badge; today\'s tasks show yellow.',
+      },
+      {
+        heading: 'Task Interaction',
+        body: 'Toggle task completion directly from the Tasks panel — the checkbox in the source note updates automatically. Click the note title to navigate to the source note.',
+      },
+    ],
+  },
+  {
+    id: 'kanban',
+    title: 'Kanban Board',
+    Icon: Columns,
+    content: [
+      {
+        heading: 'How Kanban Works',
+        body: 'The Kanban board organizes your notes into columns based on their tags. Notes without tags go into the "Inbox" column. Each additional tag creates its own column.',
+      },
+      {
+        heading: 'Moving Cards',
+        body: 'Drag and drop note cards between columns to change their primary tag. This updates the note content automatically.',
+      },
+      {
+        heading: 'Adding Columns',
+        body: 'Click "Add Column" to create a new tag-based column. This is a quick way to set up a workflow (e.g., "To Do", "In Progress", "Done") using tags.',
+      },
+    ],
+  },
+  {
+    id: 'canvas',
+    title: 'Canvas',
+    Icon: Frame,
+    content: [
+      {
+        heading: 'Infinite Canvas',
+        body: 'The Canvas provides a freeform spatial workspace powered by tldraw. Create multiple canvases per notebook to visually organize your ideas, create diagrams, and spatially arrange content.',
+      },
+      {
+        heading: 'Canvas Tools',
+        body: 'Draw shapes, add text, create arrows, freehand sketch, add sticky notes, and more. The full tldraw toolkit is available — select, draw, erase, add shapes, text, images, and connectors.',
+      },
+      {
+        heading: 'Auto-Save',
+        body: 'Canvas changes are automatically saved every second. Switch between canvases or close the app — your work is preserved.',
+      },
+      {
+        heading: 'Managing Canvases',
+        body: 'The sidebar lists all canvases in the current notebook. Click "New Canvas" to create one. Hover over a canvas to see the delete button. Click a canvas title to switch to it.',
+      },
+    ],
+  },
+  {
+    id: 'ai-features',
+    title: 'AI-Powered Note Features',
+    Icon: Wand2,
+    content: [
+      {
+        heading: 'AI Features Panel',
+        body: 'Click the sparkle/wand icon in the note editor header to open the AI features panel. It provides three AI-powered tools that enhance your notes.',
+      },
+      {
+        heading: 'Auto-Tag Suggestions',
+        body: 'Click "Suggest Tags" and the AI analyzes your note content to recommend 3-5 relevant hashtags. Click any suggestion to add it to your note.',
+      },
+      {
+        heading: 'Auto-Link Suggestions',
+        body: 'Click "Find Links" to discover mentions of other notes in your content that aren\'t yet linked. The system finds note titles that appear in your text and suggests wrapping them with [[wiki links]]. Click to apply.',
+      },
+      {
+        heading: 'Note Summarization',
+        body: 'Generate a summary of your note in three lengths: Short (1-2 sentences), Medium (a paragraph), or Long (3-4 paragraphs). Copy the summary to clipboard or insert it at the top of your note.',
       },
     ],
   },
@@ -269,6 +440,22 @@ const SECTIONS: Section[] = [
       {
         heading: 'Notes as Sources',
         body: 'Write notes with your own analysis or key takeaways, then convert them to sources. The AI will incorporate your insights alongside the original documents.',
+      },
+      {
+        heading: 'Build Your Knowledge Wiki',
+        body: 'After adding several sources, go to the Wiki view and click "Ingest All". The AI builds structured entity and concept pages from your sources. Over time, the wiki becomes a persistent, cross-referenced knowledge base — far more useful than searching raw documents.',
+      },
+      {
+        heading: 'Use the Graph for Discovery',
+        body: 'Create [[wiki links]] between related notes, then open the Graph view to visualize your knowledge network. Clusters and connections often reveal patterns you hadn\'t noticed in linear note-taking.',
+      },
+      {
+        heading: 'Tasks Across Notes',
+        body: 'Use task list checkboxes in any note, then open the Tasks view for a vault-wide view of everything you need to do. Add due:YYYY-MM-DD for deadlines and !high for priority.',
+      },
+      {
+        heading: 'Keyboard Shortcuts',
+        body: 'Cmd+P opens the command palette (access any view or action). Cmd+O opens the quick note switcher. Cmd+K opens global search. Cmd+B/I/U for bold/italic/underline in the editor.',
       },
     ],
   },

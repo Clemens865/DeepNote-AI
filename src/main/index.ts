@@ -18,6 +18,9 @@ import { registerMemoryHandlers } from './ipc/memory'
 import { registerClipboardHandlers } from './ipc/clipboard'
 import { registerVoiceHandlers } from './ipc/voice'
 import { registerKnowledgeHandlers } from './ipc/knowledge'
+import { registerWikiHandlers } from './ipc/wiki'
+import { registerTaskHandlers } from './ipc/tasks'
+import { registerCanvasHandlers } from './ipc/canvas'
 import { trayService } from './services/tray'
 import { fileWatcherService } from './services/fileWatcher'
 import { deepnoteApiServer } from './services/deepnoteApi'
@@ -89,6 +92,7 @@ app.whenReady().then(() => {
   registerNotebookHandlers()
   registerSourceHandlers()
   registerNoteHandlers()
+  registerTaskHandlers()
   registerChatHandlers()
   registerStudioHandlers()
   registerConfigHandlers()
@@ -99,6 +103,8 @@ app.whenReady().then(() => {
   registerClipboardHandlers()
   registerVoiceHandlers()
   registerKnowledgeHandlers()
+  registerWikiHandlers()
+  registerCanvasHandlers()
 
   // Start DeepNote REST API server for bidirectional integration
   deepnoteApiServer.start()

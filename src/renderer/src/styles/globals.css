@@ -70,7 +70,9 @@
   .ProseMirror { outline: none; }
   .ProseMirror p { margin: 0.25rem 0; }
   .ProseMirror ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+  .ProseMirror ol { padding-left: 1.5rem; margin: 0.5rem 0; }
   .ProseMirror li { list-style-type: disc; }
+  .ProseMirror ol li { list-style-type: decimal; }
   .ProseMirror a { color: #3b82f6; text-decoration: underline; }
   .ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
@@ -79,6 +81,134 @@
     pointer-events: none;
     height: 0;
   }
+
+  /* Note editor: headings */
+  .ProseMirror h1 { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; line-height: 1.3; }
+  .ProseMirror h2 { font-size: 1.25rem; font-weight: 600; margin: 0.75rem 0 0.375rem; line-height: 1.35; }
+  .ProseMirror h3 { font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0 0.25rem; line-height: 1.4; }
+
+  /* Note editor: blockquote */
+  .ProseMirror blockquote {
+    border-left: 3px solid #818cf8;
+    padding-left: 1rem;
+    margin: 0.5rem 0;
+    color: #71717a;
+    font-style: italic;
+  }
+  .dark .ProseMirror blockquote { border-left-color: #6366f1; color: #a1a1aa; }
+
+  /* Note editor: code blocks */
+  .ProseMirror pre {
+    background: #f4f4f5;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin: 0.5rem 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+  .dark .ProseMirror pre { background: #1a1a2e; }
+  .ProseMirror code {
+    background: #f4f4f5;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+  .dark .ProseMirror code { background: rgba(255, 255, 255, 0.08); }
+  .ProseMirror pre code { background: none; padding: 0; border-radius: 0; }
+
+  /* Note editor: horizontal rule */
+  .ProseMirror hr {
+    border: none;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    margin: 1rem 0;
+  }
+  .dark .ProseMirror hr { border-top-color: rgba(255, 255, 255, 0.1); }
+
+  /* Note editor: task list */
+  .ProseMirror ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+  }
+  .ProseMirror ul[data-type="taskList"] li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    list-style: none;
+  }
+  .ProseMirror ul[data-type="taskList"] li label {
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+  }
+  .ProseMirror ul[data-type="taskList"] li label input[type="checkbox"] {
+    accent-color: #6366f1;
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+  }
+  .ProseMirror ul[data-type="taskList"] li div {
+    flex: 1;
+  }
+  .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+
+  /* Note editor: tables */
+  .ProseMirror table {
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+    width: 100%;
+    table-layout: fixed;
+    overflow: hidden;
+  }
+  .ProseMirror th, .ProseMirror td {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0.375rem 0.625rem;
+    vertical-align: top;
+    min-width: 80px;
+    font-size: 0.85rem;
+  }
+  .dark .ProseMirror th, .dark .ProseMirror td { border-color: rgba(255, 255, 255, 0.1); }
+  .ProseMirror th {
+    background: #f9fafb;
+    font-weight: 600;
+    text-align: left;
+  }
+  .dark .ProseMirror th { background: rgba(255, 255, 255, 0.04); }
+
+  /* Note editor: highlight */
+  .ProseMirror mark {
+    background-color: #fef08a;
+    border-radius: 0.125rem;
+    padding: 0.0625rem 0.125rem;
+  }
+  .dark .ProseMirror mark { background-color: rgba(250, 204, 21, 0.3); color: inherit; }
+
+  /* Note editor: images */
+  .ProseMirror img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 0.5rem 0;
+  }
+
+  /* Syntax highlighting for code blocks */
+  .ProseMirror .hljs-comment, .ProseMirror .hljs-quote { color: #6b7280; font-style: italic; }
+  .ProseMirror .hljs-keyword, .ProseMirror .hljs-selector-tag { color: #8b5cf6; }
+  .ProseMirror .hljs-string, .ProseMirror .hljs-addition { color: #059669; }
+  .ProseMirror .hljs-number { color: #d97706; }
+  .ProseMirror .hljs-built_in { color: #0891b2; }
+  .ProseMirror .hljs-title, .ProseMirror .hljs-section { color: #2563eb; font-weight: 600; }
+  .ProseMirror .hljs-attr { color: #d97706; }
+  .ProseMirror .hljs-deletion { color: #dc2626; }
+  .dark .ProseMirror .hljs-keyword, .dark .ProseMirror .hljs-selector-tag { color: #a78bfa; }
+  .dark .ProseMirror .hljs-string, .dark .ProseMirror .hljs-addition { color: #34d399; }
+  .dark .ProseMirror .hljs-number { color: #fbbf24; }
+  .dark .ProseMirror .hljs-built_in { color: #22d3ee; }
+  .dark .ProseMirror .hljs-title, .dark .ProseMirror .hljs-section { color: #60a5fa; }
 
   /* Flashcard 3D flip */
   .flashcard-container { perspective: 1000px; }
@@ -184,4 +314,25 @@
 /* Hide scrollbar utility */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Excalidraw: undo Tailwind v4 preflight resets that break Excalidraw's UI.
+   Tailwind's * selector resets border-style, line-height, and shows radio inputs
+   that Excalidraw expects to be hidden via its own CSS. */
+.excalidraw-container {
+  width: 100%;
+  height: 100%;
+}
+.excalidraw .ToolIcon_type_radio,
+.excalidraw .ToolIcon_type_checkbox {
+  appearance: none !important;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border-width: 0 !important;
+  padding: 0 !important;
+  margin: -1px !important;
 }

@@ -1,6 +1,6 @@
 # DeepNote AI — Product Document
 
-**Version 1.2.2** | Desktop App for macOS, Windows, Linux
+**Version 1.4.0** | Desktop App for macOS, Windows, Linux
 **Built with** Electron + React + TypeScript
 
 ---
@@ -73,15 +73,104 @@ Chat with your sources using your preferred AI provider. Streaming responses wit
 
 ---
 
-### 4. Notes & Editor
+### 4. Notes — Obsidian-Class Knowledge Management
 
-A built-in note-taking system with wiki-style linking and rich text editing.
+A full-featured knowledge management system with rich editing, organization, and AI-powered features.
 
-- **Rich text editor** (Tiptap) — bold, italic, headings, code blocks, links, alignment
-- **Auto-save** — changes persist immediately
-- **Tag system** — tag notes and browse by tag cloud with counts
-- **Backlinks** — wiki-style `[[Note Title]]` linking with backlink panel
-- **Convert notes to sources** — feed your notes back into the AI context
+**Rich Editor (Tiptap)**
+- Full formatting toolbar: headings (H1-H3), bold, italic, strikethrough, highlight, super/subscript
+- Task lists with checkboxes, bullet/ordered lists, blockquotes
+- Code blocks with syntax highlighting (via lowlight), inline code
+- Tables (resizable), images, links, horizontal rules
+- Auto-save with debouncing, backward compat for plain text notes
+
+**Organization**
+- **Folders** — nested folder hierarchy with drag-and-drop, context menus
+- **FTS5 Search** — full-text search across all notes using SQLite FTS5 with auto-sync triggers
+- **Outline Panel** — table of contents from headings, click to scroll
+- **Tags** — auto-extracted #hashtags, tag browser with counts, nested tags
+- **Wiki Links** — `[[Note Title]]` linking with backlink panel and link resolution
+- **Quick Switcher** — Cmd+O fuzzy note finder
+- **Command Palette** — Cmd+P access to all views and actions
+
+**Daily Notes & Templates**
+- One-click daily note creation with date-based templates
+- Three built-in templates: Daily Note, Meeting Notes, Research Note
+- Custom templates with {{date}} and {{title}} placeholders
+
+**Convert to Source** — feed notes back into the AI context for chat and studio
+
+---
+
+### 4a. Knowledge Graph
+
+Interactive force-directed graph visualization of all notes and their connections.
+
+- **Global graph** — all notes as nodes, [[wiki links]] as edges
+- **Visual clustering** — force-directed layout groups related notes
+- **Tag coloring** — nodes color-coded by their first tag
+- **Interaction** — zoom, pan, drag nodes, hover for details, double-click to navigate
+- **Sizing** — node size scales with connection count
+
+---
+
+### 4b. Knowledge Wiki (Karpathy Concept)
+
+AI-maintained persistent knowledge pages, inspired by Andrej Karpathy's LLM Wiki architecture. Instead of re-discovering knowledge from raw documents on every query, the AI builds and maintains a structured wiki.
+
+- **AI Ingest Pipeline** — add sources → AI generates entity, concept, topic, comparison, overview, and source-summary pages
+- **Coverage Indicators** — high/medium/low badges based on number of contributing sources
+- **Confidence Scores** — 0-100% per page, reflecting evidence strength
+- **Cross-References** — AI maintains links between related wiki pages
+- **Lint Engine** — detects orphan pages, low coverage, unlinked pages
+- **Activity Log** — chronological record of ingests, updates, and maintenance
+- **Six page types:** Entity, Concept, Topic, Comparison, Overview, Source Summary
+
+---
+
+### 4c. Tasks
+
+Vault-wide task management extracted from note checkboxes.
+
+- **Auto-extraction** — `- [ ]` and `- [x]` tasks automatically synced from notes
+- **Due dates** — add `due:YYYY-MM-DD` to set deadlines
+- **Priority** — `!high`, `!medium`, `!low` markers with color indicators
+- **Filters** — All, Incomplete, Completed, Overdue, Today; filter by priority
+- **Two-way sync** — toggle tasks in the Tasks panel, note content updates automatically
+- **Source linking** — click source note title to navigate
+
+---
+
+### 4d. Kanban Board
+
+Tag-based kanban board for visual note organization.
+
+- **Auto-columns** — one column per tag, "Inbox" for untagged notes
+- **Drag-and-drop** — move cards between columns to change tags
+- **Custom columns** — add new tag-based columns on the fly
+- **Card preview** — title + content snippet + tag badges
+
+---
+
+### 4e. Canvas (tldraw)
+
+Infinite spatial workspace for freeform visual thinking.
+
+- **Full tldraw toolkit** — shapes, text, arrows, freehand drawing, sticky notes, images, connectors
+- **Multiple canvases** — create and manage multiple canvases per notebook
+- **Auto-save** — changes persist every second
+- **Snapshot storage** — canvas state saved as JSON in SQLite
+
+---
+
+### 4f. AI-Powered Note Features
+
+AI assistance built into the note editor.
+
+- **Auto-Tag Suggestions** — AI analyzes content and suggests 3-5 relevant hashtags
+- **Auto-Link Suggestions** — finds mentions of other notes not yet wrapped in [[wiki links]]
+- **Note Summarization** — generate short (1-2 sentences), medium (paragraph), or long (3-4 paragraphs) summaries
+- **Toggle panel** — sparkle icon in editor header opens/closes the AI features sidebar
 
 ---
 

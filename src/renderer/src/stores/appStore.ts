@@ -4,7 +4,7 @@ interface AppState {
   sidebarCollapsed: boolean
   studioCollapsed: boolean
   sourcesCollapsed: boolean
-  activeView: 'chat' | 'notes' | 'editor'
+  activeView: 'chat' | 'notes' | 'editor' | 'graph' | 'wiki' | 'kanban' | 'tasks' | 'canvas'
   darkMode: boolean
   toggleSidebar: () => void
   toggleStudio: () => void
@@ -12,7 +12,7 @@ interface AppState {
   setSidebarCollapsed: (v: boolean) => void
   setStudioCollapsed: (v: boolean) => void
   setSourcesCollapsed: (v: boolean) => void
-  setActiveView: (v: 'chat' | 'notes' | 'editor') => void
+  setActiveView: (v: 'chat' | 'notes' | 'editor' | 'graph' | 'wiki' | 'kanban' | 'tasks' | 'canvas') => void
   toggleDarkMode: () => void
 }
 

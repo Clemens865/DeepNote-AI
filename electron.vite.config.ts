@@ -27,6 +27,9 @@ export default defineConfig({
         '@shared': resolve('src/shared')
       }
     },
-    plugins: [react(), tailwindcss()]
+    plugins: [react(), tailwindcss({
+      // Exclude Excalidraw CSS from Tailwind processing
+      exclude: ['**/node_modules/@excalidraw/**']
+    })]
   }
 })

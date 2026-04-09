@@ -5,7 +5,7 @@ import { FileTreeView } from '../workspace/FileTreeView'
 import { WorkspaceSyncBanner } from '../workspace/WorkspaceSyncBanner'
 import { useNotebookStore } from '../../stores/notebookStore'
 import { useAppStore } from '../../stores/appStore'
-import { Plus, PanelLeftClose, PanelLeftOpen, MessageSquare, StickyNote, BookOpen, FileCode } from 'lucide-react'
+import { Plus, PanelLeftClose, PanelLeftOpen, MessageSquare, StickyNote, BookOpen, FileCode, GitBranch, BookMarked, Columns, CheckSquare, Frame } from 'lucide-react'
 
 interface SourcesPanelProps {
   collapsed: boolean
@@ -98,6 +98,61 @@ export function SourcesPanel({ collapsed, onToggle }: SourcesPanelProps) {
           >
             <StickyNote size={18} />
             Notes
+          </button>
+          <button
+            onClick={() => setActiveView('graph')}
+            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all duration-200 text-sm ${
+              activeView === 'graph'
+                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium'
+                : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
+            }`}
+          >
+            <GitBranch size={18} />
+            Graph
+          </button>
+          <button
+            onClick={() => setActiveView('wiki')}
+            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all duration-200 text-sm ${
+              activeView === 'wiki'
+                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium'
+                : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
+            }`}
+          >
+            <BookMarked size={18} />
+            Wiki
+          </button>
+          <button
+            onClick={() => setActiveView('kanban')}
+            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all duration-200 text-sm ${
+              activeView === 'kanban'
+                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium'
+                : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
+            }`}
+          >
+            <Columns size={18} />
+            Kanban
+          </button>
+          <button
+            onClick={() => setActiveView('tasks')}
+            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all duration-200 text-sm ${
+              activeView === 'tasks'
+                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium'
+                : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
+            }`}
+          >
+            <CheckSquare size={18} />
+            Tasks
+          </button>
+          <button
+            onClick={() => setActiveView('canvas')}
+            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all duration-200 text-sm ${
+              activeView === 'canvas'
+                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium'
+                : 'text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
+            }`}
+          >
+            <Frame size={18} />
+            Canvas
           </button>
           {isWorkspace && (
             <button

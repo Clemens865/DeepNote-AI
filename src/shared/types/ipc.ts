@@ -1,4 +1,4 @@
-import type { Notebook, Source, Note, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, TokenUsageSummary, ImageModelId, StyleInfluence, StructuredSlide, PresentationTheme, VeoModelId, VeoResolution } from './index'
+import type { Notebook, Source, Note, NoteFolder, NoteTemplate, NoteTask, TasksListFilter, TaskStats, ChatMessage, GeneratedContent, WorkspaceFile, WorkspaceTreeNode, WorkspaceDiffResult, SlideRenderMode, SlideTextElement, ReportFormatSuggestion, UserMemory, SourceRecommendation, TokenUsageSummary, ImageModelId, StyleInfluence, StructuredSlide, PresentationTheme, VeoModelId, VeoResolution, WikiPage, WikiLogEntry, WikiLintResult, WikiPageType, WikiCoverage, Canvas } from './index'
 
 export const IPC_CHANNELS = {
   // Notebooks
@@ -23,6 +23,24 @@ export const IPC_CHANNELS = {
   NOTES_TAGS: 'notes:tags',
   NOTES_BACKLINKS: 'notes:backlinks',
   NOTES_RESOLVE_LINK: 'notes:resolveLink',
+  NOTES_MOVE_TO_FOLDER: 'notes:moveToFolder',
+  NOTES_SUGGEST_TAGS: 'notes:suggestTags',
+  NOTES_SUGGEST_LINKS: 'notes:suggestLinks',
+  NOTES_SUMMARIZE: 'notes:summarize',
+
+  // Note Folders
+  NOTE_FOLDERS_LIST: 'note-folders:list',
+  NOTE_FOLDERS_CREATE: 'note-folders:create',
+  NOTE_FOLDERS_UPDATE: 'note-folders:update',
+  NOTE_FOLDERS_DELETE: 'note-folders:delete',
+  NOTES_SEARCH: 'notes:search',
+  NOTES_GET_DAILY: 'notes:getDaily',
+
+  // Note Templates
+  NOTE_TEMPLATES_LIST: 'note-templates:list',
+  NOTE_TEMPLATES_CREATE: 'note-templates:create',
+  NOTE_TEMPLATES_UPDATE: 'note-templates:update',
+  NOTE_TEMPLATES_DELETE: 'note-templates:delete',
 
   // Notebooks (extra)
   NOTEBOOKS_EXPORT: 'notebooks:export',
@@ -159,6 +177,29 @@ export const IPC_CHANNELS = {
   // System
   SYSTEM_OPEN_FILE: 'system:openFile',
 
+  // Wiki
+  WIKI_PAGES_LIST: 'wiki:pages-list',
+  WIKI_PAGE_GET: 'wiki:page-get',
+  WIKI_PAGE_CREATE: 'wiki:page-create',
+  WIKI_PAGE_UPDATE: 'wiki:page-update',
+  WIKI_PAGE_DELETE: 'wiki:page-delete',
+  WIKI_INGEST: 'wiki:ingest',
+  WIKI_QUERY: 'wiki:query',
+  WIKI_LINT: 'wiki:lint',
+  WIKI_LOG_LIST: 'wiki:log-list',
+
+  // Canvas
+  CANVAS_LIST: 'canvas:list',
+  CANVAS_CREATE: 'canvas:create',
+  CANVAS_GET: 'canvas:get',
+  CANVAS_UPDATE: 'canvas:update',
+  CANVAS_DELETE: 'canvas:delete',
+
+  // Tasks
+  TASKS_LIST: 'tasks:list',
+  TASKS_UPDATE: 'tasks:update',
+  TASKS_STATS: 'tasks:stats',
+
   // DeepNote API
   DEEPNOTE_API_STATUS: 'deepnote-api:status',
 
@@ -212,6 +253,61 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.NOTES_RESOLVE_LINK]: {
     args: [{ notebookId: string; linkTitle: string }]
     return: { id: string; title: string } | null
+  }
+  [IPC_CHANNELS.NOTES_MOVE_TO_FOLDER]: {
+    args: [{ noteId: string; folderId: string | null }]
+    return: Note
+  }
+  [IPC_CHANNELS.NOTES_SUGGEST_TAGS]: {
+    args: [{ notebookId: string; noteId: string; content: string }]
+    return: string[]
+  }
+  [IPC_CHANNELS.NOTES_SUGGEST_LINKS]: {
+    args: [{ notebookId: string; noteId: string; content: string }]
+    return: string[]
+  }
+  [IPC_CHANNELS.NOTES_SUMMARIZE]: {
+    args: [{ content: string; length: 'short' | 'medium' | 'long' }]
+    return: string
+  }
+
+  // Note Folders
+  [IPC_CHANNELS.NOTE_FOLDERS_LIST]: { args: [string]; return: NoteFolder[] }
+  [IPC_CHANNELS.NOTE_FOLDERS_CREATE]: {
+    args: [{ notebookId: string; name: string; parentId?: string | null }]
+    return: NoteFolder
+  }
+  [IPC_CHANNELS.NOTE_FOLDERS_UPDATE]: {
+    args: [string, Partial<Pick<NoteFolder, 'name' | 'parentId' | 'sortOrder'>>]
+    return: NoteFolder
+  }
+  [IPC_CHANNELS.NOTE_FOLDERS_DELETE]: { args: [string]; return: void }
+
+  [IPC_CHANNELS.NOTES_SEARCH]: {
+    args: [{ notebookId: string; query: string }]
+    return: Note[]
+  }
+  [IPC_CHANNELS.NOTES_GET_DAILY]: {
+    args: [{ notebookId: string }]
+    return: Note
+  }
+
+  // Note Templates
+  [IPC_CHANNELS.NOTE_TEMPLATES_LIST]: {
+    args: [{ notebookId?: string }]
+    return: NoteTemplate[]
+  }
+  [IPC_CHANNELS.NOTE_TEMPLATES_CREATE]: {
+    args: [{ notebookId?: string; title: string; content: string; description?: string; isGlobal?: boolean }]
+    return: NoteTemplate
+  }
+  [IPC_CHANNELS.NOTE_TEMPLATES_UPDATE]: {
+    args: [string, Partial<Pick<NoteTemplate, 'title' | 'content' | 'description'>>]
+    return: NoteTemplate
+  }
+  [IPC_CHANNELS.NOTE_TEMPLATES_DELETE]: {
+    args: [string]
+    return: void
   }
 
   // Chat
@@ -700,6 +796,72 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.HTML_PRESENTATION_PARSE_TEMPLATE]: {
     args: [{ filePath: string }]
     return: PresentationTheme
+  }
+
+  // Wiki
+  [IPC_CHANNELS.WIKI_PAGES_LIST]: { args: [string]; return: WikiPage[] }
+  [IPC_CHANNELS.WIKI_PAGE_GET]: { args: [string]; return: WikiPage | null }
+  [IPC_CHANNELS.WIKI_PAGE_CREATE]: {
+    args: [{
+      notebookId: string
+      title: string
+      content: string
+      pageType: WikiPageType
+      sourceIds?: string[]
+      coverage?: WikiCoverage
+      confidence?: number
+      relatedPages?: string[]
+      tags?: string[]
+    }]
+    return: WikiPage
+  }
+  [IPC_CHANNELS.WIKI_PAGE_UPDATE]: {
+    args: [string, Partial<Pick<WikiPage, 'title' | 'content' | 'pageType' | 'sourceIds' | 'coverage' | 'confidence' | 'relatedPages' | 'tags'>>]
+    return: WikiPage
+  }
+  [IPC_CHANNELS.WIKI_PAGE_DELETE]: { args: [string]; return: void }
+  [IPC_CHANNELS.WIKI_INGEST]: {
+    args: [{ notebookId: string; sourceId: string }]
+    return: { pagesCreated: number; pagesUpdated: number; pageIds: string[] }
+  }
+  [IPC_CHANNELS.WIKI_QUERY]: {
+    args: [{ notebookId: string; query: string; limit?: number }]
+    return: WikiPage[]
+  }
+  [IPC_CHANNELS.WIKI_LINT]: {
+    args: [string]
+    return: WikiLintResult
+  }
+  [IPC_CHANNELS.WIKI_LOG_LIST]: {
+    args: [{ notebookId: string; limit?: number }]
+    return: WikiLogEntry[]
+  }
+
+  // Canvas
+  [IPC_CHANNELS.CANVAS_LIST]: { args: [string]; return: Canvas[] }
+  [IPC_CHANNELS.CANVAS_CREATE]: {
+    args: [{ notebookId: string; title?: string }]
+    return: Canvas
+  }
+  [IPC_CHANNELS.CANVAS_GET]: { args: [string]; return: Canvas | null }
+  [IPC_CHANNELS.CANVAS_UPDATE]: {
+    args: [string, Partial<Pick<Canvas, 'title' | 'data'>>]
+    return: Canvas
+  }
+  [IPC_CHANNELS.CANVAS_DELETE]: { args: [string]; return: void }
+
+  // Tasks
+  [IPC_CHANNELS.TASKS_LIST]: {
+    args: [TasksListFilter]
+    return: NoteTask[]
+  }
+  [IPC_CHANNELS.TASKS_UPDATE]: {
+    args: [string, Partial<Pick<NoteTask, 'isCompleted' | 'dueDate' | 'priority'>>]
+    return: NoteTask
+  }
+  [IPC_CHANNELS.TASKS_STATS]: {
+    args: [string]
+    return: TaskStats
   }
 
   // DeepNote API

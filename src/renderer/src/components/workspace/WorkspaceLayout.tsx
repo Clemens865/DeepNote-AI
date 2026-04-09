@@ -9,6 +9,11 @@ import { ChatPanel } from '../chat/ChatPanel'
 import { NotesPanel } from '../notes/NotesPanel'
 import { StudioPanel } from '../studio/StudioPanel'
 import { FileEditor } from './FileEditor'
+import { NoteGraphView } from '../notes/NoteGraphView'
+import { WikiPanel } from '../notes/WikiPanel'
+import { KanbanBoard } from '../notes/KanbanBoard'
+import { TasksPanel } from '../notes/TasksPanel'
+import { CanvasView } from '../notes/CanvasView'
 import type { Notebook, WorkspaceDiffResult } from '@shared/types'
 
 export function WorkspaceLayout() {
@@ -64,6 +69,16 @@ export function WorkspaceLayout() {
         return <FileEditor />
       case 'notes':
         return <NotesPanel />
+      case 'graph':
+        return <NoteGraphView />
+      case 'wiki':
+        return <WikiPanel />
+      case 'kanban':
+        return <KanbanBoard />
+      case 'tasks':
+        return <TasksPanel />
+      case 'canvas':
+        return <CanvasView />
       case 'chat':
       default:
         return <ChatPanel />

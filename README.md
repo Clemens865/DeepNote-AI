@@ -72,7 +72,13 @@ A feature-rich, open-source desktop application inspired by Google's NotebookLM.
 | **White Paper** | AI-generated multi-section white papers with cover image, section illustrations, table of contents, references, 3 image models, and A4 PDF export |
 | **Infographic** | AI-generated single-page visuals in 3 format types (Infographic, Advertisement, Social Post), full-image or hybrid mode, 5 aspect ratios including portrait (9:16, 3:4), custom color palettes, 3 image model options, and Veo 3.1 video animation |
 | **Study Tools** | Flashcards, Quizzes (multiple choice), Reports, Mind Maps, Data Tables, Dashboards, Literature Reviews, Competitive Analyses, Document Comparisons, Citation Graphs — search/filter/sort for all generated content |
-| **Notes** | Create, edit, auto-save notes; convert notes to sources for AI context |
+| **Notes** | Obsidian-class rich editor (Tiptap), folders, FTS5 search, outline panel, [[wiki links]] with backlinks, #tags, daily notes, templates, convert to source |
+| **Knowledge Graph** | Force-directed visualization of all notes and their [[wiki link]] connections, tag-colored nodes, zoom/pan/drag |
+| **Knowledge Wiki** | Karpathy LLM Wiki concept — AI-maintained entity/concept/topic pages from sources, coverage indicators, confidence scores, lint engine |
+| **Tasks** | Auto-extracted from note checkboxes, vault-wide queries, due dates (due:YYYY-MM-DD), priority (!high/!medium/!low), two-way sync |
+| **Kanban Board** | Tag-based columns, drag-and-drop cards, visual note organization |
+| **Canvas** | Infinite spatial workspace powered by tldraw — shapes, arrows, freehand, text, auto-save |
+| **AI Note Features** | Auto-tag suggestions, auto-link detection, note summarization (short/medium/long) |
 | **Workspace** | Link local folders, file tree browser, text editor with AI rewrite, .gitignore support |
 | **Export** | Download audio as WAV, slides as PNG, slide decks as PDF (with text overlays for hybrid mode), whitepapers as A4 PDF, copy reports to clipboard |
 | **AI Architecture** | Agentic RAG (multi-query retrieval), multi-agent generation pipeline (Research → Write → Review), AI output validation with retry, cross-session memory |

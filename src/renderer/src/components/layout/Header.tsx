@@ -88,7 +88,7 @@ export function Header() {
     }
   }
 
-  const viewTitle = activeView === 'chat' ? 'Notebook Chat' : 'Notes'
+  const viewTitle = activeView === 'chat' ? 'Notebook Chat' : activeView === 'graph' ? 'Knowledge Graph' : activeView === 'wiki' ? 'Knowledge Wiki' : activeView === 'editor' ? 'Editor' : activeView === 'kanban' ? 'Kanban Board' : activeView === 'tasks' ? 'Tasks' : activeView === 'canvas' ? 'Canvas' : 'Notes'
 
   return (
     <>

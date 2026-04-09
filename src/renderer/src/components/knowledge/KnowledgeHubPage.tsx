@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Database, FolderSearch, Network } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Database, FolderSearch, Network, ArrowLeft } from 'lucide-react'
 import { OverviewTab } from './OverviewTab'
 import { KnowledgeTab } from './KnowledgeTab'
 import { ConnectorsTab } from './ConnectorsTab'
@@ -15,6 +16,7 @@ interface KnowledgeStatus {
 }
 
 export function KnowledgeHubPage() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [status, setStatus] = useState<KnowledgeStatus | null>(null)
 
@@ -46,6 +48,13 @@ export function KnowledgeHubPage() {
       <div className="shrink-0 px-6 pt-5 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/')}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors"
+              title="Back to Home"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
             <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
               <Database className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>

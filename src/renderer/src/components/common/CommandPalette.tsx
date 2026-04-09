@@ -7,6 +7,7 @@ import {
   Search, Headphones, BrainCircuit, Presentation, Layers, HelpCircle,
   Table2, ImageIcon, LayoutDashboard, BookOpen, Trophy, GitCompare, Network,
   FileText, Globe, FileBarChart, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose,
+  Columns, CheckSquare, Frame,
 } from 'lucide-react'
 import type { Notebook } from '@shared/types'
 
@@ -72,6 +73,11 @@ export function CommandPalette({ isOpen, onClose, onOpenSearch, onOpenSettings }
       { id: 'view-chat', label: 'Switch to Chat', category: 'view', icon: <MessageSquare size={16} />, action: () => { setActiveView('chat'); onClose() } },
       { id: 'view-notes', label: 'Switch to Notes', category: 'view', icon: <StickyNote size={16} />, action: () => { setActiveView('notes'); onClose() } },
       { id: 'view-editor', label: 'Switch to Editor', category: 'view', icon: <FileCode size={16} />, action: () => { setActiveView('editor'); onClose() } },
+      { id: 'view-graph', label: 'Switch to Knowledge Graph', category: 'view', icon: <Network size={16} />, action: () => { setActiveView('graph'); onClose() } },
+      { id: 'view-wiki', label: 'Switch to Knowledge Wiki', category: 'view', icon: <BookOpen size={16} />, action: () => { setActiveView('wiki'); onClose() } },
+      { id: 'view-kanban', label: 'Switch to Kanban Board', category: 'view', icon: <Columns size={16} />, action: () => { setActiveView('kanban'); onClose() } },
+      { id: 'view-tasks', label: 'Switch to Tasks', category: 'view', icon: <CheckSquare size={16} />, action: () => { setActiveView('tasks'); onClose() } },
+      { id: 'view-canvas', label: 'Switch to Canvas', category: 'view', icon: <Frame size={16} />, action: () => { setActiveView('canvas'); onClose() } },
       {
         id: 'toggle-studio', label: studioCollapsed ? 'Show Studio Panel' : 'Hide Studio Panel', category: 'view',
         icon: studioCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />,

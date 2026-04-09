@@ -40,14 +40,26 @@ export const chunks = sqliteTable('chunks', {
   createdAt: text('created_at').notNull(),
 })
 
+export const noteFolders = sqliteTable('note_folders', {
+  id: text('id').primaryKey(),
+  notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
+  parentId: text('parent_id'),
+  name: text('name').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
 export const notes = sqliteTable('notes', {
   id: text('id').primaryKey(),
   notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
   sourceId: text('source_id').references(() => sources.id, { onDelete: 'set null' }),
+  folderId: text('folder_id').references(() => noteFolders.id, { onDelete: 'set null' }),
   title: text('title').notNull().default('Untitled note'),
   content: text('content').notNull().default(''),
   tags: text('tags', { mode: 'json' }).notNull().default('[]'),
   isConvertedToSource: integer('is_converted_to_source', { mode: 'boolean' }).notNull().default(false),
+  isDailyNote: integer('is_daily_note', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 })
@@ -92,6 +104,64 @@ export const slidePromptTemplates = sqliteTable('slide_prompt_templates', {
   name: text('name').notNull(),
   promptText: text('prompt_text').notNull(),
   isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+export const wikiPages = sqliteTable('wiki_pages', {
+  id: text('id').primaryKey(),
+  notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  content: text('content').notNull().default(''),
+  pageType: text('page_type', { enum: ['entity', 'concept', 'topic', 'comparison', 'overview', 'source-summary'] }).notNull(),
+  sourceIds: text('source_ids', { mode: 'json' }).notNull().default('[]'),
+  coverage: text('coverage', { enum: ['high', 'medium', 'low'] }).notNull().default('low'),
+  confidence: real('confidence').notNull().default(0.5),
+  relatedPages: text('related_pages', { mode: 'json' }).notNull().default('[]'),
+  tags: text('tags', { mode: 'json' }).notNull().default('[]'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+export const wikiLog = sqliteTable('wiki_log', {
+  id: text('id').primaryKey(),
+  notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
+  action: text('action', { enum: ['ingest', 'update', 'create', 'lint', 'query'] }).notNull(),
+  details: text('details').notNull(),
+  sourceId: text('source_id'),
+  pagesAffected: text('pages_affected', { mode: 'json' }).notNull().default('[]'),
+  createdAt: text('created_at').notNull(),
+})
+
+export const noteTemplates = sqliteTable('note_templates', {
+  id: text('id').primaryKey(),
+  notebookId: text('notebook_id').references(() => notebooks.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  content: text('content').notNull().default(''),
+  description: text('description').notNull().default(''),
+  isGlobal: integer('is_global', { mode: 'boolean' }).notNull().default(false),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+export const noteTasks = sqliteTable('note_tasks', {
+  id: text('id').primaryKey(),
+  notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
+  noteId: text('note_id').notNull().references(() => notes.id, { onDelete: 'cascade' }),
+  text: text('text').notNull(),
+  isCompleted: integer('is_completed', { mode: 'boolean' }).notNull().default(false),
+  dueDate: text('due_date'),
+  priority: text('priority', { enum: ['low', 'medium', 'high'] }),
+  lineIndex: integer('line_index').notNull().default(0),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+export const canvases = sqliteTable('canvases', {
+  id: text('id').primaryKey(),
+  notebookId: text('notebook_id').notNull().references(() => notebooks.id, { onDelete: 'cascade' }),
+  title: text('title').notNull().default('Untitled Canvas'),
+  data: text('data', { mode: 'json' }).notNull().default('{}'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 })

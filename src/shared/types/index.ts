@@ -74,14 +74,77 @@ export interface Chunk {
   createdAt: string
 }
 
+export interface NoteFolder {
+  id: string
+  notebookId: string
+  parentId: string | null
+  name: string
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Note {
   id: string
   notebookId: string
   sourceId: string | null
+  folderId: string | null
   title: string
   content: string
   tags: string[]
   isConvertedToSource: boolean
+  isDailyNote: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NoteTask {
+  id: string
+  notebookId: string
+  noteId: string
+  text: string
+  isCompleted: boolean
+  dueDate: string | null
+  priority: 'low' | 'medium' | 'high' | null
+  lineIndex: number
+  createdAt: string
+  updatedAt: string
+  noteTitle?: string
+}
+
+export interface TasksListFilter {
+  notebookId: string
+  completed?: boolean
+  noteId?: string
+  priority?: 'low' | 'medium' | 'high'
+  dueBefore?: string
+  dueAfter?: string
+}
+
+export interface TaskStats {
+  total: number
+  completed: number
+  incomplete: number
+  overdue: number
+  byPriority: { low: number; medium: number; high: number; none: number }
+}
+
+export interface NoteTemplate {
+  id: string
+  notebookId: string | null
+  title: string
+  content: string
+  description: string
+  isGlobal: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Canvas {
+  id: string
+  notebookId: string
+  title: string
+  data: Record<string, unknown>
   createdAt: string
   updatedAt: string
 }
@@ -396,6 +459,42 @@ export interface UserMemory {
   lastUsedAt: string
   createdAt: string
   updatedAt: string
+}
+
+// Wiki
+export type WikiPageType = 'entity' | 'concept' | 'topic' | 'comparison' | 'overview' | 'source-summary'
+export type WikiCoverage = 'high' | 'medium' | 'low'
+export type WikiLogAction = 'ingest' | 'update' | 'create' | 'lint' | 'query'
+
+export interface WikiPage {
+  id: string
+  notebookId: string
+  title: string
+  content: string
+  pageType: WikiPageType
+  sourceIds: string[]
+  coverage: WikiCoverage
+  confidence: number
+  relatedPages: string[]
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WikiLogEntry {
+  id: string
+  notebookId: string
+  action: WikiLogAction
+  details: string
+  sourceId: string | null
+  pagesAffected: string[]
+  createdAt: string
+}
+
+export interface WikiLintResult {
+  orphanPages: WikiPage[]
+  lowCoveragePages: WikiPage[]
+  unlinkedPages: WikiPage[]
 }
 
 // Source Recommendations

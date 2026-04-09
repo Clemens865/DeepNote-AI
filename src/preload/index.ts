@@ -42,6 +42,46 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.NOTES_BACKLINKS, args),
   notesResolveLink: (args: { notebookId: string; linkTitle: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.NOTES_RESOLVE_LINK, args),
+  notesSearch: (args: { notebookId: string; query: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTES_SEARCH, args),
+  notesMoveToFolder: (args: { noteId: string; folderId: string | null }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTES_MOVE_TO_FOLDER, args),
+  notesGetDaily: (args: { notebookId: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTES_GET_DAILY, args),
+  notesSuggestTags: (args: { notebookId: string; noteId: string; content: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTES_SUGGEST_TAGS, args) as Promise<string[]>,
+  notesSuggestLinks: (args: { notebookId: string; noteId: string; content: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTES_SUGGEST_LINKS, args) as Promise<string[]>,
+  notesSummarize: (args: { content: string; length: 'short' | 'medium' | 'long' }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTES_SUMMARIZE, args) as Promise<string>,
+
+  // Note Templates
+  noteTemplatesList: (args: { notebookId?: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTE_TEMPLATES_LIST, args),
+  noteTemplatesCreate: (args: { notebookId?: string; title: string; content: string; description?: string; isGlobal?: boolean }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTE_TEMPLATES_CREATE, args),
+  noteTemplatesUpdate: (id: string, data: Record<string, unknown>) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTE_TEMPLATES_UPDATE, id, data),
+  noteTemplatesDelete: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTE_TEMPLATES_DELETE, id),
+
+  // Tasks
+  tasksList: (filter: { notebookId: string; completed?: boolean; noteId?: string; priority?: string; dueBefore?: string; dueAfter?: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.TASKS_LIST, filter),
+  tasksUpdate: (id: string, data: Record<string, unknown>) =>
+    ipcRenderer.invoke(IPC_CHANNELS.TASKS_UPDATE, id, data),
+  tasksStats: (notebookId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.TASKS_STATS, notebookId),
+
+  // Note Folders
+  noteFoldersList: (notebookId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTE_FOLDERS_LIST, notebookId),
+  noteFoldersCreate: (args: { notebookId: string; name: string; parentId?: string | null }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTE_FOLDERS_CREATE, args),
+  noteFoldersUpdate: (id: string, data: Record<string, unknown>) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTE_FOLDERS_UPDATE, id, data),
+  noteFoldersDelete: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTE_FOLDERS_DELETE, id),
 
   // Chat
   chatMessages: (notebookId: string) =>
@@ -608,6 +648,47 @@ const api = {
       ipcRenderer.removeListener('knowledge:scan-progress', handler)
     }
   },
+
+  // Canvas
+  canvasList: (notebookId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CANVAS_LIST, notebookId),
+  canvasCreate: (args: { notebookId: string; title?: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CANVAS_CREATE, args),
+  canvasGet: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CANVAS_GET, id),
+  canvasUpdate: (id: string, data: Record<string, unknown>) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CANVAS_UPDATE, id, data),
+  canvasDelete: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.CANVAS_DELETE, id),
+
+  // Wiki
+  wikiPagesList: (notebookId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WIKI_PAGES_LIST, notebookId),
+  wikiPageGet: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WIKI_PAGE_GET, id),
+  wikiPageCreate: (args: {
+    notebookId: string
+    title: string
+    content: string
+    pageType: string
+    sourceIds?: string[]
+    coverage?: string
+    confidence?: number
+    relatedPages?: string[]
+    tags?: string[]
+  }) => ipcRenderer.invoke(IPC_CHANNELS.WIKI_PAGE_CREATE, args),
+  wikiPageUpdate: (id: string, data: Record<string, unknown>) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WIKI_PAGE_UPDATE, id, data),
+  wikiPageDelete: (id: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WIKI_PAGE_DELETE, id),
+  wikiIngest: (args: { notebookId: string; sourceId: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WIKI_INGEST, args),
+  wikiQuery: (args: { notebookId: string; query: string; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WIKI_QUERY, args),
+  wikiLint: (notebookId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WIKI_LINT, notebookId),
+  wikiLogList: (args: { notebookId: string; limit?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.WIKI_LOG_LIST, args),
 
   // System
   systemOpenFile: (args: { filePath: string }) =>
